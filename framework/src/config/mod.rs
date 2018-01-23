@@ -11,6 +11,8 @@ pub struct NetbricksConfiguration {
     pub name: String,
     /// Should this process be run as a secondary process or a primary process?
     pub secondary: bool,
+    /// virtual devices to create by dpdk
+    pub vdevs: Vec<String>,
     /// Where should the main thread (for the examples this just sits around and prints packet counts) be run.
     pub primary_core: i32,
     /// Cores that can be used by NetBricks. Note that currently we will add any cores specified in the ports
@@ -40,6 +42,7 @@ impl Default for NetbricksConfiguration {
             strict: false,
             secondary: false,
             ports: vec![],
+            vdevs: vec![],
         }
     }
 }
@@ -52,18 +55,31 @@ impl NetbricksConfiguration {
             ..Default::default()
         }
     }
+    /// mask of all lcores in use (cores + primary_core)
+    pub fn lcore_mask(&self) -> u64 {
+        let mut m: u64 = 1u64 << self.primary_core;
+        for c in &self.cores {
+            m |= 1u64 << c
+        }
+        m
+    }
 }
 
 impl fmt::Display for NetbricksConfiguration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(
             f,
-            "Configuration: name: {} mempool size: {} core cache: {} primary core: {}\n Ports:\n",
+            "Configuration: name: {} mempool size: {} core cache: {} primary core: {}\nPorts:\n",
             self.name,
             self.pool_size,
             self.cache_size,
             self.primary_core
         ));
+        try!(write!(f, "Virtual Devices:\n"));
+        for dev in &self.vdevs {
+            try!(write!(f, "\t{}\n", dev))
+        }
+        try!(write!(f, "Ports:\n"));
         for port in &self.ports {
             try!(write!(f, "\t{}\n", port))
         }
@@ -82,6 +98,7 @@ pub struct PortConfiguration {
     ///    dpdk:<PMD Descriptor>: PMD driver with arguments
     ///    bess:<port_name>: BESS RingVport with name.
     ///    ovs:<port_id>: OVS ring with ID.
+    ///	   kni:<i/f-name> : kernel network interface,	added by sta
     pub name: String,
     /// Core on which receive node for a given queue lives.
     pub rx_queues: Vec<i32>,

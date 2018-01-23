@@ -20,7 +20,7 @@ pub fn basic_opts() -> Options {
     opts.optmulti("c", "core", "Core to use", "core");
     opts.optopt("m", "master", "Master core", "master");
     opts.optopt("f", "configuration", "Configuration file", "path");
-
+    opts.optmulti("", "vdev", "Virtual device to create", "vdev_name");
     opts
 }
 
@@ -78,7 +78,7 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
         configuration
     };
 
-    let configuration = if matches.opt_present("c") {
+    let mut configuration = if matches.opt_present("c") {
 
         let cores_str = matches.opt_strs("c");
 
@@ -91,10 +91,16 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
             })
             .collect();
 
+        debug!("cores = {:?}", cores);
+
 
         let cores_for_port = extract_cores_for_port(&matches.opt_strs("p"), &cores);
 
+        debug!("cores_for_port = {:?}", cores_for_port);
+
         let ports_to_activate: Vec<_> = cores_for_port.keys().collect();
+
+        debug!("ports_to_activate = {:?}", ports_to_activate);
 
         let mut ports = Vec::with_capacity(ports_to_activate.len());
 
@@ -112,7 +118,11 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
         configuration
     };
 
-    println!("Going to start with configuration {}", configuration);
+    if matches.opt_present("vdev") {
+        configuration.vdevs = matches.opt_strs("vdev");
+    }
+
+    info!("Going to start with configuration {}", configuration);
     configuration
 }
 

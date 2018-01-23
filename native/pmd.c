@@ -1,4 +1,5 @@
 #include <rte_config.h>
+#include <rte_pci.h>
 #include <rte_eal.h>
 #include <rte_ethdev.h>
 #include "mempool.h"
@@ -120,7 +121,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     /* Need to accesss rte_eth_devices manually since DPDK currently
      * provides no other mechanism for checking whether something is
      * attached */
-    if (port >= RTE_MAX_ETHPORTS || !rte_eth_devices[port].attached) {
+    if (port >= RTE_MAX_ETHPORTS || (rte_eth_devices[port].state != RTE_ETH_DEV_ATTACHED) ) {
         printf("Port not found %d\n", port);
         return -ENODEV;
     }
@@ -134,7 +135,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
 
     eth_rxconf = dev_info.default_rxconf;
     /* Drop packets when no descriptors are available */
-    eth_rxconf.rx_drop_en = 1;
+    eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
 
     eth_txconf           = dev_info.default_txconf;
     tso                  = !(!tso);
@@ -144,6 +145,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
 
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
     if (ret != 0) {
+        printf("Failed to start \n");
         return ret; /* Don't need to clean up here */
     }
 
@@ -168,12 +170,21 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
             return ret; /* Clean things up */
         }
     }
-
+    // printf("calling rte_eth_dev_start ...\n");
     ret = rte_eth_dev_start(port);
     if (ret != 0) {
         printf("Failed to start \n");
         return ret; /* Clean up things */
     }
+
+//
+//  ret = rte_eth_dev_set_link_up(port);
+//  if (ret != 0) {
+//      printf("Failed to set link up \n");
+//      return ret; /* Clean up things */
+//  }
+//  else printf("Success on rte_eth_dev_set_link_up\n");
+
     return 0;
 }
 
@@ -182,8 +193,8 @@ void free_pmd_port(int port) {
     rte_eth_dev_close(port);
 }
 
-int recv_pkts(int port, int qid, mbuf_array_t pkts, int len) {
-    int ret = rte_eth_rx_burst(port, qid, (struct rte_mbuf**)pkts, len);
+uint32_t eth_rx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
+	uint32_t ret = rte_eth_rx_burst((uint8_t) port, (uint16_t) qid, (struct rte_mbuf**)pkts, len);
 /* Removed prefetching since the benefit in performance for single core was
  * outweighed by the loss in performance with several cores. */
 #if 0
@@ -194,12 +205,13 @@ int recv_pkts(int port, int qid, mbuf_array_t pkts, int len) {
     return ret;
 }
 
-int send_pkts(int port, int qid, mbuf_array_t pkts, int len) {
-    return rte_eth_tx_burst(port, (uint16_t)qid, (struct rte_mbuf**)pkts, (uint16_t)len);
+uint32_t eth_tx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
+	return rte_eth_tx_burst((uint8_t) port, (uint16_t)qid, (struct rte_mbuf**)pkts, len);
 }
 
 int find_port_with_pci_address(const char* pci) {
     struct rte_pci_addr addr;
+    struct rte_eth_dev_info info;
     char devargs[1024];
     int ret;
     uint8_t port_id;
@@ -210,10 +222,10 @@ int find_port_with_pci_address(const char* pci) {
     }
 
     for (int i = 0; i < RTE_MAX_ETHPORTS; i++) {
-        if (!rte_eth_devices[i].attached) {
+        if (rte_eth_devices[i].state!= RTE_ETH_DEV_ATTACHED) {
             continue;
         }
-
+/* TODO
         if (!rte_eth_devices[i].pci_dev) {
             continue;
         }
@@ -221,6 +233,15 @@ int find_port_with_pci_address(const char* pci) {
         if (rte_eal_compare_pci_addr(&addr, &rte_eth_devices[i].pci_dev->addr)) {
             continue;
         }
+*/
+        // needs still testing:
+        if (get_rte_eth_dev_info(i, &info)) {
+        	continue;
+        }
+        if (rte_eal_compare_pci_addr(&addr, &info.pci_dev->addr)) {
+            continue;
+        }
+
 
         return i;
     }
@@ -242,7 +263,6 @@ int find_port_with_pci_address(const char* pci) {
    device or an error if not found. */
 int attach_pmd_device(const char* devname) {
     uint8_t port = 0;
-    printf("Devname: \"%s\"\n", devname);
     int error = rte_eth_dev_attach(devname, &port);
 
     if (error != 0) {

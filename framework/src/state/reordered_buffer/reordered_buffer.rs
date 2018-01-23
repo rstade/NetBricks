@@ -165,7 +165,8 @@ impl SegmentList {
                     // Remove from next.
                     self.storage[next as usize].length -= max_len;
                     // Update seq
-                    self.storage[next as usize].seq = self.storage[next as usize].seq.wrapping_add(max_len as u32);
+                    self.storage[next as usize].seq =
+                        self.storage[next as usize].seq.wrapping_add(max_len as u32);
                     // No more merges are possible so exit this loop.
                     break;
                 }
@@ -220,7 +221,8 @@ impl SegmentList {
                     // println!("Overlapping");
                     // Overlapping segment
                     let new_end = max(seg_end, end);
-                    self.storage[idx as usize].length = (new_end - self.storage[idx as usize].seq) as u16;
+                    self.storage[idx as usize].length =
+                        (new_end - self.storage[idx as usize].seq) as u16;
                     break;
                 } else {
                     idx = self.storage[idx as usize].next;
@@ -382,7 +384,7 @@ impl ReorderedBuffer {
 
     /// Read data from the buffer. The amount of data read is limited by the amount of in-order data available at the
     /// moment.
-    pub fn read_data(&mut self, mut data: &mut [u8]) -> usize {
+    pub fn read_data(&mut self, data: &mut [u8]) -> usize {
         match self.state {
             State::Connected => self.read_data_common(data),
             State::ConnectedOutOfOrder => {
@@ -531,7 +533,7 @@ impl ReorderedBuffer {
     }
 
     #[inline]
-    fn read_data_common(&mut self, mut data: &mut [u8]) -> usize {
+    fn read_data_common(&mut self, data: &mut [u8]) -> usize {
         let read = self.data.read_from_head(data);
         self.head_seq = self.head_seq.wrapping_add(read as u32);
         read

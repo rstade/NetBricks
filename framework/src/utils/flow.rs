@@ -4,6 +4,7 @@ use native::zcsi::*;
 use std::hash::Hasher;
 use std::mem;
 use std::slice;
+use std::net::{Ipv4Addr, SocketAddrV4};
 
 // FIXME: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.
@@ -87,6 +88,14 @@ impl Flow {
         let csum = ipcsum(bytes);
         BigEndian::write_u16(&mut bytes[10..12], csum);
         // FIXME: l4 cksum
+    }
+
+    pub fn src_socket_addr(&self) -> SocketAddrV4 {
+        SocketAddrV4::new(Ipv4Addr::from(self.src_ip), self.src_port)
+    }
+
+    pub fn dst_socket_addr(&self) -> SocketAddrV4 {
+        SocketAddrV4::new(Ipv4Addr::from(self.dst_ip), self.dst_port)
     }
 }
 

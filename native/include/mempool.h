@@ -17,7 +17,7 @@ int init_secondary_mempool(const char* mempool_name);
 int find_secondary_mempool();
 struct rte_mbuf* mbuf_alloc();
 void mbuf_free(struct rte_mbuf* buf);
-int mbuf_alloc_bulk(mbuf_array_t array, uint16_t len, int cnt);
+int mbuf_alloc_bulk(struct rte_mbuf **array, unsigned int cnt);
 int mbuf_free_bulk(mbuf_array_t array, int cnt);
 struct rte_mempool* get_pframe_pool(int coreid, int sid);
 struct rte_mempool* get_mempool_for_core(int coreid);

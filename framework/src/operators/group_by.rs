@@ -10,7 +10,7 @@ use scheduler::{Executable, Scheduler};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-pub type GroupFn<T, M> = Box<FnMut(&Packet<T, M>) -> usize + Send>;
+pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize + Send>;
 
 pub struct GroupBy<T, V>
 where
@@ -45,7 +45,7 @@ where
         {
             let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
             while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
-                let group = (self.group_fn)(&packet);
+                let group = (self.group_fn)(&mut packet);
                 packet.save_header_and_offset();
                 self.producers[group].enqueue_one(packet);
             }
@@ -99,7 +99,10 @@ where
         self.groups
     }
 
-    pub fn get_group(&mut self, group: usize) -> Option<RestoreHeader<T, V::Metadata, ReceiveBatch<MpscConsumer>>> {
+    pub fn get_group(
+        &mut self,
+        group: usize,
+    ) -> Option<RestoreHeader<T, V::Metadata, ReceiveBatch<MpscConsumer>>> {
         match self.consumers.remove(&group) {
             Some(mut p) => {
                 {

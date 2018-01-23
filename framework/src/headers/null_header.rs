@@ -1,4 +1,6 @@
 use super::EndOffset;
+use super::Header;
+
 use std::fmt;
 
 #[derive(Debug, Default)]
@@ -30,5 +32,10 @@ impl EndOffset for NullHeader {
     #[inline]
     fn check_correct(&self, _: &NullHeader) -> bool {
         true
+    }
+
+    #[inline]
+    fn is_header(&self) -> Header {
+        Header::Null
     }
 }

@@ -1,8 +1,9 @@
 use super::PortStats;
-use super::super::{PacketTx, PacketRx};
+use super::super::{PacketTx, PacketRx, Packet};
 use allocators::*;
 use common::*;
 use native::zcsi::*;
+use headers::{EndOffset, NullHeader};
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -43,7 +44,7 @@ impl PacketRx for VirtualQueue {
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
         let len = pkts.len() as i32;
-        let status = unsafe { mbuf_alloc_bulk(pkts.as_mut_ptr(), 60, len) };
+        let status = unsafe { mbuf_alloc_bulk(pkts.as_mut_ptr(), len as u32) };
         let alloced = if status == 0 { len } else { 0 };
         let update = self.stats_rx.stats.load(Ordering::Relaxed) + alloced as usize;
         self.stats_rx.stats.store(update, Ordering::Relaxed);
@@ -52,14 +53,14 @@ impl PacketRx for VirtualQueue {
 }
 
 impl VirtualPort {
-    pub fn new(_queues: i32) -> Result<Arc<VirtualPort>> {
+    pub fn new() -> Result<Arc<VirtualPort>> {
         Ok(Arc::new(VirtualPort {
             stats_rx: Arc::new(PortStats::new()),
             stats_tx: Arc::new(PortStats::new()),
         }))
     }
 
-    pub fn new_virtual_queue(&self, _queue: i32) -> Result<CacheAligned<VirtualQueue>> {
+    pub fn new_virtual_queue(&self) -> Result<CacheAligned<VirtualQueue>> {
         Ok(CacheAligned::allocate(VirtualQueue {
             stats_rx: self.stats_rx.clone(),
             stats_tx: self.stats_tx.clone(),
@@ -74,3 +75,7 @@ impl VirtualPort {
         )
     }
 }
+
+//pub trait PacketGenerator {
+//    fn generate(&self, pkts: &mut [*mut MBuf]);
+//}

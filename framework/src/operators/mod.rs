@@ -108,7 +108,10 @@ pub trait Batch: BatchIterator + Act + Send {
     }
 
     /// Transform a header field.
-    fn transform(self, transformer: TransformFn<Self::Header, Self::Metadata>) -> TransformBatch<Self::Header, Self>
+    fn transform(
+        self,
+        transformer: TransformFn<Self::Header, Self::Metadata>,
+    ) -> TransformBatch<Self::Header, Self>
     where
         Self: Sized,
     {
@@ -125,7 +128,10 @@ pub trait Batch: BatchIterator + Act + Send {
     }
 
     /// Filter out packets, any packets for which `filter_f` returns false are dropped from the batch.
-    fn filter(self, filter_f: FilterFn<Self::Header, Self::Metadata>) -> FilterBatch<Self::Header, Self>
+    fn filter(
+        self,
+        filter_f: FilterFn<Self::Header, Self::Metadata>,
+    ) -> FilterBatch<Self::Header, Self>
     where
         Self: Sized,
     {

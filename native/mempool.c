@@ -218,6 +218,11 @@ struct rte_mbuf *mbuf_alloc() {
     return rte_pktmbuf_alloc(current_pframe_pool());
 }
 
+int mbuf_alloc_bulk(struct rte_mbuf **array, unsigned int cnt) {
+	return rte_pktmbuf_alloc_bulk(current_pframe_pool(),
+			 array, cnt);
+}
+
 void mbuf_free(struct rte_mbuf *buf) {
     rte_pktmbuf_free(buf);
 }
@@ -228,21 +233,22 @@ void mbuf_free(struct rte_mbuf *buf) {
  *	len: Length
  *	cnt: Count
  */
+/*
 int mbuf_alloc_bulk(mbuf_array_t array, uint16_t len, int cnt) {
     int ret;
     int i;
 
-    __m128i template; /* 256-bit write was worse... */
+    __m128i template; // 256-bit write was worse...
     __m128i rxdesc_fields;
 
     struct rte_mbuf tmp;
-    /* DPDK 2.1 specific
-     * packet_type 0 (32 bits)
-     * pkt_len len (32 bits)
-     * data_len len (16 bits)
-     * vlan_tci 0 (16 bits)
-     * rss 0 (32 bits)
-     */
+    // DPDK 2.1 specific
+    // packet_type 0 (32 bits)
+    // pkt_len len (32 bits)
+    // data_len len (16 bits)
+    // vlan_tci 0 (16 bits)
+    // rss 0 (32 bits)
+    //
     rxdesc_fields = _mm_setr_epi32(0, len, len, 0);
 
     ret = rte_mempool_get_bulk(current_pframe_pool(), (void **)array, cnt);
@@ -256,10 +262,10 @@ int mbuf_alloc_bulk(mbuf_array_t array, uint16_t len, int cnt) {
         array[cnt] = &tmp;
     }
 
-    /* 4 at a time didn't help */
+    // 4 at a time didn't help
     for (i = 0; i < cnt; i += 2) {
-        /* since the data is likely to be in the store buffer
-         * as 64-bit writes, 128-bit read will cause stalls */
+        // since the data is likely to be in the store buffer
+        // as 64-bit writes, 128-bit read will cause stalls
         struct rte_mbuf *mbuf0 = array[i];
         struct rte_mbuf *mbuf1 = array[i + 1];
 
@@ -274,6 +280,7 @@ int mbuf_alloc_bulk(mbuf_array_t array, uint16_t len, int cnt) {
         array[cnt] = NULL;
     return 0;
 }
+*/
 
 #define RTE_MBUF_FROM_BADDR(ba) (((struct rte_mbuf *)(ba)) - 1)
 

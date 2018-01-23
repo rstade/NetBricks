@@ -55,11 +55,13 @@ pub enum SchedulerCommand {
 
 const DEFAULT_Q_SIZE: usize = 256;
 
+/*
 impl Default for StandaloneScheduler {
     fn default() -> StandaloneScheduler {
         StandaloneScheduler::new()
     }
 }
+*/
 
 impl Scheduler for StandaloneScheduler {
     /// Add a task to the current scheduler.
@@ -79,7 +81,10 @@ impl StandaloneScheduler {
         StandaloneScheduler::new_with_channel_and_capacity(channel, DEFAULT_Q_SIZE)
     }
 
-    pub fn new_with_channel_and_capacity(channel: Receiver<SchedulerCommand>, capacity: usize) -> StandaloneScheduler {
+    pub fn new_with_channel_and_capacity<'b>(
+        channel: Receiver<SchedulerCommand>,
+        capacity: usize,
+    ) -> StandaloneScheduler {
         StandaloneScheduler {
             run_q: Vec::with_capacity(capacity),
             next_task: 0,
@@ -92,7 +97,7 @@ impl StandaloneScheduler {
     fn handle_request(&mut self, request: SchedulerCommand) {
         match request {
             SchedulerCommand::Add(ex) => self.run_q.push(Runnable::from_boxed_task(ex)),
-            SchedulerCommand::Run(f) => f(self),
+            SchedulerCommand::Run(mut f) => f(self),
             SchedulerCommand::Execute => self.execute_loop(),
             SchedulerCommand::Shutdown => {
                 self.execute_loop = false;

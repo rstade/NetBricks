@@ -14,18 +14,30 @@ pub struct PacketBatch {
     array: Vec<*mut MBuf>,
     scratch: Vec<*mut MBuf>,
     parent_tasks: Vec<usize>,
+    b_keep_mbuf: bool, // if false the mbuf array will be de-allocated, each time new packets are received
+                       //    port_id: Option<i32>,
 }
 
 // *mut MBuf is not send by default.
 unsafe impl Send for PacketBatch {}
 
+/*
+impl PortId for PacketBatch {
+    fn port_id(&self) -> i32 {
+        return self.port_id.unwrap();
+    }
+}
+*/
+
 impl PacketBatch {
     /// Create a new PacketBatch capable of holding up to `cnt` packets.
-    pub fn new(cnt: i32) -> PacketBatch {
+    pub fn new(cnt: i32, b_keep_mbuf: bool) -> PacketBatch {
         PacketBatch {
             array: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             parent_tasks: vec![],
+            b_keep_mbuf: b_keep_mbuf,
+//            port_id: None,
         }
     }
 
@@ -90,6 +102,7 @@ impl PacketBatch {
     unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> Result<u32> {
         let capacity = self.array.capacity();
         self.add_to_batch(capacity);
+        //       self.port_id = Some(port.port_id()); // assign the new port_id, sta
         match port.recv(self.packet_ptr()) {
             e @ Err(_) => e,
             Ok(recv) => {
@@ -185,7 +198,8 @@ impl PacketBatch {
             if self.array.capacity() < (cnt as usize) {
                 Err(ErrorKind::FailedAllocation.into())
             } else {
-                let ret = mbuf_alloc_bulk(self.array.as_mut_ptr(), len, cnt);
+                // let ret = mbuf_alloc_bulk(self.array.as_mut_ptr(), len, cnt);
+                let ret = mbuf_alloc_bulk(self.array.as_mut_ptr(), cnt as u32);
                 if ret == 0 {
                     self.array.set_len(cnt as usize);
                     Ok(())
@@ -199,7 +213,7 @@ impl PacketBatch {
     #[inline]
     fn free_packet_batch(&mut self) -> result::Result<(), ()> {
         unsafe {
-            if self.array.is_empty() {
+            if self.array.is_empty() || self.b_keep_mbuf {
                 Ok(())
             } else {
                 let len = self.array.len() as i32;
@@ -220,7 +234,10 @@ impl BatchIterator for PacketBatch {
     /// The starting offset for packets in the current batch.
     type Header = NullHeader;
     type Metadata = EmptyMetadata;
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(
+        &mut self,
+        idx: usize,
+    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         if idx < self.array.len() {
             Some(PacketDescriptor {
                 packet: packet_from_mbuf_no_free::<NullHeader>(self.array[idx], 0),
@@ -247,17 +264,32 @@ impl Act for PacketBatch {
     fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
         let mut total_sent = 0;
         // FIXME: Make it optionally possible to wait for all packets to be sent.
-        while self.available() > 0 {
-            unsafe {
-                // let available = self.available() as i32;
-                try!(port.send(self.packet_ptr()).and_then(|sent| {
-                    self.consume_batch_partial(sent as usize);
-                    total_sent += sent;
-                    Ok(sent)
-                }));
+        // while self.available() > 0 {
+        unsafe {
+            // let available = self.available() as i32;
+/*
+            for p in &self.array {
+                trace!(
+                    "sending on port {}: &mbuf= {:p}, {}",
+                    port.port_id().unwrap(),
+                    *p,
+                    **p
+                );
             }
-            break;
+*/
+            try!(port.send(self.packet_ptr()).and_then(|sent| {
+                /*
+                for p in &self.array {
+                    trace!("&mbuf= {:p}, {}", *p, **p);
+                }
+				*/
+                self.consume_batch_partial(sent as usize);
+                total_sent += sent;
+                Ok(sent)
+            }));
         }
+        //    break;
+        //}
         Ok(total_sent)
     }
 

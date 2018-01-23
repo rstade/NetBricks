@@ -92,7 +92,11 @@ impl<T: TcpControlAgent> TcpControlServer<T> {
                         T::new(
                             addr,
                             stream,
-                            IOScheduler::new(self.scheduler.new_poll_handle(), stream_fd, token),
+                            IOScheduler::new(
+                                self.scheduler.new_poll_handle(),
+                                stream_fd,
+                                token,
+                            ),
                         ),
                     );
                     // Add to some sort of hashmap.
@@ -113,7 +117,7 @@ impl<T: TcpControlAgent> TcpControlServer<T> {
     fn handle_data(&mut self, token: Token, available: Available) {
         let preserve = {
             match self.connections.get_mut(&token) {
-                Some(mut connection) => {
+                Some(connection) => {
                     if available & READ != 0 {
                         connection.handle_read_ready()
                     } else if available & WRITE != 0 {

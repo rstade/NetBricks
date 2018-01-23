@@ -11,6 +11,7 @@ use std::ffi::CString;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::ptr::Unique;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -18,11 +19,13 @@ pub struct PmdPort {
     connected: bool,
     should_close: bool,
     port: i32,
+    kni: Option<Unique<Struct_rte_kni>>, //must use Unique because raw ptr does not implement Send
     rxqs: i32,
     txqs: i32,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
 }
+
 
 /// A port queue represents a single queue for a physical port, and should be used to send and receive data.
 #[derive(Clone)]
@@ -64,9 +67,13 @@ impl fmt::Display for PortQueue {
 /// Represents a single RX/TX queue pair for a port. This is what is needed to send or receive traffic.
 impl PortQueue {
     #[inline]
-    fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: i32) -> Result<u32> {
+    fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: u16) -> Result<u32> {
         unsafe {
-            let sent = send_pkts(self.port_id, queue, pkts, to_send);
+            let sent = if self.port.is_kni() {
+                rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
+            } else {
+                eth_tx_burst(self.port_id, queue, pkts, to_send)
+            };
             let update = self.stats_tx.stats.load(Ordering::Relaxed) + sent as usize;
             self.stats_tx.stats.store(update, Ordering::Relaxed);
             Ok(sent as u32)
@@ -74,9 +81,30 @@ impl PortQueue {
     }
 
     #[inline]
-    fn recv_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_recv: i32) -> Result<u32> {
+    fn recv_queue(&self, queue: i32, pkts: &mut [*mut MBuf], to_recv: u16) -> Result<u32> {
         unsafe {
-            let recv = recv_pkts(self.port_id, queue, pkts, to_recv);
+            let recv = if self.port.is_kni() {
+                rte_kni_rx_burst(
+                    self.port.kni.unwrap().as_ptr(),
+                    pkts.as_mut_ptr(),
+                    to_recv as u32,
+                )
+            } else {
+                eth_rx_burst(self.port_id, queue, pkts.as_mut_ptr(), to_recv)
+            };
+            /*
+            if recv > 0 {
+                for i in 0..recv {
+                    let p = pkts[i as usize];
+                    trace!(
+                        "portqueue port-id= {}: &mbuf= {:p}, {}",
+                        self.port_id,
+                        p,
+                        *p
+                    );
+                }
+            }
+*/
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
             Ok(recv as u32)
@@ -98,8 +126,12 @@ impl PacketTx for PortQueue {
     #[inline]
     fn send(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
         let txq = self.txq;
-        let len = pkts.len() as i32;
+        let len = pkts.len() as u16;
         self.send_queue(txq, pkts.as_mut_ptr(), len)
+    }
+
+    fn port_id(&self) -> Option<i32> {
+        self.port.port_id()
     }
 }
 
@@ -109,8 +141,12 @@ impl PacketRx for PortQueue {
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
         let rxq = self.rxq;
-        let len = pkts.len() as i32;
-        self.recv_queue(rxq, pkts.as_mut_ptr(), len)
+        let len = pkts.len() as u16;
+        self.recv_queue(rxq, pkts, len)
+    }
+
+    fn port_id(&self) -> Option<i32> {
+        self.port.port_id()
     }
 }
 
@@ -136,6 +172,11 @@ impl PmdPort {
         unsafe { find_port_with_pci_address(pcie_cstr.as_ptr()) }
     }
 
+    fn port_id(&self) -> Option<i32> {
+        Some(self.port)
+    }
+
+
     /// Number of configured RXQs.
     pub fn rxqs(&self) -> i32 {
         self.rxqs
@@ -146,7 +187,19 @@ impl PmdPort {
         self.txqs
     }
 
-    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: i32, txq: i32) -> Result<CacheAligned<PortQueue>> {
+    pub fn is_kni(&self) -> bool {
+        self.kni.is_some()
+    }
+
+    pub fn get_kni(&self) -> *mut Struct_rte_kni {
+        self.kni.unwrap().as_ptr()
+    }
+
+    pub fn new_queue_pair(
+        port: &Arc<PmdPort>,
+        rxq: i32,
+        txq: i32,
+    ) -> Result<CacheAligned<PortQueue>> {
         if rxq > port.rxqs || rxq < 0 {
             Err(ErrorKind::BadRxQueue(port.port, rxq).into())
         } else if txq > port.txqs || txq < 0 {
@@ -200,7 +253,9 @@ impl PmdPort {
         let actual_rxqs = min(max_rxqs, rxqs);
         let actual_txqs = min(max_txqs, txqs);
 
-        if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
+        if ((actual_txqs as usize) <= tx_cores.len()) &&
+            ((actual_rxqs as usize) <= rx_cores.len())
+        {
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -219,6 +274,7 @@ impl PmdPort {
                 Ok(Arc::new(PmdPort {
                     connected: true,
                     port: port,
+                    kni: None,
                     rxqs: actual_rxqs,
                     txqs: actual_txqs,
                     should_close: true,
@@ -246,6 +302,7 @@ impl PmdPort {
             Ok(Arc::new(PmdPort {
                 connected: true,
                 port: port,
+                kni: None,
                 rxqs: 1,
                 txqs: 1,
                 should_close: false,
@@ -266,6 +323,7 @@ impl PmdPort {
                     Ok(Arc::new(PmdPort {
                         connected: true,
                         port: port,
+                        kni: None,
                         rxqs: 1,
                         txqs: 1,
                         should_close: false,
@@ -277,6 +335,32 @@ impl PmdPort {
                 }
             }
             _ => Err(ErrorKind::BadVdev(String::from(name)).into()),
+        }
+    }
+
+    fn new_kni_port(name: &str, rxqs: i32, txqs: i32) -> Result<Arc<PmdPort>> {
+
+        // This call returns a pointer to an opaque C struct
+        let p_kni = unsafe { kni_alloc(1 as u8) };
+        if !p_kni.is_null() {
+            let port = 0;
+            // unsafe { attach_pmd_device(CString::new(String::from(name)).unwrap().as_ptr()) };
+            // if port >= 0 {
+            Ok(Arc::new(PmdPort {
+                connected: true,
+                port: port,
+                kni: Some(Unique::new(p_kni).unwrap()),
+                rxqs: rxqs,
+                txqs: txqs,
+                should_close: true, // sta, not clear what this is used for, and if to set true or false
+                stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
+                stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
+            }))
+        //            } else {
+        //                Err(ErrorKind::BadDev(String::from(name)).into())
+        //            }
+        } else {
+            Err(ErrorKind::FailedToInitializeKni(String::from(name)).into())
         }
     }
 
@@ -295,7 +379,7 @@ impl PmdPort {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
         if port >= 0 {
-            println!("Going to try and use port {}", port);
+            debug!("Going to try and use port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
                 port,
                 rxqs,
@@ -317,6 +401,7 @@ impl PmdPort {
         Ok(Arc::new(PmdPort {
             connected: false,
             port: 0,
+            kni: None,
             rxqs: 0,
             txqs: 0,
             should_close: false,
@@ -379,6 +464,7 @@ impl PmdPort {
                     csumoffload,
                 )
             }
+            "kni" => PmdPort::new_kni_port(parts[1], rxqs, txqs),
             "null" => PmdPort::null_port(),
             _ => {
                 PmdPort::new_dpdk_port(
@@ -442,7 +528,7 @@ impl PmdPort {
 
     #[inline]
     pub fn mac_address(&self) -> MacAddress {
-        let mut address = MacAddress { addr: [0; 6] };
+        let mut address = MacAddress::nil();
         unsafe {
             rte_eth_macaddr_get(self.port, &mut address as *mut MacAddress);
             address

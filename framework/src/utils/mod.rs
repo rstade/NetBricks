@@ -1,7 +1,12 @@
 pub use self::asm::*;
 pub use self::flow::*;
+pub use self::check::*;
+pub use self::ip::*;
+
 mod flow;
 mod asm;
+mod check;
+pub mod ip;
 
 pub const PAGE_SIZE: usize = 4096; // Page size in bytes, not using huge pages here.
 

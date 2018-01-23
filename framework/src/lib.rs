@@ -8,6 +8,8 @@
 #![feature(alloc)]
 #![feature(heap_api)]
 #![feature(unique)]
+#![feature(rustc_private)]
+
 // Used for cache alignment.
 #![feature(allocator_api)]
 
@@ -27,8 +29,10 @@ extern crate fnv;
 extern crate twox_hash;
 extern crate regex;
 extern crate net2;
+
 #[macro_use]
 extern crate lazy_static;
+
 #[cfg(feature = "sctp")]
 extern crate sctp;
 // TOML for scheduling configuration
@@ -43,10 +47,14 @@ extern crate alloc;
 #[macro_use]
 extern crate error_chain;
 
+// Logging
+#[macro_use]
+extern crate log;
+
 #[cfg(unix)]
 extern crate nix;
 #[allow(dead_code)]
-mod native;
+
 pub mod allocators;
 pub mod headers;
 pub mod scheduler;
@@ -59,3 +67,4 @@ pub mod common;
 pub mod control;
 pub mod shared_state;
 pub mod config;
+pub mod native;

@@ -7,6 +7,7 @@ use headers::NullHeader;
 use interface::PacketTx;
 use scheduler::Executable;
 
+
 pub struct SendBatch<Port, V>
 where
     Port: PacketTx,
@@ -51,7 +52,10 @@ where
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, _: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(
+        &mut self,
+        _: usize,
+    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         panic!("Cannot iterate send batch")
     }
 }
@@ -64,6 +68,7 @@ where
 {
     #[inline]
     fn act(&mut self) {
+        // debug!("SendBatch.act with port {}", self.port.port_id());
         // First everything is applied
         self.parent.act();
         self.parent

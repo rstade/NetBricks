@@ -53,7 +53,7 @@ INSTALL_PATH = $(abspath ../target/native)
 
 .PHONY: all clean tags cscope all-static
 
-all: $(DEPS) $(PROD)
+all: $(DEPS) $(PROD) install
 
 all-static: $(DEPS) $(PROD_STATIC)
 

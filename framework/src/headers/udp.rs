@@ -1,4 +1,4 @@
-use super::EndOffset;
+use super::{EndOffset, Header};
 use headers::IpHeader;
 use std::default::Default;
 use std::fmt;
@@ -47,6 +47,11 @@ impl EndOffset for UdpHeader {
     #[inline]
     fn check_correct(&self, _prev: &IpHeader) -> bool {
         true
+    }
+
+    #[inline]
+    fn is_header(&self) -> Header {
+        Header::Udp
     }
 }
 

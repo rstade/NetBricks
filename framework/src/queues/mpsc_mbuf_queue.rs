@@ -26,7 +26,7 @@ struct MpscQueue {
     producer: QueueMetadata,
     consumer: QueueMetadata,
     queue: Vec<AtomicPtr<MBuf>>,
-    n_producers: AtomicUsize, // Number of consumers.
+    n_producers: AtomicUsize, // Number of producers.
 }
 
 impl MpscQueue {
@@ -85,7 +85,7 @@ impl MpscQueue {
         }
     }
 
-    // In the mp only version lots of time was being consumed in CAS. We want to allow for the mp case, but there is no
+    // In the mp only version lots of time was being consumed in CAS (Compare and Swap). We want to allow for the mp case, but there is no
     // need to waste cycles.
     #[inline]
     fn enqueue_sp(&self, mbufs: &[*mut MBuf]) -> usize {

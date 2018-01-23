@@ -12,6 +12,10 @@ error_chain! {
             description("Failed to initialize port")
             display("Failed to initialize port: {}", port)
         }
+        FailedToInitializeKni(name: String) {
+            description("Failed to initialize kni i/f")
+            display("Failed to initialize kni i/f: {}", name)
+        }
         BadQueue {
             description("Invalid queue request")
             display("Invalid queue request")

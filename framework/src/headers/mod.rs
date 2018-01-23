@@ -9,6 +9,14 @@ mod udp;
 mod tcp;
 mod null_header;
 
+pub enum Header {
+    Null,
+    Mac,
+    Ip,
+    Tcp,
+    Udp,
+}
+
 /// A trait implemented by all headers, used for reading them from a mbuf.
 pub trait EndOffset: Send {
     type PreviousHeader: EndOffset;
@@ -25,4 +33,6 @@ pub trait EndOffset: Send {
     fn payload_size(&self, hint: usize) -> usize;
 
     fn check_correct(&self, prev: &Self::PreviousHeader) -> bool;
+
+    fn is_header(&self) -> Header;
 }

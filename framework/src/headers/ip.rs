@@ -1,4 +1,4 @@
-use super::EndOffset;
+use super::{EndOffset, Header};
 use byteorder::{BigEndian, ByteOrder};
 use headers::MacHeader;
 use std::convert::From;
@@ -6,7 +6,7 @@ use std::default::Default;
 use std::fmt;
 use std::net::Ipv4Addr;
 use std::slice;
-use utils::Flow;
+use utils::{Flow, checksum};
 
 /// IP header using SSE
 #[derive(Debug, Default)]
@@ -64,6 +64,11 @@ impl EndOffset for IpHeader {
     fn check_correct(&self, _prev: &MacHeader) -> bool {
         true
     }
+
+    #[inline]
+    fn is_header(&self) -> Header {
+        Header::Ip
+    }
 }
 
 impl IpHeader {
@@ -77,8 +82,8 @@ impl IpHeader {
                 let self_as_u8 = (self as *const IpHeader) as *const u8;
                 let port_as_u8 = self_as_u8.offset(self.offset() as isize);
                 let port_slice = slice::from_raw_parts(port_as_u8, 4);
-                let dst_port = BigEndian::read_u16(&port_slice[..2]);
-                let src_port = BigEndian::read_u16(&port_slice[2..]);
+                let src_port = BigEndian::read_u16(&port_slice[..2]);
+                let dst_port = BigEndian::read_u16(&port_slice[2..]);
                 Some(Flow {
                     src_ip: src_ip,
                     dst_ip: dst_ip,
@@ -178,7 +183,8 @@ impl IpHeader {
 
     #[inline]
     pub fn set_flags(&mut self, flags: u8) {
-        self.id_to_foffset = (self.id_to_foffset & !0x00e00000) | (((flags & 0x7) as u32) << (16 + 5));
+        self.id_to_foffset = (self.id_to_foffset & !0x00e00000) |
+            (((flags & 0x7) as u32) << (16 + 5));
     }
 
     #[inline]
@@ -242,6 +248,24 @@ impl IpHeader {
 
     #[inline]
     pub fn set_length(&mut self, len: u16) {
-        self.version_to_len = (self.version_to_len & !0xffff0000) | ((u16::to_be(len) as u32) << 16);
+        self.version_to_len = (self.version_to_len & !0xffff0000) |
+            ((u16::to_be(len) as u32) << 16);
+    }
+
+    #[inline]
+    pub fn trim_length_by(&mut self, delta: u16) {
+        let newlen = self.length().wrapping_sub(delta);
+        self.set_length(newlen);
+    }
+
+    #[inline]
+    pub fn update_checksum(&mut self) {
+        unsafe {
+            let bytes = slice::from_raw_parts(
+                (self as *const IpHeader) as *const u8,
+                ::std::mem::size_of::<IpHeader>(),
+            );
+            self.set_csum(checksum(bytes, 5));
+        };
     }
 }

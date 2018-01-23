@@ -24,11 +24,19 @@ impl<T: PacketRx> PacketRx for CacheAligned<T> {
     fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
         T::recv(&*self, pkts)
     }
+
+    fn port_id(&self) -> Option<i32> {
+        T::port_id(&*self)
+    }
 }
 
 impl<T: PacketTx> PacketTx for CacheAligned<T> {
     #[inline]
     fn send(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
         T::send(&*self, pkts)
+    }
+
+    fn port_id(&self) -> Option<i32> {
+        T::port_id(&*self)
     }
 }

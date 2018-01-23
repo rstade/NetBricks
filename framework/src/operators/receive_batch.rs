@@ -8,26 +8,33 @@ use interface::{PacketRx, PacketTx};
 
 pub struct ReceiveBatch<T: PacketRx> {
     parent: PacketBatch,
-    queue: T,
+    packet_rx: T,
     pub received: u64,
 }
 
 impl<T: PacketRx> ReceiveBatch<T> {
-    pub fn new_with_parent(parent: PacketBatch, queue: T) -> ReceiveBatch<T> {
+    pub fn new_with_parent(parent: PacketBatch, packet_rx: T) -> ReceiveBatch<T> {
         ReceiveBatch {
             parent: parent,
-            queue: queue,
+            packet_rx: packet_rx,
             received: 0,
         }
     }
 
-    pub fn new(queue: T) -> ReceiveBatch<T> {
+    pub fn new(packet_rx: T) -> ReceiveBatch<T> {
         ReceiveBatch {
-            parent: PacketBatch::new(32),
-            queue: queue,
+            parent: PacketBatch::new(32, false),
+            packet_rx: packet_rx,
             received: 0,
         }
+    }
 
+    pub fn new_keep_mbuf(packet_rx: T) -> ReceiveBatch<T> {
+        ReceiveBatch {
+            parent: PacketBatch::new(32, true),
+            packet_rx: packet_rx,
+            received: 0,
+        }
     }
 }
 
@@ -42,7 +49,10 @@ impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(
+        &mut self,
+        idx: usize,
+    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         self.parent.next_payload(idx)
     }
 }
@@ -53,8 +63,17 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
     fn act(&mut self) {
         self.parent.act();
         self.parent
-            .recv(&self.queue)
+            .recv(&self.packet_rx)
             .and_then(|x| {
+                /*
+                if x > 0 && self.packet_rx.port_id().is_some() {
+                    trace!(
+                        "received batch with {} packets on port {}. ",
+                        x,
+                        self.packet_rx.port_id().unwrap()
+                    );
+                }
+*/
                 self.received += x as u64;
                 Ok(x)
             })
