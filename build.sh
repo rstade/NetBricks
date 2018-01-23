@@ -1,6 +1,7 @@
 #!/bin/bash
 # Stop on any errors
 set -e
+
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 BUILD_SCRIPT=$( basename "$0" )
 
@@ -15,7 +16,7 @@ fi
 if [ ! -e ${TOOLS_BASE} ]; then
     mkdir -p ${TOOLS_BASE}
 fi
-DPDK_VER=16.11
+DPDK_VER=17.08
 DPDK_HOME="${BASE_DIR}/3rdparty/dpdk"
 DPDK_LD_PATH="${DPDK_HOME}/build/lib"
 DPDK_CONFIG_FILE=${DPDK_CONFIG_FILE-"${EXT_BASE}/dpdk-confs/common_linuxapp-${DPDK_VER}"}
@@ -45,7 +46,7 @@ LLVM_RESULT="${EXT_BASE}/llvm"
 UNWIND_RESULT="${TOOLS_BASE}/lib/libunwind.a"
 
 NATIVE_LIB_PATH="${BASE_DIR}/native"
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt
 
 source ${BASE_DIR}/examples.sh
 REQUIRE_RUSTFMT=0
@@ -161,6 +162,17 @@ clean () {
 UNWIND_BUILD="${TOOLS_BASE}"/libunwind
 
 deps () {
+    dep_dpdk
+
+    rust
+
+    if [ ${REQUIRE_RUSTFMT} -ne 0 ]; then
+        rust_fmt
+    fi
+    echo "Done with deps"
+}
+
+dep_dpdk () {
     # Build DPDK
     export DPDK_CONFIG_FILE=${DPDK_CONFIG_FILE}
     export DPDK_VER=${DPDK_VER}
@@ -170,12 +182,7 @@ deps () {
         echo "DPDK found not building"
     fi
 
-    rust
-
-    if [ ${REQUIRE_RUSTFMT} -ne 0 ]; then
-        rust_fmt
-    fi
-    echo "Done with deps"
+    echo "Done with dpdk"
 }
 
 clean_deps() {
@@ -320,6 +327,38 @@ case $TASK in
                 popd
             fi
         done
+        ;;
+    build_debug)
+        deps
+
+        native
+
+        find_sctp
+
+        pushd $BASE_DIR/framework
+        if [ ${SCTP_PRESENT} -eq 1 ]; then
+            ${CARGO} build --features "sctp"
+        else
+            ${CARGO} build
+        fi
+        popd
+
+        for example in ${examples[@]}; do
+            if [[ ${example} == *sctp* ]]; then
+                if [ ${SCTP_PRESENT} -eq 1 ]; then
+                    pushd ${BASE_DIR}/${example}
+                    ${CARGO} build
+                    popd
+                fi
+            else
+                pushd ${BASE_DIR}/${example}
+                ${CARGO} build
+                popd
+            fi
+        done
+        ;;
+    dpdk)
+        dep_dpdk
         ;;
     create_container)
         clean
