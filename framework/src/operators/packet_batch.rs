@@ -21,13 +21,6 @@ pub struct PacketBatch {
 // *mut MBuf is not send by default.
 unsafe impl Send for PacketBatch {}
 
-/*
-impl PortId for PacketBatch {
-    fn port_id(&self) -> i32 {
-        return self.port_id.unwrap();
-    }
-}
-*/
 
 impl PacketBatch {
     /// Create a new PacketBatch capable of holding up to `cnt` packets.
@@ -37,7 +30,6 @@ impl PacketBatch {
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             parent_tasks: vec![],
             b_keep_mbuf: b_keep_mbuf,
-//            port_id: None,
         }
     }
 
@@ -54,18 +46,16 @@ impl PacketBatch {
     /// Allocate as many mbufs as batch can hold. `len` here merely sets the extent of the mbuf considered when sending
     /// a packet. We always allocate mbuf's of the same size.
     #[inline]
-    pub fn allocate_batch_with_size(&mut self, len: u16) -> Result<&mut Self> {
+    pub fn allocate_batch_with_size(&mut self) -> Result<&mut Self> {
         let capacity = self.array.capacity() as i32;
-        self.alloc_packet_batch(len, capacity).and_then(
-            |_| Ok(self),
-        )
+        self.alloc_packet_batch(capacity).and_then(|_| Ok(self))
     }
 
     /// Allocate `cnt` mbufs. `len` sets the metadata field indicating how much of the mbuf should be considred when
     /// sending the packet, all `mbufs` are of the same size.
     #[inline]
-    pub fn allocate_partial_batch_with_size(&mut self, len: u16, cnt: i32) -> Result<&mut Self> {
-        match self.alloc_packet_batch(len, cnt) {
+    pub fn allocate_partial_batch_with_size(&mut self, cnt: i32) -> Result<&mut Self> {
+        match self.alloc_packet_batch(cnt) {
             Ok(_) => Ok(self),
             Err(_) => Err(ErrorKind::FailedAllocation.into()),
         }
@@ -102,7 +92,6 @@ impl PacketBatch {
     unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> Result<u32> {
         let capacity = self.array.capacity();
         self.add_to_batch(capacity);
-        //       self.port_id = Some(port.port_id()); // assign the new port_id, sta
         match port.recv(self.packet_ptr()) {
             e @ Err(_) => e,
             Ok(recv) => {
@@ -193,12 +182,11 @@ impl PacketBatch {
     }
 
     #[inline]
-    fn alloc_packet_batch(&mut self, len: u16, cnt: i32) -> Result<()> {
+    fn alloc_packet_batch(&mut self, cnt: i32) -> Result<()> {
         unsafe {
             if self.array.capacity() < (cnt as usize) {
                 Err(ErrorKind::FailedAllocation.into())
             } else {
-                // let ret = mbuf_alloc_bulk(self.array.as_mut_ptr(), len, cnt);
                 let ret = mbuf_alloc_bulk(self.array.as_mut_ptr(), cnt as u32);
                 if ret == 0 {
                     self.array.set_len(cnt as usize);
@@ -234,10 +222,7 @@ impl BatchIterator for PacketBatch {
     /// The starting offset for packets in the current batch.
     type Header = NullHeader;
     type Metadata = EmptyMetadata;
-    unsafe fn next_payload(
-        &mut self,
-        idx: usize,
-    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         if idx < self.array.len() {
             Some(PacketDescriptor {
                 packet: packet_from_mbuf_no_free::<NullHeader>(self.array[idx], 0),
@@ -264,10 +249,8 @@ impl Act for PacketBatch {
     fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
         let mut total_sent = 0;
         // FIXME: Make it optionally possible to wait for all packets to be sent.
-        // while self.available() > 0 {
         unsafe {
-            // let available = self.available() as i32;
-/*
+            /*
             for p in &self.array {
                 trace!(
                     "sending on port {}: &mbuf= {:p}, {}",
@@ -288,8 +271,7 @@ impl Act for PacketBatch {
                 Ok(sent)
             }));
         }
-        //    break;
-        //}
+
         Ok(total_sent)
     }
 

@@ -2,6 +2,7 @@ use super::MBuf;
 use headers::MacAddress;
 use std::os::raw::c_char;
 
+#[allow(non_camel_case_types)]
 pub enum Struct_rte_kni { }
 
 #[link(name = "zcsi")]

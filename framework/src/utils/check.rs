@@ -132,30 +132,8 @@ pub fn ipv4_checksum(
     finalize_checksum(sum)
 }
 
-
-/*
-> I have a similar function that can be used when you only change a 16bit
-> word:
->
->
->  Incrementaly update a checksum, given old and new 16bit words 
-> static inline __u16 incr_check_s(__u16 old_check, __u16 old, __u16 new)
-> {  see RFC's 1624, 1141 and 1071 for incremental checksum updates
-> 
-> __u32 l;
-> old_check = ~ntohs(old_check);
-> old = ~old;
-> l = (__u32)old_check + old + new;
-> return htons(~( (__u16)(l>>16) + (l&0xffff) ));
-> }
->
-*/
 // everything in host byte order:
-pub fn update_checksum_incremental(
-    old_check: u16,
-    old_data_csum: u16,
-    new_data_csum: u16,
-) -> u16be {
+pub fn update_checksum_incremental(old_check: u16, old_data_csum: u16, new_data_csum: u16) -> u16be {
     let tmp: u32;
     tmp = (!old_check) as u32 + (!old_data_csum) as u32 + new_data_csum as u32;
     finalize_checksum(tmp)

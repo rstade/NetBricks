@@ -1,9 +1,8 @@
 use super::PortStats;
-use super::super::{PacketTx, PacketRx, Packet};
+use super::super::{PacketTx, PacketRx};
 use allocators::*;
 use common::*;
 use native::zcsi::*;
-use headers::{EndOffset, NullHeader};
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -75,7 +74,3 @@ impl VirtualPort {
         )
     }
 }
-
-//pub trait PacketGenerator {
-//    fn generate(&self, pkts: &mut [*mut MBuf]);
-//}

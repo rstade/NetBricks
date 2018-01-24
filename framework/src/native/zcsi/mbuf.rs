@@ -1,33 +1,9 @@
 use std::fmt;
-//#[repr(C)]
-//pub struct MBuf {
-//    buf_addr: *mut u8,
-//    phys_addr: usize,
-//    buf_len: u16,
-//    data_off: u16,
-//    refcnt: u16,
-//    nb_segs: u8,
-//    port: u8,
-//    ol_flags: u64,
-//    packet_type: u32,
-//    pkt_len: u32,
-//    data_len: u16,
-//    vlan_tci: u16,
-//    hash: u64,
-//    seqn: u32,
-//    vlan_tci_outer: u32,
-//    userdata: u64,
-//    pool: u64,
-//    next: *mut MBuf,
-//    tx_offload: u64,
-//    priv_size: u16,
-//    timesync: u16,
-//}
+
 #[repr(C)]
 pub struct MBuf {
     buf_addr: *mut u8,
     phys_addr: usize,
-    //    buf_len: u16, moved down
     data_off: u16,
     refcnt: u16,
     nb_segs: u16, // now u16 from u8
@@ -115,9 +91,6 @@ impl MBuf {
 
     #[inline]
     pub fn pkt_tailroom(&self) -> usize {
-        //        println!("buf_len={}", self.buf_len());
-        //        println!("data_off={}", self.data_off);
-        //        println!("data_len={}", self.data_len());
         self.buf_len() - self.data_off as usize - self.data_len()
     }
 

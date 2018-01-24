@@ -1,6 +1,5 @@
 use super::{Scheduler, Executable};
 use common::*;
-use std::default::Default;
 use std::sync::Arc;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel, RecvError};
 use std::thread;
@@ -97,7 +96,7 @@ impl StandaloneScheduler {
     fn handle_request(&mut self, request: SchedulerCommand) {
         match request {
             SchedulerCommand::Add(ex) => self.run_q.push(Runnable::from_boxed_task(ex)),
-            SchedulerCommand::Run(mut f) => f(self),
+            SchedulerCommand::Run(f) => f(self),
             SchedulerCommand::Execute => self.execute_loop(),
             SchedulerCommand::Shutdown => {
                 self.execute_loop = false;

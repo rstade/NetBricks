@@ -9,9 +9,9 @@ use regex::Regex;
 use std::cmp::min;
 use std::ffi::CString;
 use std::fmt;
+use std::ptr::Unique;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::ptr::Unique;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -92,19 +92,6 @@ impl PortQueue {
             } else {
                 eth_rx_burst(self.port_id, queue, pkts.as_mut_ptr(), to_recv)
             };
-            /*
-            if recv > 0 {
-                for i in 0..recv {
-                    let p = pkts[i as usize];
-                    trace!(
-                        "portqueue port-id= {}: &mbuf= {:p}, {}",
-                        self.port_id,
-                        p,
-                        *p
-                    );
-                }
-            }
-*/
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
             Ok(recv as u32)
@@ -195,11 +182,7 @@ impl PmdPort {
         self.kni.unwrap().as_ptr()
     }
 
-    pub fn new_queue_pair(
-        port: &Arc<PmdPort>,
-        rxq: i32,
-        txq: i32,
-    ) -> Result<CacheAligned<PortQueue>> {
+    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: i32, txq: i32) -> Result<CacheAligned<PortQueue>> {
         if rxq > port.rxqs || rxq < 0 {
             Err(ErrorKind::BadRxQueue(port.port, rxq).into())
         } else if txq > port.txqs || txq < 0 {
@@ -253,9 +236,7 @@ impl PmdPort {
         let actual_rxqs = min(max_rxqs, rxqs);
         let actual_txqs = min(max_txqs, txqs);
 
-        if ((actual_txqs as usize) <= tx_cores.len()) &&
-            ((actual_rxqs as usize) <= rx_cores.len())
-        {
+        if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -356,9 +337,6 @@ impl PmdPort {
                 stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
                 stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
             }))
-        //            } else {
-        //                Err(ErrorKind::BadDev(String::from(name)).into())
-        //            }
         } else {
             Err(ErrorKind::FailedToInitializeKni(String::from(name)).into())
         }

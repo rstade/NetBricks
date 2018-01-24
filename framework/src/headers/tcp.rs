@@ -2,7 +2,7 @@ use super::{EndOffset, Header};
 use headers::IpHeader;
 use std::default::Default;
 use std::fmt;
-use utils::{u16be, update_checksum_incremental};
+use utils::update_checksum_incremental;
 
 #[derive(Debug, Default)]
 #[repr(C, packed)]

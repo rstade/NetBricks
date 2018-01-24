@@ -177,14 +177,6 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
         return ret; /* Clean up things */
     }
 
-//
-//  ret = rte_eth_dev_set_link_up(port);
-//  if (ret != 0) {
-//      printf("Failed to set link up \n");
-//      return ret; /* Clean up things */
-//  }
-//  else printf("Success on rte_eth_dev_set_link_up\n");
-
     return 0;
 }
 

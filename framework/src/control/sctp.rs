@@ -112,7 +112,7 @@ impl<T: SctpControlAgent> SctpControlServer<T> {
     fn handle_data(&mut self, token: Token, available: Available) {
         let preserve = {
             match self.connections.get_mut(&token) {
-                Some(mut connection) => {
+                Some(connection) => {
                     if available & READ != 0 {
                         connection.handle_read_ready()
                     } else if available & WRITE != 0 {
