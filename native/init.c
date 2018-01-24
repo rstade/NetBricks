@@ -119,7 +119,7 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
      * could hack around this another way, but this seems more reasonable.*/
 //    sprintf(opt_lcore_bitmap, "0x%x", (1u << core));
 
-    sprintf(opt_lcore_bitmap, "0x%llx", lcore_mask);  // the previous statement allowed only for a single lcore = master core !?
+    sprintf(opt_lcore_bitmap, "0x%llx", lcore_mask);  // the previous statement supports only a single lcore = master core !?
     sprintf(opt_socket_mem, "%d", mempool_size);
     for (i = 1; i < numa_count; i++)
         sprintf(opt_socket_mem + strlen(opt_socket_mem), ",%d", mempool_size);

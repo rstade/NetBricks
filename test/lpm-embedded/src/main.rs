@@ -21,14 +21,14 @@ fn main() {
     };
     match initialize_system(&configuration) {
         Ok(_) => {
-            let port = VirtualPort::new(1).unwrap();
+            let port = VirtualPort::new().unwrap();
             let mut sched = embedded_scheduler::EmbeddedScheduler::new();
             let pipeline0 = lpm(
-                ReceiveBatch::new(port.new_virtual_queue(1).unwrap()),
+                ReceiveBatch::new(port.new_virtual_queue().unwrap()),
                 &mut sched,
             );
             let pipeline1 = lpm(
-                ReceiveBatch::new(port.new_virtual_queue(1).unwrap()),
+                ReceiveBatch::new(port.new_virtual_queue().unwrap()),
                 &mut sched,
             );
             let task = sched.add_task(merge(vec![pipeline0, pipeline1])).unwrap();

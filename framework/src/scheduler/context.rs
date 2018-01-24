@@ -8,13 +8,9 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::mpsc::{SyncSender, sync_channel};
 use std::thread::{self, JoinHandle, Thread};
-use std::sync::mpsc::{channel, Sender, Receiver};
-
 
 type AlignedPortQueue = CacheAligned<PortQueue>;
 type AlignedVirtualQueue = CacheAligned<VirtualQueue>;
-
-
 
 /// A handle to schedulers paused on a barrier.
 pub struct BarrierHandle<'a> {
@@ -36,51 +32,18 @@ impl<'a> BarrierHandle<'a> {
 }
 
 /// `NetBricksContext` contains handles to all schedulers, and provides mechanisms for coordination.
-
-pub struct NetBricksContext<S>
-where
-    S: Send + Sync,
-{
+#[derive(Default)]
+pub struct NetBricksContext {
     pub ports: HashMap<String, Arc<PmdPort>>,
     pub rx_queues: HashMap<i32, Vec<CacheAligned<PortQueue>>>,
     pub active_cores: Vec<i32>,
     pub virtual_ports: HashMap<i32, Arc<VirtualPort>>,
-    pub com_sender: Sender<S>,
-    pub com_receiver: Receiver<S>,
     scheduler_channels: HashMap<i32, SyncSender<SchedulerCommand>>,
     scheduler_handles: HashMap<i32, JoinHandle<()>>,
 }
 
-/*
-pub struct KniMacs {
-    knimacs: MacTable,
-}
 
-impl KniMacs {
-    pub fn new() -> KniMacs {
-        KniMacs { knimacs: Arc::new(CHashMap::new()) }
-    }
-}
-*/
-
-impl<S> NetBricksContext<S>
-where
-    S: Send + Sync,
-{
-    pub fn new() -> NetBricksContext<S> {
-        let (sender, receiver) = channel::<S>();
-        NetBricksContext {
-            ports: Default::default(),
-            rx_queues: Default::default(),
-            active_cores: Default::default(),
-            virtual_ports: Default::default(),
-            scheduler_channels: Default::default(),
-            scheduler_handles: Default::default(),
-            com_sender: sender,
-            com_receiver: receiver,
-        }
-    }
-
+impl NetBricksContext {
     /// Boot up all schedulers.
     pub fn start_schedulers(&mut self) {
         let cores = self.active_cores.clone();
@@ -118,8 +81,6 @@ where
                 None => vec![],
             };
             let boxed_run = run.clone();
-
-
             channel
                 .send(SchedulerCommand::Run(
                     Arc::new(move |s| boxed_run(ports.clone(), s)),
@@ -167,7 +128,7 @@ where
         &mut self,
         core: i32,
         run: Arc<T>,
-    ) -> Result<()> {
+) -> Result<()>{
 
         if let Some(channel) = self.scheduler_channels.get(&core) {
             let port = self.virtual_ports.entry(core).or_insert(
@@ -187,12 +148,7 @@ where
     }
 
     /// Install a pipeline on a particular core.
-    pub fn add_pipeline_to_core<
-        T: Fn(Vec<AlignedPortQueue>, &mut StandaloneScheduler)
-            + Send
-            + Sync
-            + 'static,
-    >(
+    pub fn add_pipeline_to_core<T: Fn(Vec<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static>(
         &mut self,
         core: i32,
         run: Arc<T>,
@@ -276,20 +232,15 @@ where
 
 
 /// Initialize the system from a configuration.
-pub fn initialize_system<S>(configuration: &NetbricksConfiguration) -> Result<NetBricksContext<S>>
-where
-    S: Send + Sync,
-{
+pub fn initialize_system(configuration: &NetbricksConfiguration) -> Result<NetBricksContext> {
     init_system(configuration);
-    let mut ctx = NetBricksContext::<S>::new();
+    let mut ctx: NetBricksContext = Default::default();
     let mut cores: HashSet<_> = configuration.cores.iter().cloned().collect();
     for port in &configuration.ports {
         if ctx.ports.contains_key(&port.name) {
             error!("Port {} appears twice in specification", port.name);
             return Err(
-                ErrorKind::ConfigurationError(
-                    format!("Port {} appears twice in specification", port.name),
-                ).into(),
+                ErrorKind::ConfigurationError(format!("Port {} appears twice in specification", port.name)).into(),
             );
         } else {
             match PmdPort::new_port_from_configuration(port) {

@@ -112,11 +112,12 @@ fn main() {
     let primary = !matches.opt_present("secondary");
 
     let cores_for_port = extract_cores_for_port(&matches.opt_strs("p"), &cores);
-
+    let vdev_list = vec![];
+    let lcore_mask: u64 = 1u64 << master_core;
     if primary {
-        init_system_wl(&name, master_core, &[]);
+        init_system_wl(&name, lcore_mask, master_core, &[], &vdev_list);
     } else {
-        init_system_secondary(&name, master_core);
+        init_system_secondary(&name, lcore_mask, master_core);
     }
 
     let ports_to_activate: Vec<_> = cores_for_port.keys().collect();
