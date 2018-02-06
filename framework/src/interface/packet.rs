@@ -254,8 +254,11 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     #[inline]
     pub fn data_len(&self) -> usize {
         unsafe { (*self.mbuf).data_len() }
-    }
+    } // this includes also any ethernet padding, sta
 
+
+    // this includes any ethernet padding,
+    // and therefore can be larger than the actual payload, sta
     #[inline]
     pub fn payload_size(&self) -> usize {
         self.data_len() - self.offset() - self.payload_offset()
@@ -569,14 +572,13 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn copy_payload_to_bytearray(&mut self, bytearray: &mut Box<Vec<u8>>) {
+    pub fn copy_payload_to_bytearray(&mut self, bytearray: &mut Box<Vec<u8>>, size: u16) {
         let src = self.payload();
-        let payload_size = self.payload_size();
-        if payload_size >= 1 {
+        if size >= 1u16 {
             let dst = bytearray.as_mut_ptr();
             unsafe {
-                ptr::copy_nonoverlapping(src, dst, payload_size);
-                bytearray.set_len(payload_size);
+                ptr::copy_nonoverlapping(src, dst, size as usize);
+                bytearray.set_len(size as usize);
             }
         }
     }
@@ -603,6 +605,10 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         }
     }
 
+    #[inline]
+    pub fn add_padding(&mut self, nbytes: usize) -> usize {
+        self.increase_payload_size(nbytes)
+    }
 
     #[inline]
     pub fn refcnt(&self) -> u16 {
