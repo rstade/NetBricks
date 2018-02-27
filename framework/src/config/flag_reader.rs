@@ -122,7 +122,7 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
         configuration.vdevs = matches.opt_strs("vdev");
     }
 
-    info!("Going to start with configuration {}", configuration);
+    info!("Going to start with configuration:\n{}", configuration);
     configuration
 }
 

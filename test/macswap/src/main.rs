@@ -10,6 +10,7 @@ use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
@@ -18,9 +19,9 @@ use std::thread;
 use std::time::Duration;
 mod nf;
 
-fn test<T, S>(ports: Vec<T>, sched: &mut S)
+fn test<T, S>(ports: HashSet<T>, sched: &mut S)
 where
-    T: PacketRx + PacketTx + Display + Clone + 'static,
+    T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
     S: Scheduler + Sized,
 {
     for port in &ports {

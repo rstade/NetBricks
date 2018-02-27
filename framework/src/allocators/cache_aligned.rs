@@ -10,6 +10,7 @@ unsafe fn allocate_cache_line(size: usize) -> *mut u8 {
         .unwrap()
 }
 
+
 pub struct CacheAligned<T: Sized> {
     ptr: Unique<T>,
 }

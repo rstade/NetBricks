@@ -25,7 +25,7 @@ impl<T: PacketRx> PacketRx for CacheAligned<T> {
         T::recv(&*self, pkts)
     }
 
-    fn port_id(&self) -> Option<i32> {
+    fn port_id(&self) -> i32 {
         T::port_id(&*self)
     }
 }
@@ -36,7 +36,7 @@ impl<T: PacketTx> PacketTx for CacheAligned<T> {
         T::send(&*self, pkts)
     }
 
-    fn port_id(&self) -> Option<i32> {
+    fn port_id(&self) -> i32 {
         T::port_id(&*self)
     }
 }

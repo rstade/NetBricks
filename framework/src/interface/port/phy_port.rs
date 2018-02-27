@@ -9,13 +9,38 @@ use regex::Regex;
 use std::cmp::min;
 use std::ffi::CString;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::ptr::Unique;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
+
+pub enum PortType {
+    Dpdk,
+    Kni,
+    Bess,
+    Ovs,
+    Null,
+}
+
+impl fmt::Display for PortType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::PortType::*;
+        let printable = match *self {
+            Dpdk => "DPDK",
+            Kni => "KNI",
+            Bess => "BESS",
+            Ovs => "OVS",
+            Null => "NULL",
+        };
+        write!(f, "{}", printable)
+    }
+}
+
 pub struct PmdPort {
+    port_type: PortType,
     connected: bool,
     should_close: bool,
     port: i32,
@@ -38,6 +63,24 @@ pub struct PortQueue {
     port_id: i32,
     txq: i32,
     rxq: i32,
+}
+
+impl PartialEq for CacheAligned<PortQueue> {
+    fn eq(&self, other: &CacheAligned<PortQueue>) -> bool {
+        self.port_id == other.port_id && self.txq == other.txq && self.rxq == other.rxq &&
+            self.port.is_kni() == other.port.is_kni()
+    }
+}
+
+impl Eq for CacheAligned<PortQueue> {}
+
+impl Hash for CacheAligned<PortQueue> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.port_id.hash(state);
+        self.txq.hash(state);
+        self.rxq.hash(state);
+        self.port.is_kni().hash(state);
+    }
 }
 
 impl Drop for PmdPort {
@@ -117,7 +160,7 @@ impl PacketTx for PortQueue {
         self.send_queue(txq, pkts.as_mut_ptr(), len)
     }
 
-    fn port_id(&self) -> Option<i32> {
+    fn port_id(&self) -> i32 {
         self.port.port_id()
     }
 }
@@ -132,7 +175,7 @@ impl PacketRx for PortQueue {
         self.recv_queue(rxq, pkts, len)
     }
 
-    fn port_id(&self) -> Option<i32> {
+    fn port_id(&self) -> i32 {
         self.port.port_id()
     }
 }
@@ -159,10 +202,13 @@ impl PmdPort {
         unsafe { find_port_with_pci_address(pcie_cstr.as_ptr()) }
     }
 
-    fn port_id(&self) -> Option<i32> {
-        Some(self.port)
+    pub fn port_id(&self) -> i32 {
+        self.port
     }
 
+    pub fn port_type(&self) -> &PortType {
+        &self.port_type
+    }
 
     /// Number of configured RXQs.
     pub fn rxqs(&self) -> i32 {
@@ -200,11 +246,10 @@ impl PmdPort {
     }
 
     /// Current port ID.
-    #[inline]
-    pub fn name(&self) -> i32 {
-        self.port
-    }
-
+    //    #[inline]
+    //    pub fn name(&self) -> i32 {
+    //        self.port
+    //    }
     /// Get stats for an RX/TX queue pair.
     pub fn stats(&self, queue: i32) -> (usize, usize) {
         let idx = queue as usize;
@@ -253,6 +298,7 @@ impl PmdPort {
             };
             if ret == 0 {
                 Ok(Arc::new(PmdPort {
+                    port_type: PortType::Dpdk,
                     connected: true,
                     port: port,
                     kni: None,
@@ -281,6 +327,7 @@ impl PmdPort {
         // FIXME: Can we really not close?
         if port >= 0 {
             Ok(Arc::new(PmdPort {
+                port_type: PortType::Bess,
                 connected: true,
                 port: port,
                 kni: None,
@@ -302,6 +349,7 @@ impl PmdPort {
                 let port = unsafe { init_ovs_eth_ring(iface, core) };
                 if port >= 0 {
                     Ok(Arc::new(PmdPort {
+                        port_type: PortType::Ovs,
                         connected: true,
                         port: port,
                         kni: None,
@@ -319,17 +367,15 @@ impl PmdPort {
         }
     }
 
-    fn new_kni_port(name: &str, rxqs: i32, txqs: i32) -> Result<Arc<PmdPort>> {
+    fn new_kni_port(port_id: u8, rxqs: i32, txqs: i32) -> Result<Arc<PmdPort>> {
 
         // This call returns a pointer to an opaque C struct
-        let p_kni = unsafe { kni_alloc(1 as u8) };
+        let p_kni = unsafe { kni_alloc(port_id) };
         if !p_kni.is_null() {
-            let port = 0;
-            // unsafe { attach_pmd_device(CString::new(String::from(name)).unwrap().as_ptr()) };
-            // if port >= 0 {
             Ok(Arc::new(PmdPort {
+                port_type: PortType::Kni,
                 connected: true,
-                port: port,
+                port: port_id as i32,
                 kni: Some(Unique::new(p_kni).unwrap()),
                 rxqs: rxqs,
                 txqs: txqs,
@@ -338,7 +384,7 @@ impl PmdPort {
                 stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
             }))
         } else {
-            Err(ErrorKind::FailedToInitializeKni(String::from(name)).into())
+            Err(ErrorKind::FailedToInitializeKni(port_id).into())
         }
     }
 
@@ -377,6 +423,7 @@ impl PmdPort {
 
     fn null_port() -> Result<Arc<PmdPort>> {
         Ok(Arc::new(PmdPort {
+            port_type: PortType::Null,
             connected: false,
             port: 0,
             kni: None,
@@ -442,7 +489,13 @@ impl PmdPort {
                     csumoffload,
                 )
             }
-            "kni" => PmdPort::new_kni_port(parts[1], rxqs, txqs),
+            "kni" => {
+                let port_id: u8 = parts[1].parse::<u8>().expect(&format!(
+                    "cannot parse port_id from {} as an u8",
+                    name
+                ));
+                PmdPort::new_kni_port(port_id, rxqs, txqs)
+            }
             "null" => PmdPort::null_port(),
             _ => {
                 PmdPort::new_dpdk_port(

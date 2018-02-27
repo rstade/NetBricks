@@ -14,6 +14,7 @@ use e2d2::control::sctp::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::net::*;
@@ -27,9 +28,9 @@ mod control;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
-fn test<T, S>(ports: Vec<T>, sched: &mut S, delay_arg: u64)
+fn test<T, S>(ports: HashSet<T>, sched: &mut S, delay_arg: u64)
 where
-    T: PacketRx + PacketTx + Display + Clone + 'static,
+    T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
     S: Scheduler + Sized,
 {
     println!("Receiving started");

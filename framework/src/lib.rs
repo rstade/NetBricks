@@ -8,6 +8,7 @@
 #![feature(alloc)]
 #![feature(heap_api)]
 #![feature(unique)]
+#![feature(ptr_internals)]
 #![feature(rustc_private)]
 
 // Used for cache alignment.

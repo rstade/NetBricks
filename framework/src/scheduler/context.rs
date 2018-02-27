@@ -35,7 +35,8 @@ impl<'a> BarrierHandle<'a> {
 #[derive(Default)]
 pub struct NetBricksContext {
     pub ports: HashMap<String, Arc<PmdPort>>,
-    pub rx_queues: HashMap<i32, Vec<CacheAligned<PortQueue>>>,
+    pub rx_queues: HashMap<i32, HashSet<CacheAligned<PortQueue>>>,
+    pub kni_queues: HashSet<CacheAligned<PortQueue>>,
     pub active_cores: Vec<i32>,
     pub virtual_ports: HashMap<i32, Arc<VirtualPort>>,
     scheduler_channels: HashMap<i32, SyncSender<SchedulerCommand>>,
@@ -73,13 +74,18 @@ impl NetBricksContext {
     /// Run a function (which installs a pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run<T>(&mut self, run: Arc<T>)
     where
-        T: Fn(Vec<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
+        T: Fn(HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
     {
         for (core, channel) in &self.scheduler_channels {
-            let ports = match self.rx_queues.get(core) {
-                Some(v) => v.clone(),
-                None => vec![],
+            let mut ports: HashSet<_> = match self.rx_queues.get(core) {
+                Some(set) => set.clone(),
+                None => HashSet::with_capacity(8),
             };
+            // add kni ports, irrespectively of core
+            for q in self.kni_queues.clone() {
+                ports.insert(q);
+            }
+
             let boxed_run = run.clone();
             channel
                 .send(SchedulerCommand::Run(
@@ -148,15 +154,15 @@ impl NetBricksContext {
     }
 
     /// Install a pipeline on a particular core.
-    pub fn add_pipeline_to_core<T: Fn(Vec<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static>(
+    pub fn add_pipeline_to_core<T: Fn(HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static>(
         &mut self,
         core: i32,
         run: Arc<T>,
     ) -> Result<()> {
         if let Some(channel) = self.scheduler_channels.get(&core) {
             let ports = match self.rx_queues.get(&core) {
-                Some(v) => v.clone(),
-                None => vec![],
+                Some(set) => set.clone(),
+                None => HashSet::with_capacity(8),
             };
             let boxed_run = run.clone();
             channel
@@ -243,6 +249,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> Result<NetBr
                 ErrorKind::ConfigurationError(format!("Port {} appears twice in specification", port.name)).into(),
             );
         } else {
+            debug!("configure port {}", port.name);
             match PmdPort::new_port_from_configuration(port) {
                 Ok(p) => {
                     ctx.ports.insert(port.name.clone(), p);
@@ -264,7 +271,14 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> Result<NetBr
                 let rx_q = rx_q as i32;
                 match PmdPort::new_queue_pair(port_instance, rx_q, rx_q) {
                     Ok(q) => {
-                        ctx.rx_queues.entry(*core).or_insert_with(|| vec![]).push(q);
+                        if port_instance.is_kni() {
+                            ctx.kni_queues.insert(q);
+                        } else {
+                            ctx.rx_queues
+                                .entry(*core)
+                                .or_insert_with(|| HashSet::with_capacity(8))
+                                .insert(q);
+                        }
                     }
                     Err(e) => {
                         return Err(

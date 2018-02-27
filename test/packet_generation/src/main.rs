@@ -10,6 +10,7 @@ use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::queues::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
@@ -21,9 +22,9 @@ use self::nf::*;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
-fn test<T, S>(ports: Vec<T>, sched: &mut S)
+fn test<T, S>(ports: HashSet<T>, sched: &mut S)
 where
-    T: PacketRx + PacketTx + Display + Clone + 'static,
+    T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
     S: Scheduler + Sized,
 {
     if ports.len() > 1 {
@@ -32,7 +33,7 @@ where
     println!("Sending started");
 
     let (producer, consumer) = new_mpsc_queue_pair();
-    let pipeline = consumer.send(ports[0].clone());
+    let pipeline = consumer.send(ports.iter().next().unwrap().clone());
     let creator = PacketCreator::new(producer);
 
     sched.add_task(creator).unwrap();

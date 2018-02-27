@@ -69,7 +69,7 @@ impl fmt::Display for NetbricksConfiguration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(
             f,
-            "Configuration: name: {} mempool size: {} core cache: {} primary core: {}\nPorts:\n",
+            "name: {}\nmempool size: {}\ncore cache: {}\nprimary core: {}\n",
             self.name,
             self.pool_size,
             self.cache_size,
@@ -98,7 +98,7 @@ pub struct PortConfiguration {
     ///    dpdk:<PMD Descriptor>: PMD driver with arguments
     ///    bess:<port_name>: BESS RingVport with name.
     ///    ovs:<port_id>: OVS ring with ID.
-    ///	   kni:<i/f-name> : kernel network interface,	added by sta
+    ///	   kni:<port_id>: kernel network interface,	added by sta
     pub name: String,
     /// Core on which receive node for a given queue lives.
     pub rx_queues: Vec<i32>,
@@ -153,7 +153,7 @@ impl fmt::Display for PortConfiguration {
         let tx_queue_str = tx_queues_str_vec.join(" ");
         write!(
             f,
-            "Port {} RXQ_Count: {} RX_Queues: [ {} ] TXQ_Count: {} TX_Queues: {} RXD: {} TXD: {} Loopback {}",
+            "Port {} RXQ_Count: {} RX_Queues: [ {} ] TXQ_Count: {} TX_Queues: [ {} ] RXD: {} TXD: {} Loopback {}",
             self.name,
             self.rx_queues.len(),
             rx_queue_str,

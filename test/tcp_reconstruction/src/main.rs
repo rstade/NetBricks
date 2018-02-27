@@ -11,6 +11,7 @@ use e2d2::config::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::sync::Arc;
 use std::thread;
@@ -19,7 +20,7 @@ mod nf;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
-fn test<S: Scheduler + Sized>(ports: Vec<CacheAligned<PortQueue>>, sched: &mut S) {
+fn test<S: Scheduler + Sized>(ports: HashSet<CacheAligned<PortQueue>>, sched: &mut S) {
     for port in &ports {
         println!(
             "Receiving port {} rxq {} txq {}",

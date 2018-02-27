@@ -125,6 +125,8 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
         sprintf(opt_socket_mem + strlen(opt_socket_mem), ",%d", mempool_size);
 
     add_arg(&rte_argc, rte_argv, "lzcsi");
+    add_arg(&rte_argc, rte_argv, "-v");
+
     if (secondary) {
         add_arg(&rte_argc, rte_argv, "--proc-type");
         add_arg(&rte_argc, rte_argv, "secondary");
@@ -138,6 +140,7 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
         add_arg(&rte_argc, rte_argv, "-w");
         add_arg(&rte_argc, rte_argv, whitelist[i]);
     }
+
     for (int i = 0; i < vdev_count; i++) {
         add_arg(&rte_argc, rte_argv, "--vdev");
         add_arg(&rte_argc, rte_argv, vdevs[i]);
@@ -151,9 +154,8 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     add_arg(&rte_argc, rte_argv, opt_master_lcore);
 
     add_arg(&rte_argc, rte_argv, "-n");
-    /* number of memory channels (Sandy Bridge) */
-    add_arg(&rte_argc, rte_argv, "4");  // Number of memory channels on
-    // Sandy Bridge.
+
+    add_arg(&rte_argc, rte_argv, "2");  // Number of memory channels on your CPU
     add_arg(&rte_argc, rte_argv, "--socket-mem");
     add_arg(&rte_argc, rte_argv, opt_socket_mem);
     rte_argv[rte_argc] = NULL;

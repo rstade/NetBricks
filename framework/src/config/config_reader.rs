@@ -20,8 +20,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             Some(&Value::String(ref name)) => name.clone(),
             _ => {
                 return Err(
-                    ErrorKind::ConfigurationError(String::from("Could not parse name for port"))
-                        .into(),
+                    ErrorKind::ConfigurationError(String::from("Could not parse name for port")).into(),
                 )
             }
         };
@@ -31,9 +30,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             None => NUM_RXD,
             v => {
                 return Err(
-                    ErrorKind::ConfigurationError(
-                        format!("Could not parse number of rx descriptors {:?}", v),
-                    ).into(),
+                    ErrorKind::ConfigurationError(format!("Could not parse number of rx descriptors {:?}", v)).into(),
                 )
             }
         };
@@ -43,9 +40,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             None => NUM_TXD,
             v => {
                 return Err(
-                    ErrorKind::ConfigurationError(
-                        format!("Could not parse number of tx descriptors {:?}", v),
-                    ).into(),
+                    ErrorKind::ConfigurationError(format!("Could not parse number of tx descriptors {:?}", v)).into(),
                 )
             }
         };
@@ -55,9 +50,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             None => false,
             v => {
                 return Err(
-                    ErrorKind::ConfigurationError(
-                        format!("Could not parse loopback spec {:?}", v),
-                    ).into(),
+                    ErrorKind::ConfigurationError(format!("Could not parse loopback spec {:?}", v)).into(),
                 )
             }
         };
@@ -67,8 +60,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             None => false,
             v => {
                 return Err(
-                    ErrorKind::ConfigurationError(format!("Could not parse tso spec {:?}", v))
-                        .into(),
+                    ErrorKind::ConfigurationError(format!("Could not parse tso spec {:?}", v)).into(),
                 )
             }
         };
@@ -78,16 +70,13 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             None => false,
             v => {
                 return Err(
-                    ErrorKind::ConfigurationError(format!("Could not parse csum spec {:?}", v))
-                        .into(),
+                    ErrorKind::ConfigurationError(format!("Could not parse csum spec {:?}", v)).into(),
                 )
             }
         };
 
         let symmetric_queue = port_def.contains_key("cores");
-        if symmetric_queue &&
-            (port_def.contains_key("rx_cores") || port_def.contains_key("tx_cores"))
-        {
+        if symmetric_queue && (port_def.contains_key("rx_cores") || port_def.contains_key("tx_cores")) {
             println!(
                 "cores specified along with rx_cores and/or tx_cores for port {}",
                 name
@@ -110,9 +99,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                             qs.push(core as i32)
                         } else {
                             return Err(
-                                ErrorKind::ConfigurationError(
-                                    format!("Could not parse queue spec {:?}", q),
-                                ).into(),
+                                ErrorKind::ConfigurationError(format!("Could not parse queue spec {:?}", q)).into(),
                             );
                         };
                     }
@@ -161,19 +148,14 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
 /// Read a TOML string and create a `NetbricksConfiguration` structure.
 /// `configuration` is a TOML formatted string.
 /// `filename` is used for error reporting purposes, and is otherwise meaningless.
-pub fn read_configuration_from_str(
-    configuration: &str,
-    filename: &str,
-) -> Result<NetbricksConfiguration> {
+pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Result<NetbricksConfiguration> {
     // Parse string for TOML file.
     let toml = match toml::de::from_str::<Value>(configuration) {
         Ok(toml) => toml,
         Err(error) => {
             println!("Parse error: {} in file: {}", error, filename);
             return Err(
-                ErrorKind::ConfigurationError(
-                    format!("Experienced {} parse errors in spec.", error),
-                ).into(),
+                ErrorKind::ConfigurationError(format!("Experienced {} parse errors in spec.", error)).into(),
             );
         }
     };
@@ -198,9 +180,7 @@ pub fn read_configuration_from_str(
                 Ok(c) => c,
                 _ => {
                     return Err(
-                        ErrorKind::ConfigurationError(
-                            format!("Could not parse {} as core", core),
-                        ).into(),
+                        ErrorKind::ConfigurationError(format!("Could not parse {} as core", core)).into(),
                     )
                 }
             }
@@ -246,9 +226,7 @@ pub fn read_configuration_from_str(
         _ => {
             println!("Could not parse whether this is a secondary process");
             return Err(
-                ErrorKind::ConfigurationError(
-                    String::from("Could not parse secondary processor spec"),
-                ).into(),
+                ErrorKind::ConfigurationError(String::from("Could not parse secondary processor spec")).into(),
             );
         }
     };
@@ -262,9 +240,7 @@ pub fn read_configuration_from_str(
                     cores.push(core as i32)
                 } else {
                     return Err(
-                        ErrorKind::ConfigurationError(
-                            format!("Could not parse core spec {}", core),
-                        ).into(),
+                        ErrorKind::ConfigurationError(format!("Could not parse core spec {}", core)).into(),
                     );
                 }
             }

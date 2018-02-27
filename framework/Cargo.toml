@@ -12,7 +12,7 @@ libc = ">= 0.2.4"
 time = ">=0.1.0"
 chashmap = ">= 2.2.0"
 log = "0.3"
-simd = { git = "https://github.com/huonw/simd" }
+#simd = { git = "https://github.com/huonw/simd" }
 getopts = "*"
 byteorder = "*"
 clippy = { version = "*", optional = true }
@@ -29,7 +29,7 @@ toml = "*"
 # Hack for SHM
 uuid= { version = "*", features=["v4"] }
 error-chain = "*"
-etcdv3-rs={ git="https://github.com/apanda/etcdv3-rs" }
+#etcdv3-rs={ git="https://github.com/apanda/etcdv3-rs" }
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
 

@@ -11,13 +11,14 @@ use e2d2::config::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 mod nf;
 
-fn test<S: Scheduler + Sized>(ports: Vec<CacheAligned<PortQueue>>, sched: &mut S) {
+fn test<S: Scheduler + Sized>(ports: HashSet<CacheAligned<PortQueue>>, sched: &mut S) {
     let pipelines: Vec<_> = ports
         .iter()
         .map(|port| {

@@ -10,6 +10,7 @@ use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
@@ -20,7 +21,28 @@ mod nf;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
-fn test<T, S>(ports: Vec<T>, sched: &mut S, delay_arg: u64)
+fn test<T, S>(ports: HashSet<T>, sched: &mut S, delay_arg: u64)
+where
+    T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
+    S: Scheduler + Sized,
+{
+    for port in &ports {
+        println!("Receiving port {} w/ delay {}", port, delay_arg);
+    }
+
+    let pipelines: Vec<_> = ports
+        .iter()
+        .map(|port| {
+            delay(ReceiveBatch::new(port.clone()), delay_arg).send(port.clone())
+        })
+        .collect();
+    println!("Running {} pipelines", pipelines.len());
+    for pipeline in pipelines {
+        sched.add_task(pipeline).unwrap();
+    }
+}
+
+fn testv<T, S>(ports: Vec<T>, sched: &mut S, delay_arg: u64)
 where
     T: PacketRx + PacketTx + Display + Clone + 'static,
     S: Scheduler + Sized,
@@ -72,7 +94,7 @@ fn main() {
                 ));
             } else {
                 context.add_test_pipeline(Arc::new(
-                    move |p, s: &mut StandaloneScheduler| test(p, s, delay),
+                    move |p, s: &mut StandaloneScheduler| testv(p, s, delay),
                 ));
             }
             context.execute();
