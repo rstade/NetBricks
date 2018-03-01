@@ -16,6 +16,7 @@ pub const NUM_TXD: i32 = 128;
 /// Read a TOML stub and figure out the port.
 fn read_port(value: &Value) -> Result<PortConfiguration> {
     if let Value::Table(ref port_def) = *value {
+        debug!("in read port");
         let name = match port_def.get("name") {
             Some(&Value::String(ref name)) => name.clone(),
             _ => {
@@ -77,7 +78,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
 
         let symmetric_queue = port_def.contains_key("cores");
         if symmetric_queue && (port_def.contains_key("rx_cores") || port_def.contains_key("tx_cores")) {
-            println!(
+            error!(
                 "cores specified along with rx_cores and/or tx_cores for port {}",
                 name
             );
@@ -153,7 +154,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
     let toml = match toml::de::from_str::<Value>(configuration) {
         Ok(toml) => toml,
         Err(error) => {
-            println!("Parse error: {} in file: {}", error, filename);
+            error!("Parse error: {} in file: {}", error, filename);
             return Err(
                 ErrorKind::ConfigurationError(format!("Experienced {} parse errors in spec.", error)).into(),
             );
@@ -165,7 +166,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         Some(&Value::String(ref name)) => name.clone(),
         None => String::from(DEFAULT_NAME),
         _ => {
-            println!("Could not parse name");
+            error!("Could not parse name");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Could not parse name")).into(),
             );
@@ -187,7 +188,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         }
         None => DEFAULT_PRIMARY_CORE,
         v => {
-            println!("Could not parse core");
+            error!("Could not parse core");
             return Err(
                 ErrorKind::ConfigurationError(format!("Could not parse {:?} as core", v)).into(),
             );
@@ -200,7 +201,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         Some(&Value::Integer(pool)) => pool as u32,
         None => DEFAULT_POOL_SIZE,
         _ => {
-            println!("Could parse pool size");
+            error!("Could parse pool size");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Could not parse pool size")).into(),
             );
@@ -212,7 +213,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         Some(&Value::Integer(cache)) => cache as u32,
         None => DEFAULT_CACHE_SIZE,
         _ => {
-            println!("Could parse cache size");
+            error!("Could parse cache size");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Could not parse cache size")).into(),
             );
@@ -224,7 +225,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         Some(&Value::Boolean(secondary)) => secondary,
         None => DEFAULT_SECONDARY,
         _ => {
-            println!("Could not parse whether this is a secondary process");
+            error!("Could not parse whether this is a secondary process");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Could not parse secondary processor spec")).into(),
             );
@@ -248,7 +249,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         }
         None => Vec::with_capacity(0),
         _ => {
-            println!("Cores is not an array");
+            error!("Cores is not an array");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Cores is not an array")).into(),
             );
@@ -280,7 +281,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         }
         None => Vec::with_capacity(0),
         _ => {
-            println!("Ports is not an array");
+            error!("Ports is not an array");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Ports is not an array")).into(),
             );
@@ -297,7 +298,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         }
         None => Vec::with_capacity(0),
         _ => {
-            println!("Could not parse vdev");
+            error!("Could not parse vdev");
             return Err(
                 ErrorKind::ConfigurationError(String::from("Could not parse vdev")).into(),
             );
@@ -324,5 +325,6 @@ pub fn read_configuration(filename: &str) -> Result<NetbricksConfiguration> {
     let _ =
         try!{File::open(filename).and_then(|mut f| f.read_to_string(&mut toml_str))
         .chain_err(|| ErrorKind::ConfigurationError(String::from("Could not read file")))};
+    debug!("toml string is: {}", toml_str);
     read_configuration_from_str(&toml_str[..], filename)
 }

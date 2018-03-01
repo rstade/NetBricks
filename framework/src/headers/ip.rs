@@ -9,7 +9,7 @@ use std::slice;
 use utils::{Flow, checksum};
 
 /// IP header using SSE
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(C, packed)]
 pub struct IpHeader {
     version_to_len: u32,
@@ -183,15 +183,14 @@ impl IpHeader {
 
     #[inline]
     pub fn set_flags(&mut self, flags: u8) {
-        self.id_to_foffset = (self.id_to_foffset & !0x00e00000) |
-            (((flags & 0x7) as u32) << (16 + 5));
+        self.id_to_foffset = (self.id_to_foffset & !0x00e00000) | (((flags & 0x7) as u32) << (16 + 5));
     }
 
     #[inline]
     pub fn fragment_offset(&self) -> u16 {
         let id_flag_fragment = self.id_to_foffset;
         let flag_fragment = (id_flag_fragment & 0xffff) as u16;
-        u16::from_be(((flag_fragment & !0xe) >> 3))
+        u16::from_be(flag_fragment & !0xe >> 3)
     }
 
     #[inline]
@@ -248,8 +247,7 @@ impl IpHeader {
 
     #[inline]
     pub fn set_length(&mut self, len: u16) {
-        self.version_to_len = (self.version_to_len & !0xffff0000) |
-            ((u16::to_be(len) as u32) << 16);
+        self.version_to_len = (self.version_to_len & !0xffff0000) | ((u16::to_be(len) as u32) << 16);
     }
 
     #[inline]

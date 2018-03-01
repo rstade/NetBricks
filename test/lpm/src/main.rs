@@ -73,10 +73,10 @@ fn main() {
         Ok(m) => m,
         Err(f) => panic!(f.to_string()),
     };
-    let configuration = read_matches(&matches, &opts);
+    let mut configuration = read_matches(&matches, &opts);
     let phy_ports = !matches.opt_present("test");
 
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 

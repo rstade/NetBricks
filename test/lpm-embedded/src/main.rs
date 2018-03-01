@@ -15,11 +15,11 @@ mod nf;
 fn main() {
     let name = String::from("recv");
     let configuration = NetbricksConfiguration::new_with_name(&name[..]);
-    let configuration = NetbricksConfiguration {
+    let mut configuration = NetbricksConfiguration {
         primary_core: 0,
         ..configuration
     };
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(_) => {
             let port = VirtualPort::new().unwrap();
             let mut sched = embedded_scheduler::EmbeddedScheduler::new();

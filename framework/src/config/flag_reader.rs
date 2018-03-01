@@ -36,9 +36,11 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
 
     let configuration = if matches.opt_present("f") {
         let config_file = matches.opt_str("f").unwrap();
+        debug!("config file is: {}", config_file);
         match read_configuration(&config_file[..]) {
             Ok(cfg) => cfg,
             Err(ref e) => {
+                debug!("error reading configuration");
                 print_error(e);
                 process::exit(1);
             }

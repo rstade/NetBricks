@@ -61,7 +61,7 @@ fn main() {
         Ok(m) => m,
         Err(f) => panic!(f.to_string()),
     };
-    let configuration = read_matches(&matches, &opts);
+    let mut configuration = read_matches(&matches, &opts);
 
     let chain_len = matches
         .opt_str("l")
@@ -75,7 +75,7 @@ fn main() {
         .parse()
         .expect("Could not parse chain position");
 
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
             context.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| {

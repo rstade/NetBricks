@@ -51,6 +51,11 @@ pub struct PmdPort {
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
 }
 
+impl fmt::Display for PmdPort {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.port_type, self.port)
+    }
+}
 
 /// A port queue represents a single queue for a physical port, and should be used to send and receive data.
 #[derive(Clone)]
@@ -124,17 +129,20 @@ impl PortQueue {
     }
 
     #[inline]
-    fn recv_queue(&self, queue: i32, pkts: &mut [*mut MBuf], to_recv: u16) -> Result<u32> {
+    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> Result<u32> {
         unsafe {
             let recv = if self.port.is_kni() {
+                //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
                 rte_kni_rx_burst(
                     self.port.kni.unwrap().as_ptr(),
                     pkts.as_mut_ptr(),
                     to_recv as u32,
                 )
             } else {
-                eth_rx_burst(self.port_id, queue, pkts.as_mut_ptr(), to_recv)
+                //debug!("calling eth_rx_burst for {}.{}", self.port, self.rxq);
+                eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
             };
+            //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
             Ok(recv as u32)
@@ -170,9 +178,8 @@ impl PacketRx for PortQueue {
     /// called).
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
-        let rxq = self.rxq;
         let len = pkts.len() as u16;
-        self.recv_queue(rxq, pkts, len)
+        self.recv_queue(pkts, len)
     }
 
     fn port_id(&self) -> i32 {
@@ -280,6 +287,7 @@ impl PmdPort {
         let max_rxqs = unsafe { max_rxqs(port) };
         let actual_rxqs = min(max_rxqs, rxqs);
         let actual_txqs = min(max_txqs, txqs);
+        debug!("max_rxqs={}, max_txqs={}", max_rxqs, max_txqs);
 
         if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
             let ret = unsafe {
@@ -437,6 +445,7 @@ impl PmdPort {
 
     /// Create a new port from a `PortConfiguration`.
     pub fn new_port_from_configuration(port_config: &PortConfiguration) -> Result<Arc<PmdPort>> {
+        debug!("port config: {}", port_config);
         PmdPort::new_port_with_queues_descriptors_offloads(
             &port_config.name[..],
             port_config.rx_queues.len() as i32,
@@ -471,6 +480,7 @@ impl PmdPort {
         tso: bool,
         csumoffload: bool,
     ) -> Result<Arc<PmdPort>> {
+        debug!("rxqs= {}, txqs= {}", rxqs, txqs);
         let parts: Vec<_> = name.splitn(2, ':').collect();
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),

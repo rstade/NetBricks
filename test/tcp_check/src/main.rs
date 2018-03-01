@@ -50,7 +50,7 @@ fn main() {
     let mut configuration = read_matches(&matches, &opts);
     configuration.pool_size = 512; // Travis allocates at most 512 hugepages.
 
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
             context.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));

@@ -5,11 +5,11 @@ pub use self::errors::*;
 pub struct EmptyMetadata;
 
 pub fn print_error(e: &Error) {
-    println!("Error: {}", e);
+    error!("Error: {}", e);
     for e in e.iter().skip(1) {
-        println!("Cause: {}", e);
+        error!("Cause: {}", e);
     }
     if let Some(backtrace) = e.backtrace() {
-        println!("Backtrace: {:?}", backtrace);
+        error!("Backtrace: {:?}", backtrace);
     }
 }

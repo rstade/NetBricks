@@ -41,7 +41,7 @@ fn main() {
     let mut configuration = read_matches(&matches, &opts);
     configuration.pool_size = 256; // Travis allows 512 hugepages, but reliably continguously produces 256.
 
-    let mut config = initialize_system(&configuration).unwrap();
+    let mut config = initialize_system(&mut configuration).unwrap();
     config.start_schedulers();
 
     config.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));

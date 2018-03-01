@@ -53,7 +53,7 @@ fn main() {
         Ok(m) => m,
         Err(f) => panic!(f.to_string()),
     };
-    let configuration = read_matches(&matches, &opts);
+    let mut configuration = read_matches(&matches, &opts);
 
     let delay_arg = matches
         .opt_str("d")
@@ -61,7 +61,7 @@ fn main() {
         .parse()
         .expect("Could not parse delay");
 
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 

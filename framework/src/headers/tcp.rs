@@ -4,7 +4,7 @@ use std::default::Default;
 use std::fmt;
 use utils::update_checksum_incremental;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(C, packed)]
 pub struct TcpHeader {
     src_port: u16,

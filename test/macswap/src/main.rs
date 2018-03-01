@@ -64,7 +64,7 @@ fn main() {
         .parse()
         .expect("Could not parse test duration");
 
-    match initialize_system(&configuration) {
+    match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 

@@ -10,7 +10,7 @@
 static const struct rte_eth_conf default_eth_conf = {
     .link_speeds = ETH_LINK_SPEED_AUTONEG, /* auto negotiate speed */
     /*.link_duplex = ETH_LINK_AUTONEG_DUPLEX,	[> auto negotiation duplex <]*/
-    .lpbk_mode = 0,
+    .lpbk_mode = 0, /* Loopback operation mode. By default the value is 0, meaning the loopback mode is disabled. */
     .rxmode =
         {
             .mq_mode        = ETH_MQ_RX_RSS, /* Use RSS without DCB or VMDQ */
@@ -23,10 +23,15 @@ static const struct rte_eth_conf default_eth_conf = {
             .hw_vlan_extend = 0,             /* Extended VLAN */
             .jumbo_frame    = 0,             /* Jumbo Frame support */
             .hw_strip_crc   = 1,             /* CRC stripped by hardware */
+			.enable_scatter = 0,			 /* Enable scatter packets rx handler */
+			.enable_lro     = 0,			 /* Enable LRO */
         },
     .txmode =
         {
             .mq_mode = ETH_MQ_TX_NONE, /* Disable DCB and VMDQ */
+			.hw_vlan_reject_tagged = 0,
+			.hw_vlan_reject_untagged = 0,
+			.hw_vlan_insert_pvid = 0,
         },
     /* FIXME: Find supported RSS hashes from rte_eth_dev_get_info */
     .rx_adv_conf.rss_conf =
@@ -118,7 +123,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     struct rte_eth_txconf eth_txconf;
     int ret, i;
 
-    /* Need to accesss rte_eth_devices manually since DPDK currently
+    /* Need to access rte_eth_devices manually since DPDK currently
      * provides no other mechanism for checking whether something is
      * attached */
     if (port >= RTE_MAX_ETHPORTS || (rte_eth_devices[port].state != RTE_ETH_DEV_ATTACHED) ) {
@@ -129,13 +134,14 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     eth_conf           = default_eth_conf;
     eth_conf.lpbk_mode = !(!loopback);
 
-    /* Use defaut rx/tx configuration as provided by PMD drivers,
+    /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
 
     eth_rxconf = dev_info.default_rxconf;
     /* Drop packets when no descriptors are available */
-    eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
+    //eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
+    eth_rxconf.rx_drop_en = 1;
 
     eth_txconf           = dev_info.default_txconf;
     tso                  = !(!tso);
@@ -148,6 +154,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
         printf("Failed to start \n");
         return ret; /* Don't need to clean up here */
     }
+    //else printf("init_pmd_port %d: rxqs= %d, txqs= %d, nrxd= %d, ntxd= %d\n", port, rxqs, txqs, nrxd, ntxd);
 
     /* Set to promiscuous mode */
     rte_eth_promiscuous_enable(port);

@@ -3,8 +3,8 @@ use fnv::FnvHasher;
 use native::zcsi::*;
 use std::hash::Hasher;
 use std::mem;
-use std::slice;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::slice;
 
 // FIXME: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.
@@ -135,7 +135,7 @@ pub fn crc_hash<T: Sized>(to_hash: &T, iv: u32) -> u32 {
 
 fn flow_as_u8(flow: &Flow) -> &[u8] {
     let size = mem::size_of::<Flow>();
-    unsafe { slice::from_raw_parts(((flow as *const Flow) as *const u8), size) }
+    unsafe { slice::from_raw_parts(flow as *const Flow as *const u8, size) }
 }
 
 #[inline]

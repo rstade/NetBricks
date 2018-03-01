@@ -27,7 +27,9 @@ pub fn tcp_nf<T: 'static + Batch<Header = NullHeader>>(parent: T) -> Composition
                 payload[2],
                 payload[3]
             );
-            println!("Src {} dst {}", flow.src_port, flow.dst_port);
+            unsafe {
+                println!("Src {} dst {}", flow.src_port, flow.dst_port);
+            }
         })
         .parse::<UdpHeader>()
         .map(box |pkt| {

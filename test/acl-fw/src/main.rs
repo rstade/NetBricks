@@ -60,9 +60,9 @@ fn main() {
         Ok(m) => m,
         Err(f) => panic!(f.to_string()),
     };
-    let configuration = read_matches(&matches, &opts);
+    let mut configuration = read_matches(&matches, &opts);
 
-    let mut config = initialize_system(&configuration).unwrap();
+    let mut config = initialize_system(&mut configuration).unwrap();
     config.start_schedulers();
 
     config.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));

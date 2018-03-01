@@ -238,11 +238,11 @@ impl NetBricksContext {
 
 
 /// Initialize the system from a configuration.
-pub fn initialize_system(configuration: &NetbricksConfiguration) -> Result<NetBricksContext> {
+pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> Result<NetBricksContext> {
     init_system(configuration);
     let mut ctx: NetBricksContext = Default::default();
     let mut cores: HashSet<_> = configuration.cores.iter().cloned().collect();
-    for port in &configuration.ports {
+    for port in &mut configuration.ports {
         if ctx.ports.contains_key(&port.name) {
             error!("Port {} appears twice in specification", port.name);
             return Err(
@@ -266,7 +266,9 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> Result<NetBr
             }
 
             let port_instance = &ctx.ports[&port.name];
-
+            // number of queues configured, may be larger than possible by driver, therefore correct this now
+            port.rx_queues.truncate(port_instance.rxqs() as usize);
+            port.tx_queues.truncate(port_instance.txqs() as usize);
             for (rx_q, core) in port.rx_queues.iter().enumerate() {
                 let rx_q = rx_q as i32;
                 match PmdPort::new_queue_pair(port_instance, rx_q, rx_q) {

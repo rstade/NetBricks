@@ -5,7 +5,7 @@ use std::fmt;
 
 /// UDP header using SSE
 // #[repr(C, packed)]
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(C, packed)]
 pub struct UdpHeader {
     src_port: u16,
