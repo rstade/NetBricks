@@ -94,15 +94,15 @@ struct rte_mempool *get_mempool_for_core(int coreid) {
     return get_pframe_pool(coreid, rte_lcore_to_socket_id(coreid));
 }
 
-static int init_mempool_socket(int sid, unsigned int mempool_size, unsigned int mcache_size, uint16_t metadata_slots) {
+static int init_mempool_socket(int sid, unsigned int n_mbufs, unsigned int mcache_size, uint16_t metadata_slots) {
     char name[256];
     sprintf(name, "pframe%d", sid);
-    pframe_pool[sid] = rte_pktmbuf_pool_create(name, mempool_size, mcache_size, metadata_slots * METADATA_SLOT_SIZE,
+    pframe_pool[sid] = rte_pktmbuf_pool_create(name, n_mbufs, mcache_size, metadata_slots * METADATA_SLOT_SIZE,
                                                RTE_MBUF_DEFAULT_BUF_SIZE, sid);
     return pframe_pool[sid] != NULL;
 }
 
-int init_mempool(int master_core, unsigned int mempool_size, unsigned int mcache_size, unsigned short metadata_slots) {
+int init_mempool(int master_core, unsigned int n_mbufs, unsigned int mcache_size, unsigned short metadata_slots) {
 #if (!PER_CORE)
     int initialized[RTE_MAX_NUMA_NODES];
     for (int i = 0; i < RTE_MAX_NUMA_NODES; i++) {
@@ -115,7 +115,7 @@ int init_mempool(int master_core, unsigned int mempool_size, unsigned int mcache
         int sid = rte_lcore_to_socket_id(i);
         if (!initialized[sid]) {
             struct rte_mbuf *mbuf;
-            if (!init_mempool_socket(sid, mempool_size, mcache_size, metadata_slots)) {
+            if (!init_mempool_socket(sid, n_mbufs, mcache_size, metadata_slots)) {
                 goto fail;
             }
             /* Initialize mbuf template */

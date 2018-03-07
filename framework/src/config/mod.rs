@@ -98,7 +98,7 @@ pub struct PortConfiguration {
     ///    dpdk:<PMD Descriptor>: PMD driver with arguments
     ///    bess:<port_name>: BESS RingVport with name.
     ///    ovs:<port_id>: OVS ring with ID.
-    ///	   kni:<port_id>: kernel network interface,	added by sta
+    ///	   kni:<port_id>: kernel network interface for Ethernet port <port_id>
     pub name: String,
     /// Core on which receive node for a given queue lives.
     pub rx_queues: Vec<i32>,
@@ -111,6 +111,8 @@ pub struct PortConfiguration {
     pub loopback: bool,
     pub tso: bool,
     pub csum: bool,
+    /// cores on which kni kernel threads should run (in case of multi-threading kni kernel module)
+    pub k_cores: Vec<i32>,
 }
 
 impl Default for PortConfiguration {
@@ -124,6 +126,7 @@ impl Default for PortConfiguration {
             loopback: false,
             tso: false,
             csum: false,
+            k_cores: vec![],
         }
     }
 }

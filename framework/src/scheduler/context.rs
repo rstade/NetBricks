@@ -249,7 +249,7 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> Result<N
                 ErrorKind::ConfigurationError(format!("Port {} appears twice in specification", port.name)).into(),
             );
         } else {
-            debug!("configure port {}", port.name);
+            debug!("configure port {}", port);
             match PmdPort::new_port_from_configuration(port) {
                 Ok(p) => {
                     ctx.ports.insert(port.name.clone(), p);

@@ -13,7 +13,7 @@ pub struct MBuf {
     pkt_len: u32,
     data_len: u16,
     vlan_tci: u16,
-    hash_lo: u32, // must split u64 into two u32, because u64 gets aligned at 64 bit boundaries
+    hash_rss: u32,
     hash_hi: u32,
     //    seqn: u32, moved down
     vlan_tci_outer: u16, // now u16 from u32

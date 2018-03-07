@@ -1,9 +1,62 @@
 use super::MBuf;
 use headers::MacAddress;
 use std::os::raw::c_char;
+use std::ptr;
 
-#[allow(non_camel_case_types)]
-pub enum Struct_rte_kni { }
+pub enum RteKni { }
+
+#[repr(C)]
+pub enum RteLogLevel {
+    RteLogEmerg = 1,
+    RteLogAlert = 2,
+    RteLogCrit = 3,
+    RteLogErr = 4,
+    RteLogWarning = 5,
+    RteLogNotice = 6,
+    RteLogInfo = 7,
+    RteLogDebug = 8,
+}
+/* see kni.c
+struct kni_port_params {
+        uint16_t port_id; // Port ID 
+        unsigned lcore_rx; // lcore ID for RX 
+        unsigned lcore_tx; // lcore ID for TX
+        uint32_t nb_lcore_k; // Number of lcores for KNI multi kernel threads 
+        uint32_t nb_kni; // Number of KNI devices to be created 
+        unsigned lcore_k[KNI_MAX_KTHREAD]; // lcore ID list for kthreads 
+        struct rte_kni *kni[KNI_MAX_KTHREAD]; // KNI context pointers 
+} __rte_cache_aligned;
+*/
+pub const KNI_MAX_KTHREAD: usize = 32;
+
+#[repr(C)]
+pub struct KniPortParams {
+    pub port_id: u16, // Port ID
+    pub lcore_rx: u32, // lcore ID for RX
+    pub lcore_tx: u32, // lcore ID for TX
+    pub nb_lcore_k: u32, // Number of lcores for KNI multi kernel threads
+    pub nb_kni: u32, // Number of KNI devices to be created
+    pub lcore_k: [u32; KNI_MAX_KTHREAD], // lcore ID list for kthreads
+    pub kni: [*mut RteKni; KNI_MAX_KTHREAD], // KNI context pointers
+}
+
+impl KniPortParams {
+    pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
+        let mut params = KniPortParams {
+            port_id: port_id, // Port ID
+            lcore_rx: lcore_rx, // lcore ID for RX
+            lcore_tx: lcore_tx, // lcore ID for TX
+            nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
+            nb_kni: 1,
+            lcore_k: [0u32; KNI_MAX_KTHREAD], // lcore ID list for kthreads
+            kni: [ptr::null_mut(); KNI_MAX_KTHREAD], // KNI context pointers
+        };
+        for i in 0..lcore_k.len() {
+            params.lcore_k[i] = lcore_k[i] as u32;
+        }
+        params
+    }
+}
 
 #[link(name = "zcsi")]
 extern "C" {
@@ -61,10 +114,13 @@ extern "C" {
     pub fn ipv4_cksum(payload: *const u8) -> u16;
 
     pub fn rte_kni_init(max_kni_ifaces: u32); //sta, usually called already by rte_eal_init when e.g. --vdev netkni0
-    pub fn kni_alloc(port_id: u8) -> *mut Struct_rte_kni; // sta
-    pub fn rte_kni_release(kni: *mut Struct_rte_kni) -> i32; //sta
-    pub fn rte_kni_handle_request(kni: *mut Struct_rte_kni) -> i32; //sta
-    pub fn rte_kni_rx_burst(kni: *mut Struct_rte_kni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
-    pub fn rte_kni_tx_burst(kni: *mut Struct_rte_kni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
+    pub fn kni_alloc(port_id: u8, kni_port_params: *mut KniPortParams) -> *mut RteKni; // sta
+    pub fn rte_kni_release(kni: *mut RteKni) -> i32; //sta
+    pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32; //sta
+    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
+    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
+
+    pub fn rte_log_set_global_level(level: RteLogLevel);
+    pub fn rte_log_get_global_level() -> u32;
 
 }

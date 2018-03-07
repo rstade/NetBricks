@@ -10,40 +10,14 @@
 #include <rte_eal.h>
 #include <rte_ethdev.h>
 #include <rte_timer.h>
-#include <rte_kni.h>
 
 #include "mempool.h"
-#define NUM_PFRAMES (2048 - 1)  // Number of pframes in the mempool
+// TODO: make pframe pool configurable
+#define NUM_PFRAMES (1024*64 - 1)  // Number of pframes in the mempool,
 #define MEMPOOL_SIZE 1024       // Default mempool size
 #define CACHE_SIZE 32           // Size of per-core mempool cache
-/* Max size of a single packet */
-#define MAX_PACKET_SZ           2048
-
-/* Total octets in ethernet header */
-#define KNI_ENET_HEADER_SIZE    14
-
-/* Total octets in the FCS */
-#define KNI_ENET_FCS_SIZE       4
-
-/* Macros for printing using RTE_LOG */
-#define RTE_LOGTYPE_APP RTE_LOGTYPE_USER1
-
 
 #define MAX_ARGS 128
-
-/* Options for configuring ethernet port */
-static struct rte_eth_conf port_conf = {
-	.rxmode = {
-		.header_split = 0,      /* Header Split disabled */
-		.hw_ip_checksum = 0,    /* IP checksum offload disabled */
-		.hw_vlan_filter = 0,    /* VLAN filtering disabled */
-		.jumbo_frame = 0,       /* Jumbo Frame Support disabled */
-		.hw_strip_crc = 1,      /* CRC stripped by hardware */
-	},
-	.txmode = {
-		.mq_mode = ETH_MQ_TX_NONE,
-	},
-};
 
 
 static inline void bind_to_domain(int socket_id) {
@@ -166,10 +140,13 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     optind = 0;
 
     /* rte_eal_init: Initializes EAL */
-    fprintf(stderr, "calling rte_eal_init:\n");
-    for (int i=1; i< rte_argc; i+=2) {
-    	fprintf(stderr, "%s : %s\n", rte_argv[i], rte_argv[i+1]);
+
+    RTE_LOG(DEBUG, EAL, "init_eal: calling rte_eal_init:\n");
+    for (int i=0; i< rte_argc; i+=2) {
+    	RTE_LOG(DEBUG, EAL, "%s : %s\n", rte_argv[i], rte_argv[i+1]);
     }
+
+
     ret = rte_eal_init(rte_argc, rte_argv);
     if (secondary && rte_eal_process_type() != RTE_PROC_SECONDARY) {
         rte_panic("Not a secondary process");
@@ -184,142 +161,6 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     }
 
     return ret;
-}
-
-/* Callback for request of changing MTU */
-static int
-kni_change_mtu(uint8_t port_id, unsigned new_mtu)
-{
-	int ret;
-	struct rte_eth_conf conf;
-
-	if (port_id >= rte_eth_dev_count()) {
-		RTE_LOG(ERR, APP, "Invalid port id %d\n", port_id);
-		return -EINVAL;
-	}
-
-	RTE_LOG(INFO, APP, "Change MTU of port %d to %u\n", port_id, new_mtu);
-
-	/* Stop specific port */
-	rte_eth_dev_stop(port_id);
-
-	memcpy(&conf, &port_conf, sizeof(conf));
-	/* Set new MTU */
-	if (new_mtu > ETHER_MAX_LEN)
-		conf.rxmode.jumbo_frame = 1;
-	else
-		conf.rxmode.jumbo_frame = 0;
-
-	/* mtu + length of header + length of FCS = max pkt length */
-	conf.rxmode.max_rx_pkt_len = new_mtu + KNI_ENET_HEADER_SIZE +
-							KNI_ENET_FCS_SIZE;
-	ret = rte_eth_dev_configure(port_id, 1, 1, &conf);
-	if (ret < 0) {
-		RTE_LOG(ERR, APP, "Fail to reconfigure port %d\n", port_id);
-		return ret;
-	}
-
-	/* Restart specific port */
-	ret = rte_eth_dev_start(port_id);
-	if (ret < 0) {
-		RTE_LOG(ERR, APP, "Fail to restart port %d\n", port_id);
-		return ret;
-	}
-
-	return 0;
-}
-
-/* Callback for request of configuring network interface up/down */
-static int
-kni_config_network_interface(uint8_t port_id, uint8_t if_up)
-{
-	int ret = 0;
-
-	if (port_id >= rte_eth_dev_count() || port_id >= RTE_MAX_ETHPORTS) {
-		RTE_LOG(ERR, APP, "Invalid port id %d\n", port_id);
-		return -EINVAL;
-	}
-
-	RTE_LOG(INFO, APP, "Configure network interface of %d %s\n",
-					port_id, if_up ? "up" : "down");
-
-	if (if_up != 0) { /* Configure network interface up */
-		rte_eth_dev_stop(port_id);
-		ret = rte_eth_dev_start(port_id);
-	} else /* Configure network interface down */
-		rte_eth_dev_stop(port_id);
-
-	if (ret < 0)
-		RTE_LOG(ERR, APP, "Failed to start port %d\n", port_id);
-
-	return ret;
-}
-
-
-
- struct rte_kni* kni_alloc(uint8_t port_id)
- {
-//     uint8_t i;
-     struct rte_kni *kni;
-     struct rte_kni_conf conf;
-/*     struct kni_port_params **params = kni_port_params_array;
-
-     if (port_id >= RTE_MAX_ETHPORTS || !params[port_id])
-         return -1;
-
-     params[port_id]->nb_kni = params[port_id]->nb_lcore_k ? params[port_id]->nb_lcore_k : 1;
-
-     for (i = 0; i < params[port_id]->nb_kni; i++) {
-*/
-         /* Clear conf at first */
-
-         memset(&conf, 0, sizeof(conf));
-/*         if (params[port_id]->nb_lcore_k) {
-             snprintf(conf.name, RTE_KNI_NAMESIZE, "vEth%u_%u", port_id, i);
-             conf.core_id = params[port_id]->lcore_k[i];
-             conf.force_bind = 1;
-         }
-         else */ snprintf(conf.name, RTE_KNI_NAMESIZE, "vEth%u", port_id);
-             conf.group_id = (uint16_t)port_id;
-             conf.mbuf_size = MAX_PACKET_SZ;
-
-             /*
-              *   The first KNI device associated to a port
-              *   is the master, for multiple kernel thread
-              *   environment.
-              */
-
-//             if (i == 0) {
-                 struct rte_kni_ops ops;
-                 struct rte_eth_dev_info dev_info;
-
-
-                 memset(&dev_info, 0, sizeof(dev_info));
-                 rte_eth_dev_info_get(port_id, &dev_info);
-                 if (dev_info.pci_dev) {
-                	conf.addr = dev_info.pci_dev->addr;
-                    conf.id = dev_info.pci_dev->id;
-                 }
-
-                 memset(&ops, 0, sizeof(ops));
-
-                 ops.port_id = port_id;
-                 ops.change_mtu = kni_change_mtu;
-                 ops.config_network_if = kni_config_network_interface;
-
-                 // fprintf(stderr, "calling rte_kni_alloc:\n");
-
-                 kni = rte_kni_alloc(get_pframe_pool(0,0), &conf, &ops);
- //            } else
- //                kni = rte_kni_alloc(pktmbuf_pool, &conf, NULL);
-
-             if (!kni)
-                 rte_exit(EXIT_FAILURE, "Fail to create kni for "
-                         "port: %d\n", port_id);
-
- //            params[port_id]->kni[i] = kni;
- //        }
-     return kni;
 }
 
 static void init_timer() {
@@ -357,14 +198,15 @@ int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore
     if ((ret = init_eal(clean_name, 0, lcore_mask, core, mempool_size, whitelist, wlcount, vdevs, vdevcount)) < 0) {
         return ret;
     }
-    return init_mempool(core, mempool_size, mcache_size, slots);
+
+    return init_mempool(core, NUM_PFRAMES, mcache_size, slots); // we request here #mbufs, not MB as in rte_eal_init !
 }
 
 /* Call this from the main thread on ZCSI to initialize things. This initializes
  * the master thread. */
-int init_system(char* name, int nlen,  unsigned long long lcore_mask, int core, int slots) {
-    return init_system_whitelisted(name, nlen, lcore_mask, core, NULL, 0, NUM_PFRAMES, CACHE_SIZE, slots, NULL, 0);
-}
+//int init_system(char* name, int nlen,  unsigned long long lcore_mask, int core, int slots) {
+//    return init_system_whitelisted(name, nlen, lcore_mask, core, NULL, 0, NUM_PFRAMES, CACHE_SIZE, slots, NULL, 0);
+//}
 
 /* Declared within eal_thread.c, but not exposed */
 RTE_DECLARE_PER_LCORE(unsigned, _socket_id);

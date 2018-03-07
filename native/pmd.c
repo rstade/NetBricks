@@ -4,6 +4,27 @@
 #include <rte_ethdev.h>
 #include "mempool.h"
 
+/*
+ * RX and TX Prefetch, Host, and Write-back threshold values should be
+ * carefully set for optimal performance. Consult the network
+ * controller's datasheet and supporting DPDK documentation for guidance
+ * on how these parameters should be set.
+ */
+#define RX_PTHRESH 			8 /**< Default values of RX prefetch threshold reg. */
+#define RX_HTHRESH 			8 /**< Default values of RX host threshold reg. */
+#define RX_WTHRESH 			4 /**< Default values of RX write-back threshold reg. */
+#define RX_FREE_THRESH     32
+
+/*
+ * These default values are optimized for use with the Intel(R) 82599 10 GbE
+ * Controller and the DPDK ixgbe PMD. Consider using other values for other
+ * network controllers and/or network drivers.
+ */
+#define TX_PTHRESH 			36 /**< Default values of TX prefetch threshold reg. */
+#define TX_HTHRESH			0  /**< Default values of TX host threshold reg. */
+#define TX_WTHRESH			0  /**< Default values of TX write-back threshold reg. */
+
+
 #define HW_RXCSUM 0
 #define HW_TXCSUM 0
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -115,6 +136,31 @@ void enumerate_pmd_ports() {
     }
 }
 
+static int log_eth_dev_info(struct rte_eth_dev_info* dev_info) {
+//    uint8_t i;
+	if (!dev_info) return -1;
+	RTE_LOG(DEBUG, PMD, "driver_name: %s (if_index: %d)\n", dev_info->driver_name, dev_info->if_index);
+	RTE_LOG(DEBUG, PMD, "nb_rx_queues: %d\n", dev_info->nb_rx_queues);
+	RTE_LOG(DEBUG, PMD, "nb_tx_queues: %d\n", dev_info->nb_tx_queues);
+	RTE_LOG(DEBUG, PMD, "rx_offload_capa: %x\n", dev_info->rx_offload_capa);
+	RTE_LOG(DEBUG, PMD, "flow_type_rss_offloads: %lx\n", dev_info->flow_type_rss_offloads);
+//    for (i = 0; i < params->nb_kni; i++)
+//    	RTE_LOG(DEBUG, PMD, "lcore_k[%d]: %d\n", i, dev_info->lcore_k[i]);
+    return 0;
+}
+
+static int log_eth_rxconf(struct rte_eth_rxconf* rxconf) {
+	if (!rxconf) return -1;
+	RTE_LOG(DEBUG, PMD, "rx_thresh (p,h,w): (%d, %d, %d)\n", rxconf->rx_thresh.pthresh,
+			rxconf->rx_thresh.hthresh, rxconf->rx_thresh.wthresh);
+	RTE_LOG(DEBUG, PMD, "rx_free_thresh: %d\n", rxconf->rx_free_thresh);
+	RTE_LOG(DEBUG, PMD, "rx_drop_en: %d\n", rxconf->rx_drop_en);
+	RTE_LOG(DEBUG, PMD, "rx_deferred_start: %d\n", rxconf->rx_deferred_start);
+
+    return 0;
+}
+
+
 int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], int nrxd, int ntxd,
                   int loopback, int tso, int csumoffload) {
     struct rte_eth_dev_info dev_info = {};
@@ -138,10 +184,18 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
 
+    eth_conf.rx_adv_conf.rss_conf.rss_hf = dev_info.flow_type_rss_offloads;
+
+
     eth_rxconf = dev_info.default_rxconf;
     /* Drop packets when no descriptors are available */
     //eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
     eth_rxconf.rx_drop_en = 1;
+    eth_rxconf.rx_thresh.pthresh=RX_PTHRESH;
+    eth_rxconf.rx_thresh.hthresh=RX_HTHRESH;
+    eth_rxconf.rx_thresh.wthresh=RX_WTHRESH;
+    eth_rxconf.rx_free_thresh=RX_FREE_THRESH;
+
 
     eth_txconf           = dev_info.default_txconf;
     tso                  = !(!tso);
@@ -150,6 +204,14 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
 
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
+
+    rte_eth_dev_info_get(port, &dev_info);
+    log_eth_dev_info(&dev_info);
+    RTE_LOG(DEBUG, PMD, "default eth_rxconf:\n");
+    log_eth_rxconf(&dev_info.default_rxconf);
+    RTE_LOG(DEBUG, PMD, "using eth_rxconf:\n");
+    log_eth_rxconf(&eth_rxconf);
+
     if (ret != 0) {
         printf("Failed to start \n");
         return ret; /* Don't need to clean up here */

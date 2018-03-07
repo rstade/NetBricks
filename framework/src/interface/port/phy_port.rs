@@ -44,7 +44,7 @@ pub struct PmdPort {
     connected: bool,
     should_close: bool,
     port: i32,
-    kni: Option<Unique<Struct_rte_kni>>, //must use Unique because raw ptr does not implement Send
+    kni: Option<Unique<RteKni>>, //must use Unique because raw ptr does not implement Send
     rxqs: i32,
     txqs: i32,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
@@ -231,7 +231,7 @@ impl PmdPort {
         self.kni.is_some()
     }
 
-    pub fn get_kni(&self) -> *mut Struct_rte_kni {
+    pub fn get_kni(&self) -> *mut RteKni {
         self.kni.unwrap().as_ptr()
     }
 
@@ -375,21 +375,23 @@ impl PmdPort {
         }
     }
 
-    fn new_kni_port(port_id: u8, rxqs: i32, txqs: i32) -> Result<Arc<PmdPort>> {
+    fn new_kni_port(kni_port_params: Box<KniPortParams>) -> Result<Arc<PmdPort>> {
 
         // This call returns a pointer to an opaque C struct
-        let p_kni = unsafe { kni_alloc(port_id) };
+        let port_id = kni_port_params.port_id as u8;
+        let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
+        let p_kni = unsafe { kni_alloc(port_id, p_kni_port_params) };
         if !p_kni.is_null() {
             Ok(Arc::new(PmdPort {
                 port_type: PortType::Kni,
                 connected: true,
                 port: port_id as i32,
                 kni: Some(Unique::new(p_kni).unwrap()),
-                rxqs: rxqs,
-                txqs: txqs,
+                rxqs: 1,
+                txqs: 1,
                 should_close: true, // sta, not clear what this is used for, and if to set true or false
-                stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
-                stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
+                stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
+                stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
             }))
         } else {
             Err(ErrorKind::FailedToInitializeKni(port_id).into())
@@ -445,42 +447,27 @@ impl PmdPort {
 
     /// Create a new port from a `PortConfiguration`.
     pub fn new_port_from_configuration(port_config: &PortConfiguration) -> Result<Arc<PmdPort>> {
-        debug!("port config: {}", port_config);
-        PmdPort::new_port_with_queues_descriptors_offloads(
-            &port_config.name[..],
-            port_config.rx_queues.len() as i32,
-            port_config.tx_queues.len() as i32,
-            &port_config.rx_queues[..],
-            &port_config.tx_queues[..],
-            port_config.rxd,
-            port_config.txd,
-            port_config.loopback,
-            port_config.tso,
-            port_config.csum,
-        )
-    }
 
-    /// Create a new port.
-    ///
-    /// Description
-    /// -   `name`: The name for a port. NetBricks currently supports Bess native vports, OVS shared memory ports and
-    ///     `dpdk` PMDs. DPDK PMDs can be used to input pcap (e.g., `dpdk:eth_pcap0,rx_pcap=<pcap_name>`), etc.
-    /// -   `rxqs`, `txqs`: Number of RX and TX queues.
-    /// -   `tx_cores`, `rx_cores`: Core affinity of where the queues will be used.
-    /// -   `nrxd`, `ntxd`: RX and TX descriptors.
-    pub fn new_port_with_queues_descriptors_offloads(
-        name: &str,
-        rxqs: i32,
-        txqs: i32,
-        rx_cores: &[i32],
-        tx_cores: &[i32],
-        nrxd: i32,
-        ntxd: i32,
-        loopback: bool,
-        tso: bool,
-        csumoffload: bool,
-    ) -> Result<Arc<PmdPort>> {
-        debug!("rxqs= {}, txqs= {}", rxqs, txqs);
+        /// Create a new port.
+        ///
+        /// Description
+        /// -   `name`: The name for a port. NetBricks currently supports Bess native vports, OVS shared memory ports and
+        ///     `dpdk` PMDs. DPDK PMDs can be used to input pcap (e.g., `dpdk:eth_pcap0,rx_pcap=<pcap_name>`), etc.
+        /// -   `rxqs`, `txqs`: Number of RX and TX queues.
+        /// -   `tx_cores`, `rx_cores`: Core affinity of where the queues will be used.
+        /// -   `nrxd`, `ntxd`: RX and TX descriptors.
+
+        let name = &port_config.name[..];
+        let rxqs = port_config.rx_queues.len() as i32;
+        let txqs = port_config.tx_queues.len() as i32;
+        let rx_cores = &port_config.rx_queues[..];
+        let tx_cores = &port_config.tx_queues[..];
+        let nrxd = port_config.rxd;
+        let ntxd = port_config.txd;
+        let loopback = port_config.loopback;
+        let tso = port_config.tso;
+        let csumoffload = port_config.csum;
+
         let parts: Vec<_> = name.splitn(2, ':').collect();
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
@@ -500,11 +487,17 @@ impl PmdPort {
                 )
             }
             "kni" => {
-                let port_id: u8 = parts[1].parse::<u8>().expect(&format!(
-                    "cannot parse port_id from {} as an u8",
+                let port_id: u16 = parts[1].parse::<u16>().expect(&format!(
+                    "cannot parse port_id from {} as an u16",
                     name
                 ));
-                PmdPort::new_kni_port(port_id, rxqs, txqs)
+
+                PmdPort::new_kni_port(Box::new(KniPortParams::new(
+                    port_id,
+                    rx_cores[0] as u32,
+                    tx_cores[0] as u32,
+                    &port_config.k_cores,
+                )))
             }
             "null" => PmdPort::null_port(),
             _ => {
@@ -531,18 +524,18 @@ impl PmdPort {
         rx_cores: &[i32],
         tx_cores: &[i32],
     ) -> Result<Arc<PmdPort>> {
-        PmdPort::new_port_with_queues_descriptors_offloads(
-            name,
-            rxqs,
-            txqs,
-            rx_cores,
-            tx_cores,
-            NUM_RXD,
-            NUM_TXD,
-            false,
-            false,
-            false,
-        )
+        let config = PortConfiguration {
+            name: name.to_string(),
+            rx_queues: rx_cores[0..rxqs as usize].to_vec(),
+            tx_queues: tx_cores[0..txqs as usize].to_vec(),
+            rxd: NUM_RXD,
+            txd: NUM_TXD,
+            loopback: false,
+            tso: false,
+            csum: false,
+            k_cores: vec![],
+        };
+        PmdPort::new_port_from_configuration(&config)
     }
 
     pub fn new_with_cores(name: &str, rx_core: i32, tx_core: i32) -> Result<Arc<PmdPort>> {

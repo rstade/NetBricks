@@ -29,6 +29,7 @@ CFLAGS = -std=gnu99 -g3 -ggdb3 -O3 -Wall -Werror -m64 -march=native \
 	 -D_GNU_SOURCE \
 	 -fPIC
 
+DPDKLIBS= $(wildcard $(DPDK_LIB_DIR)/*.a)
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 HEADERS = $(wildcard include/*.h)
@@ -68,10 +69,10 @@ $(DEPS): $(SRCS) $(HEADERS)
 	@echo $(RTE_SDK) $(DPDK_INC_DIR)
 	@$(CC) $(CFLAGS) -MM $(SRCS) | sed 's|\(.*\)\.o: \(.*\)\.c|\2.o: \2.c|' > $(DEPS);
 
-$(PROD_STATIC): $(OBJS)
+$(PROD_STATIC): $(OBJS) $(DPDKLIBS)
 	ar rcs $(PROD_STATIC) $(OBJS)
 
-$(PROD): $(OBJS)
+$(PROD): $(OBJS) $(DPDKLIBS)
 	$(CC) -shared  $(OBJS) -o $@ $(LDFLAGS) $(LIBS)
 
 -include $(DEPS)

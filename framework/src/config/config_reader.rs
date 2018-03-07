@@ -5,7 +5,7 @@ use std::io::Read;
 use toml::{self, Value};
 
 /// Default configuration values
-pub const DEFAULT_POOL_SIZE: u32 = 2048 - 1;
+pub const DEFAULT_POOL_SIZE: u32 = 2048;
 pub const DEFAULT_CACHE_SIZE: u32 = 32;
 pub const DEFAULT_SECONDARY: bool = false;
 pub const DEFAULT_PRIMARY_CORE: i32 = 0;
@@ -111,6 +111,11 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             }
         }
 
+        let k_cores = match port_def.get("k_cores") {
+            Some(v) => try!(read_queue(v)),
+            None => Vec::with_capacity(0),
+        };
+
         let rx_queues = if symmetric_queue {
             try!(read_queue(port_def.get("cores").unwrap()))
         } else {
@@ -138,6 +143,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             loopback: loopback,
             csum: csum,
             tso: tso,
+            k_cores: k_cores,
         })
     } else {
         Err(
