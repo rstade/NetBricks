@@ -1,9 +1,9 @@
 #![feature(box_syntax)]
 extern crate e2d2;
 extern crate fnv;
-extern crate time;
 extern crate getopts;
 extern crate rand;
+extern crate time;
 extern crate twox_hash;
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
@@ -30,13 +30,7 @@ where
 
     let pipelines: Vec<_> = ports
         .iter()
-        .map(|port| {
-            maglev(
-                ReceiveBatch::new(port.clone()),
-                sched,
-                &vec!["Larry", "Curly", "Moe"],
-            ).send(port.clone())
-        })
+        .map(|port| maglev(ReceiveBatch::new(port.clone()), sched, &vec!["Larry", "Curly", "Moe"]).send(port.clone()))
         .collect();
     println!("Running {} pipelines", pipelines.len());
     sched.add_task(merge(pipelines)).unwrap();

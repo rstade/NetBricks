@@ -12,11 +12,7 @@ fn round_pages_test() {
         4096,
         "Rounding up 1 byte did not result in PAGE_SIZE"
     );
-    assert_eq!(
-        round_to_pages(0),
-        0,
-        "Rounding up 0 bytes did not result in 0"
-    );
+    assert_eq!(round_to_pages(0), 0, "Rounding up 0 bytes did not result in 0");
     assert_eq!(
         round_to_pages(8),
         4096,
@@ -46,36 +42,12 @@ fn round_pages_test() {
 /// Test rounding up to power of 2.
 #[test]
 fn round_to_power_of_2_test() {
-    assert_eq!(
-        round_to_power_of_2(0),
-        0,
-        "Rounding to power of 2 failed, expected 0"
-    );
-    assert_eq!(
-        round_to_power_of_2(1),
-        1,
-        "Rounding to power of 2 failed, expected 1"
-    );
-    assert_eq!(
-        round_to_power_of_2(2),
-        2,
-        "Rounding to power of 2 failed, expected 2"
-    );
-    assert_eq!(
-        round_to_power_of_2(3),
-        4,
-        "Rounding to power of 2 failed, expected 4"
-    );
-    assert_eq!(
-        round_to_power_of_2(4),
-        4,
-        "Rounding to power of 2 failed, expected 4"
-    );
-    assert_eq!(
-        round_to_power_of_2(5),
-        8,
-        "Rounding to power of 2 failed, expected 8"
-    );
+    assert_eq!(round_to_power_of_2(0), 0, "Rounding to power of 2 failed, expected 0");
+    assert_eq!(round_to_power_of_2(1), 1, "Rounding to power of 2 failed, expected 1");
+    assert_eq!(round_to_power_of_2(2), 2, "Rounding to power of 2 failed, expected 2");
+    assert_eq!(round_to_power_of_2(3), 4, "Rounding to power of 2 failed, expected 4");
+    assert_eq!(round_to_power_of_2(4), 4, "Rounding to power of 2 failed, expected 4");
+    assert_eq!(round_to_power_of_2(5), 8, "Rounding to power of 2 failed, expected 8");
 }
 
 /// Test that creation proceeds without a hitch.
@@ -171,14 +143,12 @@ fn test_out_of_order_insertion() {
 
     let data1 = ": hamburger";
     let data2 = " american";
-    if let InsertionResult::Inserted { written, available } =
-        ro.add_data(
-            base_seq.wrapping_add(data0.len() as u32).wrapping_add(
-                data1.len() as u32,
-            ),
-            data2.as_bytes(),
-        )
-    {
+    if let InsertionResult::Inserted { written, available } = ro.add_data(
+        base_seq
+            .wrapping_add(data0.len() as u32)
+            .wrapping_add(data1.len() as u32),
+        data2.as_bytes(),
+    ) {
         assert_eq!(written, data2.len());
         assert_eq!(available, data0.len());
     } else {
@@ -204,11 +174,7 @@ fn test_out_of_order_insertion() {
     let mut read_buffer: Vec<_> = (0..read_buf_len).map(|_| 0).collect();
     let read = ro.read_data(&mut read_buffer[..]);
     assert_eq!(read, read_buf_len, "Read less than what is available");
-    assert_eq!(
-        ro.available(),
-        0,
-        "Read everything but data is still available"
-    );
+    assert_eq!(ro.available(), 0, "Read everything but data is still available");
     let read = str::from_utf8(&read_buffer[..read]).unwrap();
     assert_eq!(
         read,
@@ -243,9 +209,9 @@ fn test_state_change() {
     let data1 = ": hamburger";
     let data2 = " american";
     let data3 = " (w/fries)";
-    let data2_seq = base_seq.wrapping_add(data0.len() as u32).wrapping_add(
-        data1.len() as u32,
-    );
+    let data2_seq = base_seq
+        .wrapping_add(data0.len() as u32)
+        .wrapping_add(data1.len() as u32);
     if let InsertionResult::Inserted { written, available } = ro.add_data(data2_seq, data2.as_bytes()) {
         assert_eq!(written, data2.len());
         assert_eq!(
@@ -276,20 +242,15 @@ fn test_state_change() {
         panic!("Writing data1 failed");
     }
 
-    if let InsertionResult::Inserted { written, available } =
-        ro.add_data(
-            base_seq
-                .wrapping_add(data0.len() as u32)
-                .wrapping_add(data1.len() as u32)
-                .wrapping_add(data2.len() as u32),
-            data3.as_bytes(),
-        )
-    {
+    if let InsertionResult::Inserted { written, available } = ro.add_data(
+        base_seq
+            .wrapping_add(data0.len() as u32)
+            .wrapping_add(data1.len() as u32)
+            .wrapping_add(data2.len() as u32),
+        data3.as_bytes(),
+    ) {
         assert_eq!(written, data3.len());
-        assert_eq!(
-            available,
-            data0.len() + data1.len() + data2.len() + data3.len()
-        );
+        assert_eq!(available, data0.len() + data1.len() + data2.len() + data3.len());
     } else {
         panic!("Writing data3 failed");
     }
@@ -297,11 +258,7 @@ fn test_state_change() {
     let mut read_buffer: Vec<_> = (0..read_buf_len).map(|_| 0).collect();
     let read = ro.read_data(&mut read_buffer[..]);
     assert_eq!(read, read_buf_len, "Read less than what is available");
-    assert_eq!(
-        ro.available(),
-        0,
-        "Read everything but data is still available"
-    );
+    assert_eq!(ro.available(), 0, "Read everything but data is still available");
     let read = str::from_utf8(&read_buffer[..read]).unwrap();
     assert_eq!(
         read,
@@ -404,7 +361,6 @@ fn test_reset() {
     } else {
         panic!("No OOM?");
     }
-
 }
 
 /// Test that reading after writing allows us to write infinitely
@@ -461,8 +417,7 @@ fn test_overlapping_write() {
         panic!("Could not write data");
     }
 
-    if let InsertionResult::Inserted { written, .. } =
-        r0.add_data(base_seq + ("hello".len() as u32), data1.as_bytes())
+    if let InsertionResult::Inserted { written, .. } = r0.add_data(base_seq + ("hello".len() as u32), data1.as_bytes())
     {
         assert_eq!(
             written,
@@ -479,11 +434,9 @@ fn test_overlapping_write() {
     let read = r0.read_data(&mut read_buf[..]);
     let read_str = str::from_utf8(&read_buf[..read]).unwrap();
     assert_eq!(
-        read_str,
-        "hello world",
+        read_str, "hello world",
         "Read value {} expected {}",
-        read_str,
-        "hello world"
+        read_str, "hello world"
     );
 
     if let InsertionResult::Inserted { written, .. } = r0.add_data(base_seq, data0.as_bytes()) {

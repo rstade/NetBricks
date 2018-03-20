@@ -1,11 +1,14 @@
 use super::MBuf;
 use headers::MacAddress;
-use std::os::raw::c_char;
+use std::os::raw::{ c_char, c_void };
 use std::ptr;
 
-pub enum RteKni { }
+pub enum RteKni {}
+
+pub enum RteFlow {}
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub enum RteLogLevel {
     RteLogEmerg = 1,
     RteLogAlert = 2,
@@ -15,6 +18,33 @@ pub enum RteLogLevel {
     RteLogNotice = 6,
     RteLogInfo = 7,
     RteLogDebug = 8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub enum RteLogtype {
+	RteLogtypeEal = 0,
+	RteLogtypeMalloc = 1,
+	RteLogtypeRing = 2,		
+	RteLogtypeMempool = 3,
+	RteLogtypeTimer = 4,
+	RteLogtypePmd = 5,		
+	RteLogtypeHash = 6,
+	RteLogtypeLpm = 7,
+	RteLogtypeKni = 8,		
+	RteLogtypeAcl = 9,
+	RteLogtypePower = 10,
+	RteLogtypeMeter = 11,		
+	RteLogtypeSched = 12,
+	RteLogtypePort = 13,
+	RteLogtypeTable = 14,		
+	RteLogtypePipeline = 15,
+	RteLogtypeMbuf = 16,
+	RteLogtypeCryptodef = 17,		
+	RteLogtypeEfd = 18,
+	RteLogtypeEventdev = 19,
+	RteLogtypeGso = 20,		
+	
 }
 /* see kni.c
 struct kni_port_params {
@@ -31,12 +61,18 @@ pub const KNI_MAX_KTHREAD: usize = 32;
 
 #[repr(C)]
 pub struct KniPortParams {
-    pub port_id: u16, // Port ID
-    pub lcore_rx: u32, // lcore ID for RX
-    pub lcore_tx: u32, // lcore ID for TX
-    pub nb_lcore_k: u32, // Number of lcores for KNI multi kernel threads
-    pub nb_kni: u32, // Number of KNI devices to be created
-    pub lcore_k: [u32; KNI_MAX_KTHREAD], // lcore ID list for kthreads
+    pub port_id: u16,
+    // Port ID
+    pub lcore_rx: u32,
+    // lcore ID for RX
+    pub lcore_tx: u32,
+    // lcore ID for TX
+    pub nb_lcore_k: u32,
+    // Number of lcores for KNI multi kernel threads
+    pub nb_kni: u32,
+    // Number of KNI devices to be created
+    pub lcore_k: [u32; KNI_MAX_KTHREAD],
+    // lcore ID list for kthreads
     pub kni: [*mut RteKni; KNI_MAX_KTHREAD], // KNI context pointers
 }
 
@@ -56,6 +92,13 @@ impl KniPortParams {
         }
         params
     }
+}
+
+#[repr(C)]
+pub struct RteFlowError {
+    pub err_type: u32,
+    pub cause: *mut c_void,
+    pub message: *mut c_char,
 }
 
 #[link(name = "zcsi")]
@@ -96,7 +139,8 @@ extern "C" {
     ) -> i32;
     pub fn free_pmd_port(port: i32) -> i32;
     pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
-    pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; //sta, rte_eth_tx_burst is inline C, we cannot directly use it here
+    //rte_eth_tx_burst is inline C, we cannot directly use it here:
+    pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32;
     pub fn num_pmd_ports() -> i32;
     pub fn rte_eth_macaddr_get(port: i32, address: *mut MacAddress);
     pub fn init_bess_eth_ring(ifname: *const c_char, core: i32) -> i32;
@@ -113,8 +157,9 @@ extern "C" {
     pub fn crc_hash_native(to_hash: *const u8, size: u32, iv: u32) -> u32;
     pub fn ipv4_cksum(payload: *const u8) -> u16;
 
-    pub fn rte_kni_init(max_kni_ifaces: u32); //sta, usually called already by rte_eal_init when e.g. --vdev netkni0
-    pub fn kni_alloc(port_id: u8, kni_port_params: *mut KniPortParams) -> *mut RteKni; // sta
+    //usually called already by rte_eal_init when e.g. --vdev netkni0:
+    pub fn rte_kni_init(max_kni_ifaces: u32);
+    pub fn kni_alloc(port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni; // sta
     pub fn rte_kni_release(kni: *mut RteKni) -> i32; //sta
     pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32; //sta
     pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
@@ -122,5 +167,13 @@ extern "C" {
 
     pub fn rte_log_set_global_level(level: RteLogLevel);
     pub fn rte_log_get_global_level() -> u32;
+    pub fn rte_log_set_level(logtype: RteLogtype, level: RteLogLevel) -> i32;
+    pub fn rte_log_get_level(logtype: RteLogtype) -> i32;    
 
+    pub fn generate_tcp_flow(port_id: u16, rx_q: u16,
+                             src_ip: u32, src_mask: u32,
+                             dest_ip: u32, dest_mask: u32,
+                             src_port: u16, src_port_mask: u16,
+                             dst_port: u16, dst_port_mask: u16,
+                             error: *const RteFlowError) -> *mut RteFlow;
 }

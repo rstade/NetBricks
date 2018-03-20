@@ -5,6 +5,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::cmp::Ordering;
+use std;
 
 // merged in lot of https://github.com/abaumhauer/eui48/blob/master/src/lib.rs
 
@@ -12,12 +13,13 @@ use std::cmp::Ordering;
 pub const EUI48LEN: usize = 6;
 pub type Eui48 = [u8; EUI48LEN];
 
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Debug)]
 pub enum ParseError {
     /// Length is incorrect (should be 14 or 17)
     InvalidLength(usize),
     /// Character not [0-9a-fA-F]|'x'|'-'|':'|'.'
     InvalidCharacter(char, usize),
+    IOError(std::io::Error),
 }
 
 

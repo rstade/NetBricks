@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <rte_bus_pci.h>
 #include <rte_kni.h>
 
 #include "mempool.h"
@@ -67,7 +67,7 @@ static int log_kni_port_params(struct kni_port_params* params) {
 
 /* Callback for request of changing MTU */
 static int
-kni_change_mtu(uint8_t port_id, unsigned new_mtu)
+kni_change_mtu(uint16_t port_id, unsigned new_mtu)
 {
 	int ret;
 	struct rte_eth_conf conf;
@@ -110,7 +110,7 @@ kni_change_mtu(uint8_t port_id, unsigned new_mtu)
 
 /* Callback for request of configuring network interface up/down */
 static int
-kni_config_network_interface(uint8_t port_id, uint8_t if_up)
+kni_config_network_interface(uint16_t port_id, uint8_t if_up)
 {
 	int ret = 0;
 
@@ -136,7 +136,7 @@ kni_config_network_interface(uint8_t port_id, uint8_t if_up)
 
 
 
- struct rte_kni* kni_alloc(uint8_t port_id, struct kni_port_params* params)
+ struct rte_kni* kni_alloc(uint16_t port_id, struct kni_port_params* params)
  {
      uint8_t i;
      struct rte_kni *kni=(struct rte_kni*) -1;

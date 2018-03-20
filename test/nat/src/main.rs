@@ -1,9 +1,9 @@
 #![feature(box_syntax)]
 extern crate e2d2;
 extern crate fnv;
-extern crate time;
 extern crate getopts;
 extern crate rand;
+extern crate time;
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
@@ -30,13 +30,7 @@ where
 
     let mut pipelines: Vec<_> = ports
         .iter()
-        .map(|port| {
-            nat(
-                ReceiveBatch::new(port.clone()),
-                sched,
-                &Ipv4Addr::new(10, 0, 0, 1),
-            ).send(port.clone())
-        })
+        .map(|port| nat(ReceiveBatch::new(port.clone()), sched, &Ipv4Addr::new(10, 0, 0, 1)).send(port.clone()))
         .collect();
     println!("Running {} pipelines", pipelines.len());
     if pipelines.len() > 1 {

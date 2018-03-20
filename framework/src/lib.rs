@@ -10,26 +10,23 @@
 #![feature(unique)]
 #![feature(ptr_internals)]
 #![feature(rustc_private)]
-
 // Used for cache alignment.
 #![feature(allocator_api)]
-
 #![allow(unused_features)]
 #![feature(integer_atomics)]
 #![allow(unused_doc_comment)]
-
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 // Need this since PMD port construction triggers too many arguments.
 #![cfg_attr(feature = "dev", allow(too_many_arguments))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
 #![cfg_attr(feature = "dev", deny(warnings))]
-extern crate libc;
 extern crate byteorder;
 extern crate fnv;
-extern crate twox_hash;
-extern crate regex;
+extern crate libc;
 extern crate net2;
+extern crate regex;
+extern crate twox_hash;
 
 #[macro_use]
 extern crate lazy_static;

@@ -6,7 +6,7 @@ use std::default::Default;
 use std::fmt;
 use std::net::Ipv4Addr;
 use std::slice;
-use utils::{Flow, checksum};
+use utils::{FiveTupleV4, checksum};
 
 /// IP header using SSE
 #[derive(Clone, Copy, Debug, Default)]
@@ -73,7 +73,7 @@ impl EndOffset for IpHeader {
 
 impl IpHeader {
     #[inline]
-    pub fn flow(&self) -> Option<Flow> {
+    pub fn flow(&self) -> Option<FiveTupleV4> {
         let protocol = self.protocol();
         let src_ip = self.src();
         let dst_ip = self.dst();
@@ -84,7 +84,7 @@ impl IpHeader {
                 let port_slice = slice::from_raw_parts(port_as_u8, 4);
                 let src_port = BigEndian::read_u16(&port_slice[..2]);
                 let dst_port = BigEndian::read_u16(&port_slice[2..]);
-                Some(Flow {
+                Some(FiveTupleV4 {
                     src_ip: src_ip,
                     dst_ip: dst_ip,
                     src_port: src_port,

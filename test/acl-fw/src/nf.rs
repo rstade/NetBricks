@@ -1,6 +1,6 @@
 use e2d2::headers::*;
 use e2d2::operators::*;
-use e2d2::utils::{Flow, Ipv4Prefix};
+use e2d2::utils::{FiveTupleV4, Ipv4Prefix};
 use fnv::FnvHasher;
 use std::collections::HashSet;
 use std::hash::BuildHasherDefault;
@@ -19,7 +19,7 @@ pub struct Acl {
 }
 
 impl Acl {
-    pub fn matches(&self, flow: &Flow, connections: &HashSet<Flow, FnvHash>) -> bool {
+    pub fn matches(&self, flow: &FiveTupleV4, connections: &HashSet<FiveTupleV4, FnvHash>) -> bool {
         if (self.src_ip.is_none() || self.src_ip.unwrap().in_range(flow.src_ip)) &&
             (self.dst_ip.is_none() || self.dst_ip.unwrap().in_range(flow.dst_ip)) &&
             (self.src_port.is_none() || flow.src_port == self.src_port.unwrap()) &&
@@ -38,7 +38,7 @@ impl Acl {
 }
 
 pub fn acl_match<T: 'static + Batch<Header = NullHeader>>(parent: T, acls: Vec<Acl>) -> CompositionBatch {
-    let mut flow_cache = HashSet::<Flow, FnvHash>::with_hasher(Default::default());
+    let mut flow_cache = HashSet::<FiveTupleV4, FnvHash>::with_hasher(Default::default());
     parent
         .parse::<MacHeader>()
         .transform(box move |p| { p.get_mut_header().swap_addresses(); })

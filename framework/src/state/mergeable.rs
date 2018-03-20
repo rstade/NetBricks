@@ -7,7 +7,7 @@ use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use utils::Flow;
+use utils::FiveTupleV4;
 
 /// A generic store for associating some merge-able type with each flow. Note, the merge must be commutative, we do not
 /// guarantee ordering for things being merged. The merge function is implemented by implementing the
@@ -27,8 +27,8 @@ const MAX_CACHE_SIZE: usize = 1 << 20;
 const CHAN_SIZE: usize = 128;
 
 pub struct MergeableStoreCP<T: AddAssign<T> + Default + Clone> {
-    flow_counters: HashMap<Flow, T, FnvHash>,
-    hashmaps: Vec<Arc<RwLock<HashMap<Flow, T, FnvHash>>>>,
+    flow_counters: HashMap<FiveTupleV4, T, FnvHash>,
+    hashmaps: Vec<Arc<RwLock<HashMap<FiveTupleV4, T, FnvHash>>>>,
 }
 
 impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
@@ -57,7 +57,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
         MergeableStoreCP::dp_store_with_cache_and_size(self, CACHE_SIZE, VEC_SIZE)
     }
 
-    fn hmap_to_vec(hash: &RwLockReadGuard<HashMap<Flow, T, FnvHash>>) -> Vec<(Flow, T)> {
+    fn hmap_to_vec(hash: &RwLockReadGuard<HashMap<FiveTupleV4, T, FnvHash>>) -> Vec<(FiveTupleV4, T)> {
         let mut t = Vec::with_capacity(hash.len());
         t.extend(hash.iter().map(|(f, v)| (*f, v.clone())));
         t
@@ -80,14 +80,14 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
         }
     }
 
-    pub fn get(&self, flow: &Flow) -> T {
+    pub fn get(&self, flow: &FiveTupleV4) -> T {
         match self.flow_counters.get(flow) {
             Some(i) => i.clone(),
             None => Default::default(),
         }
     }
 
-    pub fn iter(&self) -> Iter<Flow, T> {
+    pub fn iter(&self) -> Iter<FiveTupleV4, T> {
         self.flow_counters.iter()
     }
 
@@ -103,8 +103,8 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
 #[derive(Clone)]
 pub struct MergeableStoreDP<T: AddAssign<T> + Default + Clone> {
     /// Contains the counts on the data path.
-    flow_counters: Arc<RwLock<HashMap<Flow, T, FnvHash>>>,
-    cache: Vec<(Flow, T)>,
+    flow_counters: Arc<RwLock<HashMap<FiveTupleV4, T, FnvHash>>>,
+    cache: Vec<(FiveTupleV4, T)>,
     base_cache_size: usize,
     cache_size: usize,
     len: usize,
@@ -124,7 +124,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreDP<T> {
 
     /// Change the value for the given `Flow`.
     #[inline]
-    pub fn update(&mut self, flow: Flow, inc: T) {
+    pub fn update(&mut self, flow: FiveTupleV4, inc: T) {
         {
             self.cache.push((flow, inc));
         }
@@ -135,7 +135,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreDP<T> {
 
     /// Remove an entry from the table.
     #[inline]
-    pub fn remove(&mut self, flow: &Flow) -> T {
+    pub fn remove(&mut self, flow: &FiveTupleV4) -> T {
         // self.merge_cache();
         match self.flow_counters.write() {
             Ok(mut g) => {

@@ -1,3 +1,5 @@
+#include <rte_version.h>
+#include <rte_bus_pci.h>
 #include <rte_config.h>
 #include <rte_pci.h>
 #include <rte_eal.h>
@@ -12,7 +14,7 @@
  */
 #define RX_PTHRESH 			8 /**< Default values of RX prefetch threshold reg. */
 #define RX_HTHRESH 			8 /**< Default values of RX host threshold reg. */
-#define RX_WTHRESH 			4 /**< Default values of RX write-back threshold reg. */
+#define RX_WTHRESH 			0 /**< Default values of RX write-back threshold reg. */
 #define RX_FREE_THRESH     32
 
 /*
@@ -54,15 +56,22 @@ static const struct rte_eth_conf default_eth_conf = {
 			.hw_vlan_reject_untagged = 0,
 			.hw_vlan_insert_pvid = 0,
         },
-    /* FIXME: Find supported RSS hashes from rte_eth_dev_get_info */
+    /* is later on re-written taking the info from rte_eth_dev_get_info */
     .rx_adv_conf.rss_conf =
         {
             .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP, .rss_key = NULL,
         },
-    /* No flow director */
+    /* we need the flow director feature*/
     .fdir_conf =
         {
-            .mode = RTE_FDIR_MODE_NONE,
+            .mode = RTE_FDIR_MODE_PERFECT,
+            .pballoc = RTE_FDIR_PBALLOC_256K,
+            .status = RTE_FDIR_NO_REPORT_STATUS,
+            .drop_queue = 0,
+            .flex_conf =  {
+                    .nb_payloads = 0,
+                    .nb_flexmasks = 0,
+            }
         },
     /* No interrupt */
     .intr_conf =
@@ -142,7 +151,7 @@ static int log_eth_dev_info(struct rte_eth_dev_info* dev_info) {
 	RTE_LOG(DEBUG, PMD, "driver_name: %s (if_index: %d)\n", dev_info->driver_name, dev_info->if_index);
 	RTE_LOG(DEBUG, PMD, "nb_rx_queues: %d\n", dev_info->nb_rx_queues);
 	RTE_LOG(DEBUG, PMD, "nb_tx_queues: %d\n", dev_info->nb_tx_queues);
-	RTE_LOG(DEBUG, PMD, "rx_offload_capa: %x\n", dev_info->rx_offload_capa);
+	RTE_LOG(DEBUG, PMD, "rx_offload_capa: %lx\n", dev_info->rx_offload_capa);
 	RTE_LOG(DEBUG, PMD, "flow_type_rss_offloads: %lx\n", dev_info->flow_type_rss_offloads);
 //    for (i = 0; i < params->nb_kni; i++)
 //    	RTE_LOG(DEBUG, PMD, "lcore_k[%d]: %d\n", i, dev_info->lcore_k[i]);
@@ -158,6 +167,28 @@ static int log_eth_rxconf(struct rte_eth_rxconf* rxconf) {
 	RTE_LOG(DEBUG, PMD, "rx_deferred_start: %d\n", rxconf->rx_deferred_start);
 
     return 0;
+}
+
+
+#define CHECK_INTERVAL 1000  /* 100ms */
+#define MAX_REPEAT_TIMES 90  /* 9s (90 * 100ms) in total */
+
+static void
+assert_link_status(int port_id)
+{
+    struct rte_eth_link link;
+    uint8_t rep_cnt = MAX_REPEAT_TIMES;
+
+    memset(&link, 0, sizeof(link));
+    do {
+        rte_eth_link_get(port_id, &link);
+        if (link.link_status == ETH_LINK_UP)
+            break;
+        rte_delay_ms(CHECK_INTERVAL);
+    } while (--rep_cnt);
+
+    if (link.link_status == ETH_LINK_DOWN)
+        rte_exit(EXIT_FAILURE, ":: error: link is still down\n");
 }
 
 
@@ -190,11 +221,11 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     eth_rxconf = dev_info.default_rxconf;
     /* Drop packets when no descriptors are available */
     //eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
-    eth_rxconf.rx_drop_en = 1;
-    eth_rxconf.rx_thresh.pthresh=RX_PTHRESH;
-    eth_rxconf.rx_thresh.hthresh=RX_HTHRESH;
-    eth_rxconf.rx_thresh.wthresh=RX_WTHRESH;
-    eth_rxconf.rx_free_thresh=RX_FREE_THRESH;
+    //eth_rxconf.rx_drop_en = 1;
+    //eth_rxconf.rx_thresh.pthresh=RX_PTHRESH;
+    //eth_rxconf.rx_thresh.hthresh=RX_HTHRESH;
+    //eth_rxconf.rx_thresh.wthresh=RX_WTHRESH;
+    //eth_rxconf.rx_free_thresh=RX_FREE_THRESH;
 
 
     eth_txconf           = dev_info.default_txconf;
@@ -206,6 +237,8 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
 
     rte_eth_dev_info_get(port, &dev_info);
+    // some logging:
+    RTE_LOG(DEBUG, PMD, "rte_eth_dev_info:\n");
     log_eth_dev_info(&dev_info);
     RTE_LOG(DEBUG, PMD, "default eth_rxconf:\n");
     log_eth_rxconf(&dev_info.default_rxconf);
@@ -213,10 +246,9 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     log_eth_rxconf(&eth_rxconf);
 
     if (ret != 0) {
-        printf("Failed to start \n");
+        RTE_LOG(CRIT, PMD, "Failed to configure port \n");
         return ret; /* Don't need to clean up here */
     }
-    //else printf("init_pmd_port %d: rxqs= %d, txqs= %d, nrxd= %d, ntxd= %d\n", port, rxqs, txqs, nrxd, ntxd);
 
     /* Set to promiscuous mode */
     rte_eth_promiscuous_enable(port);
@@ -225,7 +257,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
         int sid = rte_lcore_to_socket_id(rxq_core[i]);
         ret = rte_eth_rx_queue_setup(port, i, nrxd, sid, &eth_rxconf, get_pframe_pool(rxq_core[i], sid));
         if (ret != 0) {
-            printf("Failed to initialize rxq\n");
+            RTE_LOG(CRIT, PMD,"Failed to initialize rxq\n");
             return ret; /* Clean things up? */
         }
     }
@@ -235,16 +267,19 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
 
         ret = rte_eth_tx_queue_setup(port, i, ntxd, sid, &eth_txconf);
         if (ret != 0) {
-            printf("Failed to initialize txq\n");
+            RTE_LOG(CRIT, PMD,"Failed to initialize txq\n");
             return ret; /* Clean things up */
         }
     }
-    // printf("calling rte_eth_dev_start ...\n");
     ret = rte_eth_dev_start(port);
     if (ret != 0) {
-        printf("Failed to start \n");
+        RTE_LOG(CRIT, PMD, "Failed to configure port \n");
         return ret; /* Clean up things */
     }
+
+    assert_link_status(port);
+
+    RTE_LOG(INFO, PMD, "pmd port %d configured successfully\n", port);
 
     return 0;
 }
@@ -275,7 +310,7 @@ int find_port_with_pci_address(const char* pci) {
     struct rte_eth_dev_info info;
     char devargs[1024];
     int ret;
-    uint8_t port_id;
+    uint16_t port_id;
 
     // Cannot parse address
     if (eal_parse_pci_DomBDF(pci, &addr) != 0 && eal_parse_pci_BDF(pci, &addr) != 0) {
@@ -323,7 +358,7 @@ int find_port_with_pci_address(const char* pci) {
    port number of the
    device or an error if not found. */
 int attach_pmd_device(const char* devname) {
-    uint8_t port = 0;
+    uint16_t port = 0;
     int error = rte_eth_dev_attach(devname, &port);
 
     if (error != 0) {

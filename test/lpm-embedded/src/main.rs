@@ -1,9 +1,9 @@
 #![feature(box_syntax)]
 extern crate e2d2;
 extern crate fnv;
-extern crate time;
 extern crate getopts;
 extern crate rand;
+extern crate time;
 use self::nf::*;
 use e2d2::config::*;
 use e2d2::interface::*;
@@ -23,14 +23,8 @@ fn main() {
         Ok(_) => {
             let port = VirtualPort::new().unwrap();
             let mut sched = embedded_scheduler::EmbeddedScheduler::new();
-            let pipeline0 = lpm(
-                ReceiveBatch::new(port.new_virtual_queue().unwrap()),
-                &mut sched,
-            );
-            let pipeline1 = lpm(
-                ReceiveBatch::new(port.new_virtual_queue().unwrap()),
-                &mut sched,
-            );
+            let pipeline0 = lpm(ReceiveBatch::new(port.new_virtual_queue().unwrap()), &mut sched);
+            let pipeline1 = lpm(ReceiveBatch::new(port.new_virtual_queue().unwrap()), &mut sched);
             let task = sched.add_task(merge(vec![pipeline0, pipeline1])).unwrap();
             println!("Dependencies for task {}", task);
             sched.display_dependencies(task);

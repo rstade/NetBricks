@@ -2,7 +2,7 @@ use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::state::*;
-use e2d2::utils::Flow;
+use e2d2::utils::FiveTupleV4;
 use fnv::FnvHasher;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -16,7 +16,7 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
     parent: T,
     sched: &mut S,
 ) -> CompositionBatch {
-    let mut cache = HashMap::<Flow, ReorderedBuffer, FnvHash>::with_hasher(Default::default());
+    let mut cache = HashMap::<FiveTupleV4, ReorderedBuffer, FnvHash>::with_hasher(Default::default());
     let mut read_buf: Vec<u8> = (0..PRINT_SIZE).map(|_| 0).collect();
     let mut groups = parent
         .parse::<MacHeader>()

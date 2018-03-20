@@ -16,7 +16,6 @@ pub const NUM_TXD: i32 = 128;
 /// Read a TOML stub and figure out the port.
 fn read_port(value: &Value) -> Result<PortConfiguration> {
     if let Value::Table(ref port_def) = *value {
-        debug!("in read port");
         let name = match port_def.get("name") {
             Some(&Value::String(ref name)) => name.clone(),
             _ => {

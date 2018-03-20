@@ -5,18 +5,35 @@ use std::hash::Hasher;
 use std::mem;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::slice;
+use std::fmt;
 
 // FIXME: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(C, packed)]
-pub struct Flow {
+pub struct FiveTupleV4 {
     pub src_ip: u32,
     pub dst_ip: u32,
     pub src_port: u16,
     pub dst_port: u16,
     pub proto: u8,
 }
+
+impl fmt::Display for FiveTupleV4 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        unsafe {write!(
+            f,
+            "src_ip={:#08x}, dst_ip= {:#08x}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",
+            self.src_ip,
+            self.dst_ip,
+            self.src_port,
+            self.dst_port,
+            self.proto,
+        )}
+    }
+}
+
+
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Ipv4Prefix {
@@ -51,9 +68,9 @@ const IHL_TO_BYTE_FACTOR: usize = 4; // IHL is in terms of number of 32-bit word
 
 /// This assumes the function is given the Mac Payload
 #[inline]
-pub fn ipv4_extract_flow(bytes: &[u8]) -> Option<Flow> {
+pub fn ipv4_extract_flow(bytes: &[u8]) -> Option<FiveTupleV4> {
     let port_start = (bytes[0] & 0xf) as usize * IHL_TO_BYTE_FACTOR;
-    Some(Flow {
+    Some(FiveTupleV4 {
         proto: bytes[9],
         src_ip: BigEndian::read_u32(&bytes[12..16]),
         dst_ip: BigEndian::read_u32(&bytes[16..20]),
@@ -62,10 +79,10 @@ pub fn ipv4_extract_flow(bytes: &[u8]) -> Option<Flow> {
     })
 }
 
-impl Flow {
+impl FiveTupleV4 {
     #[inline]
-    pub fn reverse_flow(&self) -> Flow {
-        Flow {
+    pub fn reverse_flow(&self) -> FiveTupleV4 {
+        FiveTupleV4 {
             src_ip: self.dst_ip,
             dst_ip: self.src_ip,
             src_port: self.dst_port,
@@ -112,7 +129,7 @@ pub fn ipv4_flow_hash(bytes: &[u8], _iv: u32) -> usize {
 }
 
 #[inline]
-pub fn flow_hash(flow: &Flow) -> usize {
+pub fn flow_hash(flow: &FiveTupleV4) -> usize {
     let mut hasher = FnvHasher::default();
     hasher.write(flow_as_u8(flow));
     hasher.finish() as usize
@@ -133,9 +150,9 @@ pub fn crc_hash<T: Sized>(to_hash: &T, iv: u32) -> u32 {
     }
 }
 
-fn flow_as_u8(flow: &Flow) -> &[u8] {
-    let size = mem::size_of::<Flow>();
-    unsafe { slice::from_raw_parts(flow as *const Flow as *const u8, size) }
+fn flow_as_u8(flow: &FiveTupleV4) -> &[u8] {
+    let size = mem::size_of::<FiveTupleV4>();
+    unsafe { slice::from_raw_parts(flow as *const FiveTupleV4 as *const u8, size) }
 }
 
 #[inline]

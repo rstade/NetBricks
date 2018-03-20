@@ -6,13 +6,15 @@ use config::{NUM_RXD, NUM_TXD, PortConfiguration};
 use headers::MacAddress;
 use native::zcsi::*;
 use regex::Regex;
+use utils::FiveTupleV4;
 use std::cmp::min;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ptr::Unique;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::ptr;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -266,6 +268,42 @@ impl PmdPort {
         )
     }
 
+    pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4 ) -> Option<&RteFlow> {
+
+        unsafe {
+            let mut error = RteFlowError { err_type: 0, cause: ptr::null_mut(), message: ptr::null_mut(), };
+
+            let rte_flow = generate_tcp_flow(
+                self.port_id() as u16,
+                rxq,
+                flow.src_ip,
+                flow_mask.src_ip,
+                flow.dst_ip,
+                flow_mask.dst_ip,
+                flow.src_port,
+                flow_mask.src_port,
+                flow.dst_port,
+                flow_mask.dst_port,
+                &mut error
+            ).as_ref();
+
+            if rte_flow.is_none() {
+                error!(
+                    "Flow can't be created, error type {}, message: {}\n",
+                    error.err_type,
+                    match error.message.as_ref() {
+                        None => "(no stated reason)",
+                        Some(char_ptr) => CStr::from_ptr(char_ptr).to_str().unwrap(),
+                    }
+                );
+            }
+            else {
+                debug!("Flow created for queue {}.", rxq);
+            };
+            rte_flow
+        }
+    }
+
     /// Create a PMD port with a given number of RX and TXQs.
     fn init_dpdk_port(
         port: i32,
@@ -378,7 +416,7 @@ impl PmdPort {
     fn new_kni_port(kni_port_params: Box<KniPortParams>) -> Result<Arc<PmdPort>> {
 
         // This call returns a pointer to an opaque C struct
-        let port_id = kni_port_params.port_id as u8;
+        let port_id = kni_port_params.port_id;
         let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
         let p_kni = unsafe { kni_alloc(port_id, p_kni_port_params) };
         if !p_kni.is_null() {
@@ -413,7 +451,7 @@ impl PmdPort {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
         if port >= 0 {
-            debug!("Going to try and use port {} ({})", port, spec);
+            //debug!("Going to initialize dpdk port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
                 port,
                 rxqs,
