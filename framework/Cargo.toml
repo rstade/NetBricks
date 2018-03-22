@@ -25,13 +25,14 @@ net2 = "*"
 nix = "*"
 # Figure out if we want this permanently or just for now.
 rust-sctp = { git="https://github.com/netsys/rust-sctp", optional = true}
-toml = "*"
+toml = "0.4"
 # Hack for SHM
 uuid= { version = "*", features=["v4"] }
 error-chain = "*"
 #etcdv3-rs={ git="https://github.com/apanda/etcdv3-rs" }
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
+eui48 = "0.3"
 
 [features]
 default = []

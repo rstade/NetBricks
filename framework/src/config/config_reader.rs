@@ -151,6 +151,18 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
     }
 }
 
+pub fn read_toml_table(toml_value: &Value, table_name: &str) -> Result<Value> {
+    match toml_value.get(table_name) {
+        Some(value) => Ok(value.clone()),
+        _ => {
+            error!("[{}] table missing", table_name);
+            return Err(
+                ErrorKind::ConfigurationError(format!("[{}] table missing", table_name)).into()
+            );
+        }
+    }
+}
+
 /// Read a TOML string and create a `NetbricksConfiguration` structure.
 /// `configuration` is a TOML formatted string.
 /// `filename` is used for error reporting purposes, and is otherwise meaningless.
@@ -164,6 +176,11 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
                 ErrorKind::ConfigurationError(format!("Experienced {} parse errors in spec.", error)).into(),
             );
         }
+    };
+
+    let toml=match read_toml_table(&toml,"netbricks") {
+        Ok(value) => value,
+        Err(err) => { return Err(err) },
     };
 
     // Get name from configuration
@@ -328,8 +345,8 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
 pub fn read_configuration(filename: &str) -> Result<NetbricksConfiguration> {
     let mut toml_str = String::new();
     let _ =
-        try!{File::open(filename).and_then(|mut f| f.read_to_string(&mut toml_str))
-        .chain_err(|| ErrorKind::ConfigurationError(String::from("Could not read file")))};
+        File::open(filename).and_then(|mut f| f.read_to_string(&mut toml_str))
+        .chain_err(|| ErrorKind::ConfigurationError(String::from("Could not read file")))?;
     debug!("toml string is: {}", toml_str);
     read_configuration_from_str(&toml_str[..], filename)
 }

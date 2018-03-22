@@ -74,6 +74,16 @@ error_chain! {
             description("No scheduler running on core")
             display("No scheduler running on core {}", core)
         }
+
+        BadSize(sz: usize, description: String) {
+            description("Bad size")
+            display("Bad size {}, {}", sz, description)
+        }
+
+        BadCharAtIndex(c: char, index: usize) {
+            description("Bad char")
+            display("Bad char {} at index {}", c, index)
+        }
     }
 
     foreign_links {

@@ -53,6 +53,8 @@ extern crate log;
 extern crate nix;
 #[allow(dead_code)]
 
+extern crate eui48;
+
 pub mod allocators;
 pub mod headers;
 pub mod scheduler;

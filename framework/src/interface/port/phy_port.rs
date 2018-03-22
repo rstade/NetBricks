@@ -3,7 +3,7 @@ use super::super::{PacketTx, PacketRx};
 use allocators::*;
 use common::*;
 use config::{NUM_RXD, NUM_TXD, PortConfiguration};
-use headers::MacAddress;
+use eui48::MacAddress;
 use native::zcsi::*;
 use regex::Regex;
 use utils::FiveTupleV4;
@@ -47,6 +47,7 @@ pub struct PmdPort {
     should_close: bool,
     port: i32,
     kni: Option<Unique<RteKni>>, //must use Unique because raw ptr does not implement Send
+    linux_if: Option<String>,   // used for kni interfaces
     rxqs: i32,
     txqs: i32,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
@@ -215,6 +216,8 @@ impl PmdPort {
         self.port
     }
 
+    pub fn linux_if(&self) -> Option<&String> { self.linux_if.as_ref() }
+
     pub fn port_type(&self) -> &PortType {
         &self.port_type
     }
@@ -348,6 +351,7 @@ impl PmdPort {
                     connected: true,
                     port: port,
                     kni: None,
+                    linux_if: None,
                     rxqs: actual_rxqs,
                     txqs: actual_txqs,
                     should_close: true,
@@ -377,6 +381,7 @@ impl PmdPort {
                 connected: true,
                 port: port,
                 kni: None,
+                linux_if: None,
                 rxqs: 1,
                 txqs: 1,
                 should_close: false,
@@ -399,6 +404,7 @@ impl PmdPort {
                         connected: true,
                         port: port,
                         kni: None,
+                        linux_if: None,
                         rxqs: 1,
                         txqs: 1,
                         should_close: false,
@@ -418,21 +424,24 @@ impl PmdPort {
         // This call returns a pointer to an opaque C struct
         let port_id = kni_port_params.port_id;
         let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
-        let p_kni = unsafe { kni_alloc(port_id, p_kni_port_params) };
-        if !p_kni.is_null() {
-            Ok(Arc::new(PmdPort {
-                port_type: PortType::Kni,
-                connected: true,
-                port: port_id as i32,
-                kni: Some(Unique::new(p_kni).unwrap()),
-                rxqs: 1,
-                txqs: 1,
-                should_close: true, // sta, not clear what this is used for, and if to set true or false
-                stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
-                stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
-            }))
-        } else {
-            Err(ErrorKind::FailedToInitializeKni(port_id).into())
+        unsafe {
+            let p_kni = kni_alloc(port_id, p_kni_port_params);
+            if !p_kni.is_null() {
+                Ok(Arc::new(PmdPort {
+                    port_type: PortType::Kni,
+                    connected: true,
+                    port: port_id as i32,
+                    kni: Some(Unique::new(p_kni).unwrap()),
+                    linux_if: kni_get_name(p_kni),
+                    rxqs: 1,
+                    txqs: 1,
+                    should_close: true, // sta, not clear what this is used for, and if to set true or false
+                    stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
+                    stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
+                }))
+            } else {
+                Err(ErrorKind::FailedToInitializeKni(port_id).into())
+            }
         }
     }
 
@@ -475,6 +484,7 @@ impl PmdPort {
             connected: false,
             port: 0,
             kni: None,
+            linux_if: None,
             rxqs: 0,
             txqs: 0,
             should_close: false,

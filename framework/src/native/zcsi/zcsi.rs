@@ -1,7 +1,8 @@
 use super::MBuf;
-use headers::MacAddress;
+use eui48::MacAddress;
 use std::os::raw::{ c_char, c_void };
 use std::ptr;
+use std::ffi::CStr;
 
 pub enum RteKni {}
 
@@ -101,6 +102,15 @@ pub struct RteFlowError {
     pub message: *mut c_char,
 }
 
+pub unsafe fn kni_get_name(p_kni : *const RteKni) -> Option<String> {
+    let kni_if_raw: *const c_char = rte_kni_get_name(p_kni);
+    let slice=CStr::from_ptr(kni_if_raw).to_str();
+    match slice {
+        Ok(slice) => Some(String::from(slice)),
+        Err(_) => None,
+    }
+}
+
 #[link(name = "zcsi")]
 extern "C" {
     pub fn init_system_whitelisted(
@@ -164,6 +174,7 @@ extern "C" {
     pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32; //sta
     pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
     pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
+    pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
 
     pub fn rte_log_set_global_level(level: RteLogLevel);
     pub fn rte_log_get_global_level() -> u32;
