@@ -49,11 +49,10 @@ extern crate error_chain;
 #[macro_use]
 extern crate log;
 
+#[allow(dead_code)]
+extern crate eui48;
 #[cfg(unix)]
 extern crate nix;
-#[allow(dead_code)]
-
-extern crate eui48;
 
 pub mod allocators;
 pub mod headers;

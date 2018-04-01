@@ -68,6 +68,23 @@ static const struct rte_eth_conf default_eth_conf = {
             .pballoc = RTE_FDIR_PBALLOC_256K,
             .status = RTE_FDIR_NO_REPORT_STATUS,
             .drop_queue = 0,
+            .mask = { // every mask in big endian
+                .vlan_tci_mask=0,
+                .ipv4_mask= {
+                    .src_ip =0,
+                    .dst_ip =0xFFFFFFFF,
+                    .tos    =0,
+                    .ttl    =0,
+                    .proto  =0,
+                },
+                .ipv6_mask= {
+                },
+                .src_port_mask=0x0000,
+                .dst_port_mask=0x00FC,
+                .mac_addr_byte_mask=0,
+                .tunnel_id_mask=0,
+                .tunnel_type_mask=0,
+            },
             .flex_conf =  {
                     .nb_payloads = 0,
                     .nb_flexmasks = 0,
@@ -193,7 +210,7 @@ assert_link_status(int port_id)
 
 
 int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], int nrxd, int ntxd,
-                  int loopback, int tso, int csumoffload) {
+                  int loopback, int tso, int csumoffload, struct rte_fdir_conf const* p_fdir_conf) {
     struct rte_eth_dev_info dev_info = {};
     struct rte_eth_conf eth_conf;
     struct rte_eth_rxconf eth_rxconf;
@@ -210,6 +227,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
 
     eth_conf           = default_eth_conf;
     eth_conf.lpbk_mode = !(!loopback);
+    if (p_fdir_conf) eth_conf.fdir_conf = *p_fdir_conf;
 
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
@@ -290,7 +308,7 @@ void free_pmd_port(int port) {
 }
 
 uint32_t eth_rx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
-	uint32_t ret = rte_eth_rx_burst((uint8_t) port, (uint16_t) qid, (struct rte_mbuf**)pkts, len);
+	uint32_t ret = rte_eth_rx_burst((uint16_t) port, (uint16_t) qid, (struct rte_mbuf**)pkts, len);
 /* Removed prefetching since the benefit in performance for single core was
  * outweighed by the loss in performance with several cores. */
 #if 0
@@ -302,7 +320,7 @@ uint32_t eth_rx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
 }
 
 uint32_t eth_tx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
-	return rte_eth_tx_burst((uint8_t) port, (uint16_t)qid, (struct rte_mbuf**)pkts, len);
+	return rte_eth_tx_burst((uint16_t) port, (uint16_t)qid, (struct rte_mbuf**)pkts, len);
 }
 
 int find_port_with_pci_address(const char* pci) {
@@ -368,5 +386,5 @@ int attach_pmd_device(const char* devname) {
     return (int)port;
 }
 
-/* FIXME: Add function to modify RSS hash function using
+/* Add function to modify RSS hash function using
  * rte_eth_dev_rss_hash_update */

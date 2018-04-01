@@ -1,24 +1,26 @@
 use super::PortStats;
-use super::super::{PacketTx, PacketRx};
+use super::super::{PacketRx, PacketTx};
 use allocators::*;
 use common::*;
-use config::{NUM_RXD, NUM_TXD, PortConfiguration};
+use config::{PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
 use native::zcsi::*;
 use regex::Regex;
-use utils::FiveTupleV4;
 use std::cmp::min;
-use std::ffi::{CString, CStr};
+use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::ptr;
 use std::ptr::Unique;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::ptr;
+use std::os::raw::c_void;
+use utils::FiveTupleV4;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum PortType {
     Dpdk,
     Kni,
@@ -47,7 +49,7 @@ pub struct PmdPort {
     should_close: bool,
     port: i32,
     kni: Option<Unique<RteKni>>, //must use Unique because raw ptr does not implement Send
-    linux_if: Option<String>,   // used for kni interfaces
+    linux_if: Option<String>,    // used for kni interfaces
     rxqs: i32,
     txqs: i32,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
@@ -75,8 +77,8 @@ pub struct PortQueue {
 
 impl PartialEq for CacheAligned<PortQueue> {
     fn eq(&self, other: &CacheAligned<PortQueue>) -> bool {
-        self.port_id == other.port_id && self.txq == other.txq && self.rxq == other.rxq &&
-            self.port.is_kni() == other.port.is_kni()
+        self.port_id == other.port_id && self.txq == other.txq && self.rxq == other.rxq
+            && self.port.is_kni() == other.port.is_kni()
     }
 }
 
@@ -136,11 +138,7 @@ impl PortQueue {
         unsafe {
             let recv = if self.port.is_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
-                rte_kni_rx_burst(
-                    self.port.kni.unwrap().as_ptr(),
-                    pkts.as_mut_ptr(),
-                    to_recv as u32,
-                )
+                rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32)
             } else {
                 //debug!("calling eth_rx_burst for {}.{}", self.port, self.rxq);
                 eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
@@ -216,7 +214,9 @@ impl PmdPort {
         self.port
     }
 
-    pub fn linux_if(&self) -> Option<&String> { self.linux_if.as_ref() }
+    pub fn linux_if(&self) -> Option<&String> {
+        self.linux_if.as_ref()
+    }
 
     pub fn port_type(&self) -> &PortType {
         &self.port_type
@@ -271,12 +271,15 @@ impl PmdPort {
         )
     }
 
-    pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4 ) -> Option<&RteFlow> {
-
+    pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4) -> Option<&RteFlow> {
         unsafe {
-            let mut error = RteFlowError { err_type: 0, cause: ptr::null_mut(), message: ptr::null_mut(), };
+            let mut error = RteFlowError {
+                err_type: 0,
+                cause: ptr::null_mut(),
+                message: ptr::null_mut(),
+            };
 
-            let rte_flow = generate_tcp_flow(
+            let rte_flow = add_tcp_flow(
                 self.port_id() as u16,
                 rxq,
                 flow.src_ip,
@@ -287,7 +290,7 @@ impl PmdPort {
                 flow_mask.src_port,
                 flow.dst_port,
                 flow_mask.dst_port,
-                &mut error
+                &mut error,
             ).as_ref();
 
             if rte_flow.is_none() {
@@ -299,12 +302,88 @@ impl PmdPort {
                         Some(char_ptr) => CStr::from_ptr(char_ptr).to_str().unwrap(),
                     }
                 );
-            }
-            else {
+            } else {
                 debug!("Flow created for queue {}.", rxq);
             };
             rte_flow
         }
+    }
+
+    pub fn add_fdir_filter(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> Result<i32> {
+        // assumes that flows in Fdir are fully masked, except for the destination ip and port
+
+        let action = RteEthFdirAction {
+            rx_queue: rxq,
+            behavior: RteEthFdirBehavior::RteEthFdirAccept,
+            report_status: RteEthFdirStatus::RteEthFdirNoReportStatus,
+            flex_off: 0,
+        };
+
+        let ip = RteEthIpv4Flow {
+            src_ip: 0,
+            dst_ip: u32::to_be(dst_ip),
+            tos: 0,
+            ttl: 0,
+            proto: 6,
+        };
+
+        let flow_ext = RteEthFdirFlowExt {
+            vlan_tci: 0u16,
+            flexbytes: [0u8; 16],
+            is_vf: 0u8,   // 1 for VF, 0 for port dev
+            dst_id: 0u16, // VF ID, available when is_vf is 1
+        };
+
+        let flow = RteEthTcpv4Flow {
+            ip,                             // < IPv4 fields to match.
+            src_port: 0u16,                 // < TCP source port in big endian.
+            dst_port: u16::to_be(dst_port), // < TCP destination port in big endian.
+            _padding: [0u8; 28],
+        };
+
+        let input = RteEthFdirInputTcpv4 {
+            flow_type: 4, // i.e. RTE_ETH_FLOW_NONFRAG_IPV4_TCP
+            flow,
+            flow_ext,
+        };
+
+        let mut fdir_filter = RteEthFdirFilter {
+            soft_id: 0,
+            input,
+            action,
+        };
+
+        let fdir_filter_ptr: * mut RteEthFdirFilter= &mut fdir_filter;
+
+        unsafe {
+            check_os_error (rte_eth_dev_filter_ctrl(
+                self.port_id() as u16,
+                RteFilterType::RteEthFilterFdir,
+                RteFilterOp::RteEthFilterAdd,
+                fdir_filter_ptr as *mut c_void,
+            )).map_err(|e| e.into())
+        }
+    }
+
+    pub fn print_soft_statistics(&self) {
+        println!(
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}",
+            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors"
+        );
+        let (mut sin_p, mut sout_p) = (0usize, 0usize);
+        for q in 0..self.rxqs() {
+            let (in_p, out_p) = self.stats(q);
+            sin_p += in_p;
+            sout_p += out_p;
+            println!(
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
+                q, in_p, out_p, 0, 0, 0,
+            );
+        }
+        println!(
+            "{0: >3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
+            "sum", sin_p, sout_p, 0, 0, 0, 0,
+        );
     }
 
     /// Create a PMD port with a given number of RX and TXQs.
@@ -319,8 +398,8 @@ impl PmdPort {
         loopback: bool,
         tso: bool,
         csumoffload: bool,
+        fdir_conf: Option<&RteFdirConf>,
     ) -> Result<Arc<PmdPort>> {
-
         let loopbackv = i32_from_bool(loopback);
         let tsov = i32_from_bool(tso);
         let csumoffloadv = i32_from_bool(csumoffload);
@@ -343,6 +422,7 @@ impl PmdPort {
                     loopbackv,
                     tsov,
                     csumoffloadv,
+                    if fdir_conf.is_some() { fdir_conf.unwrap() as *const RteFdirConf } else { ptr::null() },
                 )
             };
             if ret == 0 {
@@ -379,7 +459,7 @@ impl PmdPort {
             Ok(Arc::new(PmdPort {
                 port_type: PortType::Bess,
                 connected: true,
-                port: port,
+                port,
                 kni: None,
                 linux_if: None,
                 rxqs: 1,
@@ -420,7 +500,6 @@ impl PmdPort {
     }
 
     fn new_kni_port(kni_port_params: Box<KniPortParams>) -> Result<Arc<PmdPort>> {
-
         // This call returns a pointer to an opaque C struct
         let port_id = kni_port_params.port_id;
         let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
@@ -456,6 +535,7 @@ impl PmdPort {
         loopback: bool,
         tso: bool,
         csumoffload: bool,
+        fdir_conf: Option<&RteFdirConf>,
     ) -> Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
@@ -472,6 +552,7 @@ impl PmdPort {
                 loopback,
                 tso,
                 csumoffload,
+                fdir_conf,
             ).chain_err(|| ErrorKind::BadDev(String::from(spec)))
         } else {
             Err(ErrorKind::BadDev(String::from(spec)).into())
@@ -495,7 +576,6 @@ impl PmdPort {
 
     /// Create a new port from a `PortConfiguration`.
     pub fn new_port_from_configuration(port_config: &PortConfiguration) -> Result<Arc<PmdPort>> {
-
         /// Create a new port.
         ///
         /// Description
@@ -504,7 +584,6 @@ impl PmdPort {
         /// -   `rxqs`, `txqs`: Number of RX and TX queues.
         /// -   `tx_cores`, `rx_cores`: Core affinity of where the queues will be used.
         /// -   `nrxd`, `ntxd`: RX and TX descriptors.
-
         let name = &port_config.name[..];
         let rxqs = port_config.rx_queues.len() as i32;
         let txqs = port_config.tx_queues.len() as i32;
@@ -515,30 +594,29 @@ impl PmdPort {
         let loopback = port_config.loopback;
         let tso = port_config.tso;
         let csumoffload = port_config.csum;
+        let fdir_conf = port_config.fdir_conf.as_ref();
 
         let parts: Vec<_> = name.splitn(2, ':').collect();
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
             "ovs" => PmdPort::new_ovs_port(parts[1], rx_cores[0]),
-            "dpdk" => {
-                PmdPort::new_dpdk_port(
-                    parts[1],
-                    rxqs,
-                    txqs,
-                    rx_cores,
-                    tx_cores,
-                    nrxd,
-                    ntxd,
-                    loopback,
-                    tso,
-                    csumoffload,
-                )
-            }
+            "dpdk" => PmdPort::new_dpdk_port(
+                parts[1],
+                rxqs,
+                txqs,
+                rx_cores,
+                tx_cores,
+                nrxd,
+                ntxd,
+                loopback,
+                tso,
+                csumoffload,
+                fdir_conf,
+            ),
             "kni" => {
-                let port_id: u16 = parts[1].parse::<u16>().expect(&format!(
-                    "cannot parse port_id from {} as an u16",
-                    name
-                ));
+                let port_id: u16 = parts[1]
+                    .parse::<u16>()
+                    .expect(&format!("cannot parse port_id from {} as an u16", name));
 
                 PmdPort::new_kni_port(Box::new(KniPortParams::new(
                     port_id,
@@ -548,20 +626,19 @@ impl PmdPort {
                 )))
             }
             "null" => PmdPort::null_port(),
-            _ => {
-                PmdPort::new_dpdk_port(
-                    name,
-                    rxqs,
-                    txqs,
-                    rx_cores,
-                    tx_cores,
-                    nrxd,
-                    ntxd,
-                    loopback,
-                    tso,
-                    csumoffload,
-                )
-            }
+            _ => PmdPort::new_dpdk_port(
+                name,
+                rxqs,
+                txqs,
+                rx_cores,
+                tx_cores,
+                nrxd,
+                ntxd,
+                loopback,
+                tso,
+                csumoffload,
+                fdir_conf,
+            ),
         }
     }
 
@@ -582,6 +659,7 @@ impl PmdPort {
             tso: false,
             csum: false,
             k_cores: vec![],
+            fdir_conf: None,
         };
         PmdPort::new_port_from_configuration(&config)
     }
@@ -590,7 +668,6 @@ impl PmdPort {
         let rx_vec = vec![rx_core];
         let tx_vec = vec![tx_core];
         PmdPort::new_with_queues(name, 1, 1, &rx_vec[..], &tx_vec[..])
-
     }
 
     pub fn new(name: &str, core: i32) -> Result<Arc<PmdPort>> {

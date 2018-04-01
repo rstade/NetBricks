@@ -1,8 +1,10 @@
 pub use self::config_reader::*;
 pub use self::flag_reader::*;
 use std::fmt;
+use native::zcsi::RteFdirConf;
 mod config_reader;
 mod flag_reader;
+
 
 /// `NetBricks` control configuration. In theory all applications create one of these, either through the use of
 /// `read_configuration` or manually using args.
@@ -67,25 +69,25 @@ impl NetbricksConfiguration {
 
 impl fmt::Display for NetbricksConfiguration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(
+        write!(
             f,
             "name: {}\nmempool size: {}\ncore cache: {}\nprimary core: {}\n",
             self.name,
             self.pool_size,
             self.cache_size,
             self.primary_core
-        ));
-        try!(write!(f, "Virtual Devices:\n"));
+        )?;
+        write!(f, "Virtual Devices:\n")?;
         for dev in &self.vdevs {
-            try!(write!(f, "\t{}\n", dev))
+            write!(f, "\t{}\n", dev)?
         }
-        try!(write!(f, "Ports:\n"));
+        write!(f, "Ports:\n")?;
         for port in &self.ports {
-            try!(write!(f, "\t{}\n", port))
+            write!(f, "\t{}\n", port)?
         }
-        try!(write!(f, "Cores:\n"));
+        write!(f, "Cores:\n")?;
         for core in &self.cores {
-            try!(write!(f, "\t{}\n", core))
+            write!(f, "\t{}\n", core)?
         }
         write!(f, "")
     }
@@ -113,6 +115,7 @@ pub struct PortConfiguration {
     pub csum: bool,
     /// cores on which kni kernel threads should run (in case of multi-threading kni kernel module)
     pub k_cores: Vec<i32>,
+    pub fdir_conf: Option<RteFdirConf>,
 }
 
 impl Default for PortConfiguration {
@@ -127,6 +130,7 @@ impl Default for PortConfiguration {
             tso: false,
             csum: false,
             k_cores: vec![],
+            fdir_conf: None,
         }
     }
 }

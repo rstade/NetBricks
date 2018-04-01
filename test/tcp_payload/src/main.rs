@@ -42,7 +42,7 @@ fn main() {
     let mut config = initialize_system(&mut configuration).unwrap();
     config.start_schedulers();
 
-    config.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));
+    config.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
     println!("BEGIN TEST OUTPUT");
     config.execute();
 

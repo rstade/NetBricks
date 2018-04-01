@@ -77,7 +77,7 @@ fn main() {
             context.start_schedulers();
 
             if phy_ports {
-                context.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));
+                context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
             } else {
                 context.add_test_pipeline(Arc::new(move |p, s: &mut StandaloneScheduler| testv(p, s)));
             }

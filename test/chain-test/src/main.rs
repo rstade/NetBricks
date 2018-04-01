@@ -4,6 +4,8 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+extern crate eui48;
+
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
@@ -66,7 +68,7 @@ fn main() {
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
-            context.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| {
+            context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| {
                 test(p, s, chain_len, chain_pos)
             }));
             context.execute();

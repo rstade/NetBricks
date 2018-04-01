@@ -71,12 +71,12 @@ generate_tcp_flow       (uint16_t port_id, uint16_t rx_q,
  *   A flow if the rule could be created else return NULL.
  */
 struct rte_flow *
-generate_tcp_flow (uint16_t port_id, uint16_t rx_q,
-                   uint32_t src_ip, uint32_t src_mask,
-                   uint32_t dst_ip, uint32_t dst_mask,
-                   uint16_t src_port, uint16_t src_port_mask,
-                   uint16_t dst_port, uint16_t dst_port_mask,
-                   struct rte_flow_error *error)
+add_tcp_flow ( uint16_t port_id, uint16_t rx_q,
+               uint32_t src_ip, uint32_t src_mask,
+               uint32_t dst_ip, uint32_t dst_mask,
+               uint16_t src_port, uint16_t src_port_mask,
+               uint16_t dst_port, uint16_t dst_port_mask,
+               struct rte_flow_error *error)
 {
     struct rte_flow_attr attr;
     struct rte_flow_item pattern[MAX_PATTERN_NUM];

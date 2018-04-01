@@ -66,7 +66,7 @@ fn main() {
         Ok(mut context) => {
             context.start_schedulers();
 
-            context.add_pipeline_to_run(Arc::new(move |p, s: &mut StandaloneScheduler| test(p, s)));
+            context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
             context.execute();
 
             if test_duration != 0 {

@@ -5,6 +5,7 @@ use e2d2::queues::*;
 use e2d2::scheduler::*;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
+use eui48::{MacAddress};
 
 pub struct PacketCreator {
     mac: MacHeader,
@@ -15,8 +16,8 @@ pub struct PacketCreator {
 impl PacketCreator {
     pub fn new(producer: MpscProducer) -> PacketCreator {
         let mut mac = MacHeader::new();
-        mac.dst = MacAddress { addr: [0x68, 0x05, 0xca, 0x00, 0x00, 0xac] };
-        mac.src = MacAddress { addr: [0x68, 0x05, 0xca, 0x00, 0x00, 0x01] };
+        mac.dst = MacAddress::new ([0x68, 0x05, 0xca, 0x00, 0x00, 0xac]);
+        mac.src = MacAddress::new ([0x68, 0x05, 0xca, 0x00, 0x00, 0x01]);
         mac.set_etype(0x0800);
         let mut ip = IpHeader::new();
         ip.set_src(u32::from(Ipv4Addr::from_str("10.0.0.1").unwrap()));
