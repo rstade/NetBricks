@@ -299,6 +299,7 @@ impl RteEthXstatName {
 /**
  * A structure used to define the input for IPV4 flow
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv4Flow {
     pub src_ip : u32,      // < IPv4 source address in big endian.
@@ -311,6 +312,7 @@ pub struct RteEthIpv4Flow {
 /**
 * A structure used to define the input for IPV6 flow
 */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv6Flow {
     pub src_ip: [u32; 4],       // IPv6 source address in big endian.
@@ -324,6 +326,7 @@ pub struct RteEthIpv6Flow {
 /**
  * A structure used to define the input for IPV4 UDP flow
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthUdpv4Flow {
     pub ip: RteEthIpv4Flow,      // < IPv4 fields to match.
@@ -334,6 +337,7 @@ pub struct RteEthUdpv4Flow {
 /**
  * A structure used to define the input for IPV4 TCP flow
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthTcpv4Flow {
     pub ip: RteEthIpv4Flow,     // < IPv4 fields to match.
@@ -346,6 +350,7 @@ pub struct RteEthTcpv4Flow {
 /**
  * A structure used to contain extend input of flow
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFlowExt {
     pub vlan_tci: u16,
@@ -378,6 +383,7 @@ union rte_eth_fdir_flow {
 /**
  * A structure used to define the input for a flow director filter entry
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirInputTcpv4 {
     pub flow_type: u16, // e.g. RTE_ETH_FLOW_NONFRAG_IPV4_TCP
@@ -390,6 +396,7 @@ pub struct RteEthFdirInputTcpv4 {
 /**
  * Behavior will be taken if FDIR match
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteEthFdirBehavior {
     RteEthFdirAccept = 0,
@@ -402,6 +409,7 @@ pub enum RteEthFdirBehavior {
  * Flow director report status
  * It defines what will be reported if FDIR entry is matched.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteEthFdirStatus {
     RteEthFdirNoReportStatus = 0,     // < Report nothing.
@@ -413,6 +421,7 @@ pub enum RteEthFdirStatus {
 /**
  * A structure used to define an action when match FDIR packet filter.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirAction {
     pub rx_queue: u16,                    // < Queue assigned to if FDIR match.
@@ -430,6 +439,7 @@ pub struct RteEthFdirAction {
  * It supports RTE_ETH_FILTER_FDIR with RTE_ETH_FILTER_ADD and
  * RTE_ETH_FILTER_DELETE operations.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFilter {
     pub soft_id: u32,
@@ -442,6 +452,7 @@ pub struct RteEthFdirFilter {
  *  A structure used to configure FDIR masks that are used by the device
  *  to match the various fields of RX packet headers.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirMasks {
     pub vlan_tci_mask: u16,        // < Bit mask for vlan_tci in big endian
@@ -464,6 +475,7 @@ pub struct RteEthFdirMasks {
 /**
  *  Flow Director setting modes: none, signature or perfect.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirMode {
     RteFdirModeNone = 0,            // Disable FDIR support.
@@ -487,6 +499,7 @@ impl convert::From<i32> for RteFdirMode {
     }
 }
 
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirPballocType {
     RteFdirPballoc64k = 0,  // 64k.
@@ -523,6 +536,7 @@ pub enum RteEthPayloadType {
 /**
  *  Select report mode of FDIR hash information in RX descriptors.
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirStatusMode {
     RteFdirNoReportStatus = 0,          // Never report FDIR hash.
@@ -578,6 +592,7 @@ pub struct RteEthFdirFlexMask {
  * A structure used to define all flexible payload related setting
  * include flex payload and flex mask
  */
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFlexConf {
     nb_payloads: u16,                 // The number of following payload cfg
@@ -588,6 +603,7 @@ pub struct RteEthFdirFlexConf {
     // Flex mask configuration for each flow type
 }
 
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteFdirConf {
     pub mode: RteFdirMode,                  // Flow Director mode.

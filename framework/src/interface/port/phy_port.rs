@@ -54,6 +54,7 @@ pub struct PmdPort {
     txqs: i32,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
+    fdir_conf: Option<RteFdirConf>,
 }
 
 impl fmt::Display for PmdPort {
@@ -230,6 +231,10 @@ impl PmdPort {
     /// Number of configured TXQs.
     pub fn txqs(&self) -> i32 {
         self.txqs
+    }
+
+    pub fn get_tcp_dst_port_mask(&self) -> u16 {
+        if self.fdir_conf.is_some() { u16::from_be(self.fdir_conf.unwrap().mask.dst_port_mask) } else { 0x0000 }
     }
 
     pub fn is_kni(&self) -> bool {
@@ -437,6 +442,7 @@ impl PmdPort {
                     should_close: true,
                     stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
+                    fdir_conf: if fdir_conf.is_some() {Some(fdir_conf.unwrap().clone())} else { None },
                 }))
             } else {
                 Err(ErrorKind::FailedToInitializePort(port).into())
@@ -467,6 +473,7 @@ impl PmdPort {
                 should_close: false,
                 stats_rx: vec![Arc::new(PortStats::new())],
                 stats_tx: vec![Arc::new(PortStats::new())],
+                fdir_conf: None,
             }))
         } else {
             Err(ErrorKind::FailedToInitializePort(port).into())
@@ -490,6 +497,7 @@ impl PmdPort {
                         should_close: false,
                         stats_rx: vec![Arc::new(PortStats::new())],
                         stats_tx: vec![Arc::new(PortStats::new())],
+                        fdir_conf: None,
                     }))
                 } else {
                     Err(ErrorKind::FailedToInitializePort(port).into())
@@ -517,6 +525,7 @@ impl PmdPort {
                     should_close: true, // sta, not clear what this is used for, and if to set true or false
                     stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
+                    fdir_conf: None,
                 }))
             } else {
                 Err(ErrorKind::FailedToInitializeKni(port_id).into())
@@ -571,6 +580,7 @@ impl PmdPort {
             should_close: false,
             stats_rx: vec![Arc::new(PortStats::new())],
             stats_tx: vec![Arc::new(PortStats::new())],
+            fdir_conf: None,
         }))
     }
 
