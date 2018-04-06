@@ -1,4 +1,4 @@
-use super::{Scheduler, Executable};
+use super::{Scheduler, Executable, Functional};
 use common::*;
 use std::sync::Arc;
 use std::sync::mpsc::{SyncSender, Receiver, sync_channel, RecvError};
@@ -46,7 +46,8 @@ pub struct StandaloneScheduler {
 /// Messages that can be sent on the scheduler channel to add or remove tasks.
 pub enum SchedulerCommand {
     Add(Box<Executable + Send>),
-    Run(Arc<Fn(&mut StandaloneScheduler) + Send + Sync>),
+    //Run(Arc<Fn(&mut StandaloneScheduler) + Send + Sync>),
+    Run(Box<Functional + Send>),    // allows for closures which are not Sync, e.g. closures using mpsc::Sender
     Execute,
     Shutdown,
     Handshake(SyncSender<bool>),
@@ -96,7 +97,8 @@ impl StandaloneScheduler {
     fn handle_request(&mut self, request: SchedulerCommand) {
         match request {
             SchedulerCommand::Add(ex) => self.run_q.push(Runnable::from_boxed_task(ex)),
-            SchedulerCommand::Run(f) => f(self),
+            //SchedulerCommand::Run(f) => f(self),
+            SchedulerCommand::Run(f) => f.run(self),
             SchedulerCommand::Execute => self.execute_loop(),
             SchedulerCommand::Shutdown => {
                 self.execute_loop = false;
@@ -122,7 +124,7 @@ impl StandaloneScheduler {
         {
             self.handle_request(cmd)
         }
-        println!(
+        info!(
             "Scheduler exiting {}",
             thread::current().name().unwrap_or_else(|| "unknown-name")
         );

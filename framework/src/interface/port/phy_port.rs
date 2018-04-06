@@ -151,12 +151,14 @@ impl PortQueue {
         }
     }
 
-    pub fn txq(&self) -> i32 {
-        self.txq
+    #[inline]
+    pub fn txq(&self) -> u16 {
+        self.txq as u16
     }
 
-    pub fn rxq(&self) -> i32 {
-        self.rxq
+    #[inline]
+    pub fn rxq(&self) -> u16 {
+        self.rxq as u16
     }
 }
 

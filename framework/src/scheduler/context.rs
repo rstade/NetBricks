@@ -6,7 +6,7 @@ use scheduler::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::sync::mpsc::{sync_channel, SyncSender};
+use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender};
 use std::thread::{self, JoinHandle, Thread};
 
 type AlignedPortQueue = CacheAligned<PortQueue>;
@@ -71,11 +71,30 @@ impl NetBricksContext {
     }
 
     /// Run a function (which installs a pipeline) on all schedulers in the system.
-    pub fn add_pipeline_to_run<T>(&mut self, run: Arc<T>)
+    pub fn add_pipeline_to_run<S>(&mut self, closure_cloner: S)
     where
-        T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
+        S: ClosureCloner,
     {
-        for (core, channel) in &self.scheduler_channels {
+
+        struct FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
+        {
+            pub closure: T
+        }
+
+        impl<T> FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
+        {
+            pub fn new(closure:T) -> FunctionalForRun<T> { FunctionalForRun { closure } }
+        }
+
+        impl<T> Functional for FunctionalForRun<T>
+        where T: Fn(&mut StandaloneScheduler) + Send
+        {
+            fn run(&self, s: &mut StandaloneScheduler) {
+                (self.closure)(s);
+            }
+        }
+
+        for (core, a_channel) in &self.scheduler_channels {
             let mut ports: HashSet<_> = match self.rx_queues.get(core) {
                 Some(set) => set.clone(),
                 None => HashSet::with_capacity(8),
@@ -85,16 +104,17 @@ impl NetBricksContext {
                 ports.insert(q);
             }
 
-            let boxed_run = run.clone();
+            let boxed_run = closure_cloner.get_clone();
             let core_id = *core;
-            channel
-                .send(SchedulerCommand::Run(Arc::new(move |s| {
-                    boxed_run(core_id, ports.clone(), s)
-                })))
-                .unwrap();
+
+            let functional = Box::new(FunctionalForRun::new(
+                move |s| { boxed_run(core_id, ports.clone(), s) }
+            ));
+
+            a_channel.send(SchedulerCommand::Run(functional)).unwrap();
         }
     }
-
+/* TODO: update this code as above in 'add_pipeline_to_run'
     pub fn add_test_pipeline<T>(&mut self, run: Arc<T>)
     where
         T: Fn(Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
@@ -165,7 +185,7 @@ impl NetBricksContext {
             Err(ErrorKind::NoRunningSchedulerOnCore(core).into())
         }
     }
-
+*/
     /// Start scheduling pipelines.
     pub fn execute(&mut self) {
         for (core, channel) in &self.scheduler_channels {

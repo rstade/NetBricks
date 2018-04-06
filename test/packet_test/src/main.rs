@@ -1,11 +1,11 @@
 #![feature(box_syntax)]
 #![feature(asm)]
 extern crate e2d2;
+extern crate eui48;
 extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
-extern crate eui48;
 
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
