@@ -11,11 +11,11 @@ use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 mod nf;
@@ -65,12 +65,28 @@ fn main() {
         .parse()
         .expect("Could not parse chain position");
 
+    struct SetupPipelines{
+        chain_len: u32,
+        chain_pos: u32,
+    }
+
+    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+    {
+        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+            let chain_len_clone=self.chain_len.clone();
+            let chain_pos_clone=self.chain_pos.clone();
+            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test(p, s, chain_len_clone, chain_pos_clone)
+            } )
+        }
+    }
+
+    let setup_pipeline_cloner = SetupPipelines { chain_len: chain_len, chain_pos: chain_pos };
+
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
-            context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| {
-                test(p, s, chain_len, chain_pos)
-            }));
+            context.add_pipeline_to_run(setup_pipeline_cloner);
             context.execute();
 
             let mut pkts_so_far = (0, 0);

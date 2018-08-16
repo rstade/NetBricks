@@ -13,7 +13,6 @@ use e2d2::operators::*;
 use e2d2::scheduler::*;
 use std::collections::HashSet;
 use std::env;
-use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 mod nf;
@@ -40,9 +39,24 @@ fn main() {
     configuration.pool_size = 256; // Travis allows 512 hugepages, but reliably continguously produces 256.
 
     let mut config = initialize_system(&mut configuration).unwrap();
+
+    struct SetupPipelines{
+    }
+
+    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+    {
+        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test(p, s)
+            } )
+        }
+    }
+
+    let setup_pipeline_cloner = SetupPipelines {  };
+
     config.start_schedulers();
 
-    config.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
+    config.add_pipeline_to_run(setup_pipeline_cloner);
     println!("BEGIN TEST OUTPUT");
     config.execute();
 

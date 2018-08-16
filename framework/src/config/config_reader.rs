@@ -449,6 +449,6 @@ pub fn read_configuration(filename: &str) -> Result<NetbricksConfiguration> {
     let _ =
         File::open(filename).and_then(|mut f| f.read_to_string(&mut toml_str))
         .chain_err(|| ErrorKind::ConfigurationError(String::from("Could not read file")))?;
-    debug!("toml string is: {}", toml_str);
+    debug!("toml string is:\n {}", toml_str);
     read_configuration_from_str(&toml_str[..], filename)
 }

@@ -12,11 +12,11 @@ use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::queues::*;
 use e2d2::scheduler::*;
+use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 mod nf;
@@ -52,10 +52,24 @@ fn main() {
     };
     let mut configuration = read_matches(&matches, &opts);
 
+    struct SetupPipelines{
+    }
+
+    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+    {
+        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test(p, s)
+            } )
+        }
+    }
+
+    let setup_pipeline_cloner = SetupPipelines {  };
+
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
-            context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
+            context.add_pipeline_to_run(setup_pipeline_cloner);
             context.execute();
 
             let mut pkts_so_far = (0, 0);

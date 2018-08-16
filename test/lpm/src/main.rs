@@ -9,11 +9,11 @@ use e2d2::config::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 mod nf;
@@ -60,6 +60,7 @@ where
     }
 }
 
+
 fn main() {
     let mut opts = basic_opts();
     opts.optflag("t", "test", "Test mode do not use real ports");
@@ -74,12 +75,42 @@ fn main() {
 
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
+
+            struct SetupPipelines{
+            }
+
+            struct SetupPipelinesV {
+
+            }
+
+            impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+            {
+                fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+                    Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                        test (p, s)
+                    } )
+                }
+            }
+
+            impl ClosureCloner<Vec<CacheAligned<VirtualQueue>>> for SetupPipelinesV
+            {
+                fn get_clone(&self) -> Box<Fn(i32, Vec<CacheAligned<VirtualQueue>>, &mut StandaloneScheduler) + Send> {
+                    Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
+                        testv (p, s)
+                    } )
+                }
+            }
+
+
+            let setup_pipeline_cloner = SetupPipelines { };
+            let setup_pipeline_cloner_v = SetupPipelinesV { };
+
             context.start_schedulers();
 
             if phy_ports {
-                context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| test(p, s)));
+                context.add_pipeline_to_run( setup_pipeline_cloner);
             } else {
-                context.add_test_pipeline(Arc::new(move |p, s: &mut StandaloneScheduler| testv(p, s)));
+                context.add_test_pipeline(setup_pipeline_cloner_v);
             }
             context.execute();
 

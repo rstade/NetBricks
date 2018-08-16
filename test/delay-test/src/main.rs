@@ -10,11 +10,11 @@ use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
+use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 mod nf;
@@ -79,17 +79,45 @@ fn main() {
 
     let phy_ports = !matches.opt_present("test");
 
+    struct SetupPipelines{
+        delay: u64,
+    }
+
+    struct SetupPipelinesV {
+        delay: u64,
+    }
+
+    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+    {
+        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+            let delay_clone=self.delay.clone();
+            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test (p, s, delay_clone)
+            } )
+        }
+    }
+
+    impl ClosureCloner<Vec<CacheAligned<VirtualQueue>>> for SetupPipelinesV
+    {
+        fn get_clone(&self) -> Box<Fn(i32, Vec<CacheAligned<VirtualQueue>>, &mut StandaloneScheduler) + Send> {
+            let delay_clone=self.delay.clone();
+            Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
+                testv (p, s, delay_clone)
+            } )
+        }
+    }
+
+    let setup_pipeline_cloner = SetupPipelines { delay: delay_arg };
+    let setup_pipeline_cloner_v = SetupPipelinesV { delay: delay_arg };
+
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 
-            let delay: u64 = delay_arg;
             if phy_ports {
-                context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| {
-                    test(p, s, delay)
-                }));
+                context.add_pipeline_to_run(setup_pipeline_cloner);
             } else {
-                context.add_test_pipeline(Arc::new(move |p, s: &mut StandaloneScheduler| testv(p, s, delay)));
+                context.add_test_pipeline(setup_pipeline_cloner_v);
             }
             context.execute();
 

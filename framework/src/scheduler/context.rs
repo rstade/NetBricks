@@ -43,6 +43,26 @@ pub struct NetBricksContext {
     scheduler_handles: HashMap<i32, JoinHandle<()>>,
 }
 
+// helpers for cloning closures:
+struct FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
+{
+    pub closure: T
+}
+
+impl<T> FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
+{
+    pub fn new(closure:T) -> FunctionalForRun<T> { FunctionalForRun { closure } }
+}
+
+impl<T> Functional for FunctionalForRun<T>
+    where T: Fn(&mut StandaloneScheduler) + Send
+{
+    fn run(&self, s: &mut StandaloneScheduler) {
+        (self.closure)(s);
+    }
+}
+
+
 impl NetBricksContext {
     /// Boot up all schedulers.
     pub fn start_schedulers(&mut self) {
@@ -70,30 +90,12 @@ impl NetBricksContext {
         self.scheduler_handles.insert(core, join_handle);
     }
 
+
     /// Run a function (which installs a pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run<S>(&mut self, closure_cloner: S)
     where
-        S: ClosureCloner,
+        S: ClosureCloner<HashSet<CacheAligned<PortQueue>>>,
     {
-
-        struct FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
-        {
-            pub closure: T
-        }
-
-        impl<T> FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
-        {
-            pub fn new(closure:T) -> FunctionalForRun<T> { FunctionalForRun { closure } }
-        }
-
-        impl<T> Functional for FunctionalForRun<T>
-        where T: Fn(&mut StandaloneScheduler) + Send
-        {
-            fn run(&self, s: &mut StandaloneScheduler) {
-                (self.closure)(s);
-            }
-        }
-
         for (core, a_channel) in &self.scheduler_channels {
             let mut ports: HashSet<_> = match self.rx_queues.get(core) {
                 Some(set) => set.clone(),
@@ -114,78 +116,99 @@ impl NetBricksContext {
             a_channel.send(SchedulerCommand::Run(functional)).unwrap();
         }
     }
-/* TODO: update this code as above in 'add_pipeline_to_run'
-    pub fn add_test_pipeline<T>(&mut self, run: Arc<T>)
-    where
-        T: Fn(Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
+
+    pub fn add_test_pipeline<S>(&mut self, closure_cloner: S)
+        where S: ClosureCloner<Vec<AlignedVirtualQueue>>
     {
         for (core, channel) in &self.scheduler_channels {
             let port = self.virtual_ports.entry(*core).or_insert(VirtualPort::new().unwrap());
-            let boxed_run = run.clone();
+            let boxed_run = closure_cloner.get_clone();
             let queue = port.new_virtual_queue().unwrap();
-            channel
-                .send(SchedulerCommand::Run(Arc::new(move |s| {
-                    boxed_run(vec![queue.clone()], s)
-                })))
-                .unwrap();
+            let boxed_run=closure_cloner.get_clone();
+            let core_id= *core;
+
+            let functional = Box::new(FunctionalForRun::new(
+                move |s| { boxed_run(core_id, vec![queue.clone()], s) }
+            ));
+
+            channel.send(SchedulerCommand::Run(functional)).unwrap();
         }
     }
 
-    pub fn add_producer<T>(&mut self, run: Arc<T>)
-    where
-        T: Fn(&mut StandaloneScheduler) + Send + Sync + 'static,
-    {
-        for (_, channel) in &self.scheduler_channels {
-            let boxed_run = run.clone();
-            channel
-                .send(SchedulerCommand::Run(Arc::new(move |s| boxed_run(s))))
-                .unwrap();
-        }
-    }
 
-    pub fn add_test_pipeline_to_core<
-        T: Fn(Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
-    >(
-        &mut self,
-        core: i32,
-        run: Arc<T>,
-    ) -> Result<()> {
-        if let Some(channel) = self.scheduler_channels.get(&core) {
-            let port = self.virtual_ports.entry(core).or_insert(VirtualPort::new().unwrap());
-            let boxed_run = run.clone();
-            let queue = port.new_virtual_queue().unwrap();
-            channel
-                .send(SchedulerCommand::Run(Arc::new(move |s| {
-                    boxed_run(vec![queue.clone()], s)
-                })))
-                .unwrap();
-            Ok(())
-        } else {
-            Err(ErrorKind::NoRunningSchedulerOnCore(core).into())
-        }
-    }
 
-    /// Install a pipeline on a particular core.
-    pub fn add_pipeline_to_core<T: Fn(HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static>(
-        &mut self,
-        core: i32,
-        run: Arc<T>,
-    ) -> Result<()> {
-        if let Some(channel) = self.scheduler_channels.get(&core) {
-            let ports = match self.rx_queues.get(&core) {
-                Some(set) => set.clone(),
-                None => HashSet::with_capacity(8),
-            };
-            let boxed_run = run.clone();
-            channel
-                .send(SchedulerCommand::Run(Arc::new(move |s| boxed_run(ports.clone(), s))))
-                .unwrap();
-            Ok(())
-        } else {
-            Err(ErrorKind::NoRunningSchedulerOnCore(core).into())
+    /* TODO: update this code as above in 'add_pipeline_to_run'
+        pub fn add_test_pipeline<T>(&mut self, run: Arc<T>)
+        where
+            T: Fn(Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
+        {
+            for (core, channel) in &self.scheduler_channels {
+                let port = self.virtual_ports.entry(*core).or_insert(VirtualPort::new().unwrap());
+                let boxed_run = run.clone();
+                let queue = port.new_virtual_queue().unwrap();
+                channel
+                    .send(SchedulerCommand::Run(Arc::new(move |s| {
+                        boxed_run(vec![queue.clone()], s)
+                    })))
+                    .unwrap();
+            }
         }
-    }
-*/
+
+        pub fn add_producer<T>(&mut self, run: Arc<T>)
+        where
+            T: Fn(&mut StandaloneScheduler) + Send + Sync + 'static,
+        {
+            for (_, channel) in &self.scheduler_channels {
+                let boxed_run = run.clone();
+                channel
+                    .send(SchedulerCommand::Run(Arc::new(move |s| boxed_run(s))))
+                    .unwrap();
+            }
+        }
+
+        pub fn add_test_pipeline_to_core<
+            T: Fn(Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Sync + 'static,
+        >(
+            &mut self,
+            core: i32,
+            run: Arc<T>,
+        ) -> Result<()> {
+            if let Some(channel) = self.scheduler_channels.get(&core) {
+                let port = self.virtual_ports.entry(core).or_insert(VirtualPort::new().unwrap());
+                let boxed_run = run.clone();
+                let queue = port.new_virtual_queue().unwrap();
+                channel
+                    .send(SchedulerCommand::Run(Arc::new(move |s| {
+                        boxed_run(vec![queue.clone()], s)
+                    })))
+                    .unwrap();
+                Ok(())
+            } else {
+                Err(ErrorKind::NoRunningSchedulerOnCore(core).into())
+            }
+        }
+
+        /// Install a pipeline on a particular core.
+        pub fn add_pipeline_to_core<T: Fn(HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Sync + 'static>(
+            &mut self,
+            core: i32,
+            run: Arc<T>,
+        ) -> Result<()> {
+            if let Some(channel) = self.scheduler_channels.get(&core) {
+                let ports = match self.rx_queues.get(&core) {
+                    Some(set) => set.clone(),
+                    None => HashSet::with_capacity(8),
+                };
+                let boxed_run = run.clone();
+                channel
+                    .send(SchedulerCommand::Run(Arc::new(move |s| boxed_run(ports.clone(), s))))
+                    .unwrap();
+                Ok(())
+            } else {
+                Err(ErrorKind::NoRunningSchedulerOnCore(core).into())
+            }
+        }
+    */
     /// Start scheduling pipelines.
     pub fn execute(&mut self) {
         for (core, channel) in &self.scheduler_channels {

@@ -21,7 +21,7 @@ pub trait Executable {
 pub trait Functional {
     fn run(&self, s: &mut StandaloneScheduler);
 }
-/*
+
 impl<F> Executable for F
 where
     F: FnMut(),
@@ -34,11 +34,16 @@ where
         vec![]
     }
 }
-*/
 
+/*
 pub trait ClosureCloner
 {
     fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>,  &mut StandaloneScheduler) + Send>;
+}
+*/
+pub trait ClosureCloner<P>
+{
+    fn get_clone(&self) -> Box<Fn(i32, P,  &mut StandaloneScheduler) + Send>;
 }
 
 

@@ -14,7 +14,6 @@ use e2d2::scheduler::*;
 use std::collections::HashSet;
 use std::env;
 use std::process;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 mod nf;
@@ -59,14 +58,27 @@ fn main() {
         .parse()
         .expect("Could not parse delay");
 
+    struct SetupPipelines{
+        delay: u64,
+    }
+
+    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
+    {
+        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
+            let delay_clone=self.delay.clone();
+            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test(p, s, delay_clone)
+            } )
+        }
+    }
+
+    let setup_pipeline_cloner = SetupPipelines { delay: delay_arg };
+
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 
-            let delay: u64 = delay_arg;
-            context.add_pipeline_to_run(Arc::new(move |_core: i32, p, s: &mut StandaloneScheduler| {
-                test(p, s, delay)
-            }));
+            context.add_pipeline_to_run(setup_pipeline_cloner);
             context.execute();
 
             let mut pkts_so_far = (0, 0);
