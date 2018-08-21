@@ -18,10 +18,6 @@ pub trait Executable {
     fn dependencies(&mut self) -> Vec<usize>;
 }
 
-pub trait Functional {
-    fn run(&self, s: &mut StandaloneScheduler);
-}
-
 impl<F> Executable for F
 where
     F: FnMut(),
@@ -34,18 +30,6 @@ where
         vec![]
     }
 }
-
-/*
-pub trait ClosureCloner
-{
-    fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>,  &mut StandaloneScheduler) + Send>;
-}
-*/
-pub trait ClosureCloner<P>
-{
-    fn get_clone(&self) -> Box<Fn(i32, P,  &mut StandaloneScheduler) + Send>;
-}
-
 
 pub trait Scheduler {
     fn add_task<T: Executable + 'static>(&mut self, task: T) -> Result<usize>

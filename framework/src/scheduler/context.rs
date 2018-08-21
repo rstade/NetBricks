@@ -43,26 +43,6 @@ pub struct NetBricksContext {
     scheduler_handles: HashMap<i32, JoinHandle<()>>,
 }
 
-// helpers for cloning closures:
-struct FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
-{
-    pub closure: T
-}
-
-impl<T> FunctionalForRun<T> where T: Fn(&mut StandaloneScheduler) + Send
-{
-    pub fn new(closure:T) -> FunctionalForRun<T> { FunctionalForRun { closure } }
-}
-
-impl<T> Functional for FunctionalForRun<T>
-    where T: Fn(&mut StandaloneScheduler) + Send
-{
-    fn run(&self, s: &mut StandaloneScheduler) {
-        (self.closure)(s);
-    }
-}
-
-
 impl NetBricksContext {
     /// Boot up all schedulers.
     pub fn start_schedulers(&mut self) {
@@ -90,7 +70,7 @@ impl NetBricksContext {
         self.scheduler_handles.insert(core, join_handle);
     }
 
-
+/*
     /// Run a function (which installs a pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run<S>(&mut self, closure_cloner: S)
     where
@@ -116,22 +96,49 @@ impl NetBricksContext {
             a_channel.send(SchedulerCommand::Run(functional)).unwrap();
         }
     }
+*/
+    /// Run a function (which installs a pipeline) on all schedulers in the system.
+    pub fn add_pipeline_to_run<T>(&mut self, run: Box<T>)
+        where
+            T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
+    {
+        for (core, channel) in &self.scheduler_channels {
+            let mut ports = match self.rx_queues.get(core) {
+                Some(set) => set.clone(),
+                None => HashSet::with_capacity(8),
+            };
 
-    pub fn add_test_pipeline<S>(&mut self, closure_cloner: S)
-        where S: ClosureCloner<Vec<AlignedVirtualQueue>>
+            // add kni ports, irrespectively of core
+            for q in self.kni_queues.clone() {
+                ports.insert(q);
+            }
+            let core_id = *core;
+            let run_clone=run.clone();
+
+            let closure = Box::new(move |s: &mut StandaloneScheduler| {
+                run_clone(core_id, ports.clone(), s)
+            });
+            channel
+                .send(SchedulerCommand::Run(closure))
+                .unwrap();
+        }
+    }
+
+
+    pub fn add_test_pipeline<S>(&mut self, run: Box<S>)
+        where S: Fn(i32, Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
     {
         for (core, channel) in &self.scheduler_channels {
             let port = self.virtual_ports.entry(*core).or_insert(VirtualPort::new().unwrap());
-            let boxed_run = closure_cloner.get_clone();
             let queue = port.new_virtual_queue().unwrap();
-            let boxed_run=closure_cloner.get_clone();
             let core_id= *core;
+            let run_clone=run.clone();
 
-            let functional = Box::new(FunctionalForRun::new(
-                move |s| { boxed_run(core_id, vec![queue.clone()], s) }
-            ));
+            let closure = Box::new(
+                move |s: &mut StandaloneScheduler| { run_clone(core_id, vec![queue.clone()], s) }
+            );
 
-            channel.send(SchedulerCommand::Run(functional)).unwrap();
+            channel.send(SchedulerCommand::Run(closure)).unwrap();
         }
     }
 

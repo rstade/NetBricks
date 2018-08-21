@@ -58,27 +58,14 @@ fn main() {
         .parse()
         .expect("Could not parse delay");
 
-    struct SetupPipelines{
-        delay: u64,
-    }
-
-    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
-    {
-        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
-            let delay_clone=self.delay.clone();
-            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                test(p, s, delay_clone)
-            } )
-        }
-    }
-
-    let setup_pipeline_cloner = SetupPipelines { delay: delay_arg };
 
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
 
-            context.add_pipeline_to_run(setup_pipeline_cloner);
+            context.add_pipeline_to_run( Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                test(p, s, delay_arg)
+            } ));
             context.execute();
 
             let mut pkts_so_far = (0, 0);

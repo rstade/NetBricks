@@ -48,25 +48,13 @@ fn main() {
         Err(f) => panic!(f.to_string()),
     };
     let mut configuration = read_matches(&matches, &opts);
-
-    struct SetupPipelines{
-    }
-
-    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
-    {
-        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
-            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                test(p, s)
-            } )
-        }
-    }
-
-    let setup_pipeline_cloner = SetupPipelines {  };
-
     let mut config = initialize_system(&mut configuration).unwrap();
     config.start_schedulers();
 
-    config.add_pipeline_to_run(setup_pipeline_cloner);
+    config.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+        test(p, s)
+    } )
+    );
     config.execute();
 
     let mut pkts_so_far = (0, 0);

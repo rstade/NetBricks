@@ -76,41 +76,16 @@ fn main() {
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
 
-            struct SetupPipelines{
-            }
-
-            struct SetupPipelinesV {
-
-            }
-
-            impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
-            {
-                fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
-                    Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                        test (p, s)
-                    } )
-                }
-            }
-
-            impl ClosureCloner<Vec<CacheAligned<VirtualQueue>>> for SetupPipelinesV
-            {
-                fn get_clone(&self) -> Box<Fn(i32, Vec<CacheAligned<VirtualQueue>>, &mut StandaloneScheduler) + Send> {
-                    Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
-                        testv (p, s)
-                    } )
-                }
-            }
-
-
-            let setup_pipeline_cloner = SetupPipelines { };
-            let setup_pipeline_cloner_v = SetupPipelinesV { };
-
             context.start_schedulers();
 
             if phy_ports {
-                context.add_pipeline_to_run( setup_pipeline_cloner);
+                context.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                    test(p, s)
+                } ) );
             } else {
-                context.add_test_pipeline(setup_pipeline_cloner_v);
+                context.add_test_pipeline(Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
+                    testv (p, s)
+                } ));
             }
             context.execute();
 

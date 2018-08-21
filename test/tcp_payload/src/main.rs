@@ -5,6 +5,7 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+
 use self::nf::*;
 use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
@@ -15,6 +16,7 @@ use std::collections::HashSet;
 use std::env;
 use std::thread::sleep;
 use std::time::Duration;
+
 mod nf;
 
 fn test<S: Scheduler + Sized>(ports: HashSet<CacheAligned<PortQueue>>, sched: &mut S) {
@@ -40,23 +42,12 @@ fn main() {
 
     let mut config = initialize_system(&mut configuration).unwrap();
 
-    struct SetupPipelines{
-    }
-
-    impl ClosureCloner<HashSet<CacheAligned<PortQueue>>> for SetupPipelines
-    {
-        fn get_clone(&self) -> Box<Fn(i32, HashSet<CacheAligned<PortQueue>>, &mut StandaloneScheduler) + Send> {
-            Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                test(p, s)
-            } )
-        }
-    }
-
-    let setup_pipeline_cloner = SetupPipelines {  };
-
     config.start_schedulers();
 
-    config.add_pipeline_to_run(setup_pipeline_cloner);
+    config.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+        test(p, s)
+    })
+    );
     println!("BEGIN TEST OUTPUT");
     config.execute();
 
