@@ -6,8 +6,8 @@ use operators::ReceiveBatch;
 use std::clone::Clone;
 use std::cmp::min;
 use std::default::Default;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
+use std::sync::Arc;
 use utils::{pause, round_to_power_of_2};
 
 #[derive(Default)]
@@ -21,8 +21,8 @@ struct QueueMetadata {
 /// `Packets` or sufficient metadata to reconstruct that structure.
 struct MpscQueue {
     slots: usize, // Must be a power of 2
-    mask: usize, // slots - 1
-    // FIXME: Watermark?
+    mask: usize,  // slots - 1
+    // TODO: Watermark?
     producer: QueueMetadata,
     consumer: QueueMetadata,
     queue: Vec<AtomicPtr<MBuf>>,
@@ -58,7 +58,7 @@ impl MpscQueue {
         let len = self.slots;
         let mut mbuf_idx = 0;
         let mut queue_idx = start & mask;
-        // FIXME: Unroll?
+        // TODO: Unroll?
         if queue_idx + enqueue >= len {
             while queue_idx < len {
                 self.queue[queue_idx].store(mbufs[mbuf_idx], Ordering::Release);
@@ -94,9 +94,7 @@ impl MpscQueue {
         let producer_head = self.producer.head.load(Ordering::Acquire);
         let consumer_tail = self.consumer.tail.load(Ordering::Acquire);
 
-        let free = self.mask.wrapping_add(consumer_tail).wrapping_sub(
-            producer_head,
-        );
+        let free = self.mask.wrapping_add(consumer_tail).wrapping_sub(producer_head);
         let insert = min(free, len);
 
         if insert > 0 {
@@ -124,9 +122,7 @@ impl MpscQueue {
         while {
             producer_head = self.producer.head.load(Ordering::Acquire);
             consumer_tail = self.consumer.tail.load(Ordering::Acquire);
-            let free = self.mask.wrapping_add(consumer_tail).wrapping_sub(
-                producer_head,
-            );
+            let free = self.mask.wrapping_add(consumer_tail).wrapping_sub(producer_head);
             insert = min(free, len);
             if insert == 0 {
                 // Short circuit, no insertion
@@ -135,16 +131,10 @@ impl MpscQueue {
                 let producer_next = producer_head.wrapping_add(insert);
                 self.producer
                     .head
-                    .compare_exchange(
-                        producer_head,
-                        producer_next,
-                        Ordering::AcqRel,
-                        Ordering::Relaxed,
-                    )
+                    .compare_exchange(producer_head, producer_next, Ordering::AcqRel, Ordering::Relaxed)
                     .is_err()
             }
-        }
-        {}
+        } {}
 
         if insert > 0 {
             // If we successfully reserved memory, write to memory.
@@ -156,8 +146,7 @@ impl MpscQueue {
             while {
                 let producer_tail = self.producer.tail.load(Ordering::Acquire);
                 producer_tail != producer_head
-            }
-            {
+            } {
                 pause(); // Pausing is a nice thing to do during spin locks
             }
             // Once this has been achieved, update tail. Any conflicting updates will wait on the previous spin lock.
@@ -166,7 +155,6 @@ impl MpscQueue {
         } else {
             0
         }
-
     }
 
     #[inline]
@@ -178,7 +166,7 @@ impl MpscQueue {
     fn dequeue_mbufs(&self, start: usize, dequeue: usize, mbufs: &mut [*mut MBuf]) {
         let mask = self.mask;
         let len = self.slots;
-        // FIXME: Unroll?
+        // TODO: Unroll?
         let mut mbuf_idx = 0;
         let mut queue_idx = start & mask;
         if queue_idx + dequeue >= len {
@@ -254,7 +242,9 @@ pub fn new_mpsc_queue_pair_with_size(size: usize) -> (MpscProducer, ReceiveBatch
     let mpsc_q = Arc::new(MpscQueue::new(size));
     mpsc_q.reference_producers();
     (
-        MpscProducer { mpsc_queue: mpsc_q.clone() },
+        MpscProducer {
+            mpsc_queue: mpsc_q.clone(),
+        },
         ReceiveBatch::new(MpscConsumer { mpsc_queue: mpsc_q }),
     )
 }

@@ -7,7 +7,7 @@ pub struct MBuf {
     data_off: u16,
     refcnt: u16,
     nb_segs: u16, // now u16 from u8
-    port: u16, // now u16 from u8
+    port: u16,    // now u16 from u8
     ol_flags: u64,
     packet_type: u32,
     pkt_len: u32,
@@ -17,8 +17,8 @@ pub struct MBuf {
     hash_hi: u32,
     //    seqn: u32, moved down
     vlan_tci_outer: u16, // now u16 from u32
-    buf_len: u16, //  /**< Length of segment buffer. */
-    timestamp: u64, // new
+    buf_len: u16,        //  /**< Length of segment buffer. */
+    timestamp: u64,      // new
     userdata: u64,
     pool: u64,
     next: *mut MBuf,
@@ -27,7 +27,7 @@ pub struct MBuf {
     timesync: u16,
     seqn: u32, // /** Sequence number. See also rte_reorder_insert(). */
 }
-// FIXME: Remove this once we start using these functions correctly
+// TODO: Remove this once we start using these functions correctly
 #[allow(dead_code)]
 impl MBuf {
     #[inline]
@@ -58,11 +58,7 @@ impl MBuf {
 
     #[inline]
     pub fn data_address(&self, offset: usize) -> *mut u8 {
-        unsafe {
-            self.buf_addr.offset(
-                self.data_off as isize + offset as isize,
-            )
-        }
+        unsafe { self.buf_addr.offset(self.data_off as isize + offset as isize) }
     }
 
     /// Returns the total allocated size of this mbuf segment.

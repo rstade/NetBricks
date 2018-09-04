@@ -3,12 +3,13 @@ pub use self::mac::*;
 pub use self::null_header::*;
 pub use self::tcp::*;
 pub use self::udp::*;
-mod mac;
 mod ip;
-mod udp;
-mod tcp;
+mod mac;
 mod null_header;
+mod tcp;
+mod udp;
 
+#[derive(Debug)]
 pub enum Header {
     Null,
     Mac,

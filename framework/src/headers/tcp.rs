@@ -38,7 +38,6 @@ macro_rules! write_or_return {
     }
 }
 
-
 impl fmt::Display for TcpHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write_or_return!(
@@ -61,7 +60,6 @@ impl fmt::Display for TcpHeader {
             self.checksum(),
             self.urgent()
         )
-
     }
 }
 
@@ -78,7 +76,7 @@ impl EndOffset for TcpHeader {
         20
     }
 
-    #[inline] // I think this is wrong, when we have Ethernet padding at the end of the frame, sta
+    #[inline] // I think this is not really the payload size, when we have Ethernet padding at the end of the frame, sta
     fn payload_size(&self, frame_size: usize) -> usize {
         frame_size - self.offset()
     }
@@ -113,6 +111,11 @@ impl TcpHeader {
     #[inline]
     pub fn set_src_port(&mut self, port: u16) {
         self.src_port = u16::to_be(port);
+    }
+
+    #[inline]
+    pub fn incr_src_port(&mut self) {
+        self.src_port = u16::to_be(u16::from_be(self.src_port) + 1);
     }
 
     #[inline]
@@ -169,7 +172,7 @@ impl TcpHeader {
     }
 
     /// Congestion window reduction flag.
-    // FIXME: Autogenerate after https://github.com/rust-lang/rust/issues/29599 is fixed.
+    // TODO: Autogenerate after https://github.com/rust-lang/rust/issues/29599 is fixed.
     #[inline]
     pub fn cwr_flag(&self) -> bool {
         (self.flags & CWR) != 0
@@ -360,7 +363,7 @@ impl TcpHeader {
         u16::from_be(self.csum)
     }
 
-    // FIXME: Validate checksum and update checksum
+    // TODO: Validate checksum and update checksum
 
     pub fn set_checksum(&mut self, csum: u16) {
         self.csum = u16::to_be(csum)
@@ -373,11 +376,7 @@ impl TcpHeader {
             old_word,
             new_word
         );
-        self.csum = u16::to_be(update_checksum_incremental(
-            u16::from_be(self.csum),
-            old_word,
-            new_word,
-        ));
+        self.csum = u16::to_be(update_checksum_incremental(u16::from_be(self.csum), old_word, new_word));
         trace!("updated checksum {:X}", u16::from_be(self.csum));
     }
 

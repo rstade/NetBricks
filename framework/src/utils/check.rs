@@ -37,9 +37,7 @@ pub type u16be = u16;
 
 /// Sum all words (16 bit chunks) in the given data. The word at word offset
 /// `skipword` will be skipped. Each word is treated as big endian.
-
 use std::slice;
-
 
 fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
     let len = data.len();

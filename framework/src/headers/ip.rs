@@ -6,7 +6,7 @@ use std::default::Default;
 use std::fmt;
 use std::net::Ipv4Addr;
 use std::slice;
-use utils::{FiveTupleV4, checksum};
+use utils::{checksum, FiveTupleV4};
 
 /// IP header using SSE
 #[derive(Clone, Copy, Debug, Default)]

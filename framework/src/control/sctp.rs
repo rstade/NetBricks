@@ -1,4 +1,4 @@
-use super::{Available, HUP, IOScheduler, PollHandle, PollScheduler, READ, Token, WRITE};
+use super::{Available, IOScheduler, PollHandle, PollScheduler, Token, HUP, READ, WRITE};
 use fnv::FnvHasher;
 use scheduler::Executable;
 /// SCTP Connections.
@@ -9,7 +9,6 @@ use std::hash::BuildHasherDefault;
 use std::marker::PhantomData;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::os::unix::io::AsRawFd;
-
 
 pub trait SctpControlAgent {
     fn new(address: SocketAddr, stream: SctpStream, scheduler: IOScheduler) -> Self;
@@ -40,7 +39,7 @@ impl<T: SctpControlAgent> Executable for SctpControlServer<T> {
     }
 }
 
-// FIXME: Add one-to-many SCTP support?
+// TODO: Add one-to-many SCTP support?
 impl<T: SctpControlAgent> SctpControlServer<T> {
     pub fn new_streaming<A: ToSocketAddrs>(address: A) -> SctpControlServer<T> {
         let listener = SctpListener::bind(address).unwrap();
@@ -62,10 +61,7 @@ impl<T: SctpControlAgent> SctpControlServer<T> {
     }
 
     fn listen(&mut self) {
-        self.handle.schedule_read(
-            &self.listener,
-            self.listener_token,
-        );
+        self.handle.schedule_read(&self.listener, self.listener_token);
     }
 
     pub fn schedule(&mut self) {
@@ -100,11 +96,11 @@ impl<T: SctpControlAgent> SctpControlServer<T> {
                     // Add to some sort of hashmap.
                 }
                 Err(_) => {
-                    // FIXME: Record
+                    // TODO: Record
                 }
             }
         } else {
-            // FIXME: Report something.
+            // TODO: Report something.
         }
         self.listen();
     }
@@ -124,7 +120,7 @@ impl<T: SctpControlAgent> SctpControlServer<T> {
                     }
                 }
                 None => {
-                    // FIXME: Record
+                    // TODO: Record
                     true
                 }
             }

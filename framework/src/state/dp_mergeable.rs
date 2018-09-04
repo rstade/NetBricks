@@ -1,7 +1,7 @@
 use fnv::FnvHasher;
 
-use std::collections::HashMap;
 use std::collections::hash_map::Iter;
+use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 
@@ -14,7 +14,7 @@ use utils::FiveTupleV4;
 /// accessed from the data plane. The `cache_size` should be tuned depending on whether gets or puts are the most common
 /// operation in this table.
 ///
-/// #[FIXME]
+/// #[TODO]
 /// Garbage collection.
 type FnvHash = BuildHasherDefault<FnvHasher>;
 const VEC_SIZE: usize = 1 << 24;

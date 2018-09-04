@@ -1,10 +1,9 @@
 pub use self::config_reader::*;
 pub use self::flag_reader::*;
-use std::fmt;
 use native::zcsi::RteFdirConf;
+use std::fmt;
 mod config_reader;
 mod flag_reader;
-
 
 /// `NetBricks` control configuration. In theory all applications create one of these, either through the use of
 /// `read_configuration` or manually using args.
@@ -72,10 +71,7 @@ impl fmt::Display for NetbricksConfiguration {
         write!(
             f,
             "name: {}\nmempool size: {}\ncore cache: {}\nprimary core: {}\n",
-            self.name,
-            self.pool_size,
-            self.cache_size,
-            self.primary_core
+            self.name, self.pool_size, self.cache_size, self.primary_core
         )?;
         write!(f, "Virtual Devices:\n")?;
         for dev in &self.vdevs {

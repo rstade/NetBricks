@@ -5,7 +5,7 @@ use interface::PacketTx;
 pub trait Act {
     /// Actually perform whatever needs to be done by this processing node.
     #[inline]
-    fn act(&mut self);
+    fn act(&mut self) -> u32;
 
     /// Notification indicating we are done processing the current batch of packets
     #[inline]
@@ -29,7 +29,7 @@ pub trait Act {
     #[inline]
     fn get_packet_batch(&mut self) -> &mut PacketBatch;
 
-    /// Get tasks that feed produce packets for this batch. We use this in the embedded scheduler.
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize>;
+    //    /// Get tasks that feed produce packets for this batch. We use this in the embedded scheduler.
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize>;
 }

@@ -1,12 +1,12 @@
 use allocators::CacheAligned;
 use config::NetbricksConfiguration;
-use interface::{PmdPort, PortQueue, VirtualPort, VirtualQueue};
 use interface::dpdk::{init_system, init_thread};
+use interface::{PmdPort, PortQueue, VirtualPort, VirtualQueue};
 use scheduler::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::sync::mpsc::{channel, sync_channel, Sender, Receiver, SyncSender};
 use std::sync::Arc;
-use std::sync::mpsc::{sync_channel, SyncSender, channel, Sender};
 use std::thread::{self, JoinHandle, Thread};
 
 type AlignedPortQueue = CacheAligned<PortQueue>;
@@ -39,7 +39,8 @@ pub struct NetBricksContext {
     pub kni_queues: HashSet<CacheAligned<PortQueue>>,
     pub active_cores: Vec<i32>,
     pub virtual_ports: HashMap<i32, Arc<VirtualPort>>,
-    scheduler_channels: HashMap<i32, SyncSender<SchedulerCommand>>,
+    pub scheduler_channels: HashMap<i32, SyncSender<SchedulerCommand>>,
+    pub reply_receiver: Option<Receiver<SchedulerReply>>,
     scheduler_handles: HashMap<i32, JoinHandle<()>>,
 }
 
@@ -47,13 +48,15 @@ impl NetBricksContext {
     /// Boot up all schedulers.
     pub fn start_schedulers(&mut self) {
         let cores = self.active_cores.clone();
+        let (reply_sender, reply_receiver) = channel::<SchedulerReply>();
+        self.reply_receiver= Some(reply_receiver);
         for core in &cores {
-            self.init_scheduler(*core);
+            self.init_scheduler(*core, reply_sender.clone());
         }
     }
 
     #[inline]
-    fn init_scheduler(&mut self, core: i32) {
+    fn init_scheduler(&mut self, core: i32, reply_sender: Sender<SchedulerReply>) {
         debug!("init scheduler on core-{}", core);
         let builder = thread::Builder::new();
         let (sender, receiver) = sync_channel(0);
@@ -63,44 +66,19 @@ impl NetBricksContext {
             .spawn(move || {
                 init_thread(core, core);
                 // Other init?
-                let mut sched = StandaloneScheduler::new_with_channel(receiver);
+                let mut sched = StandaloneScheduler::new_with_channel(core, receiver, reply_sender);
                 sched.handle_requests()
-            })
-            .unwrap();
+            }).unwrap();
         self.scheduler_handles.insert(core, join_handle);
     }
 
-/*
-    /// Run a function (which installs a pipeline) on all schedulers in the system.
-    pub fn add_pipeline_to_run<S>(&mut self, closure_cloner: S)
-    where
-        S: ClosureCloner<HashSet<CacheAligned<PortQueue>>>,
-    {
-        for (core, a_channel) in &self.scheduler_channels {
-            let mut ports: HashSet<_> = match self.rx_queues.get(core) {
-                Some(set) => set.clone(),
-                None => HashSet::with_capacity(8),
-            };
-            // add kni ports, irrespectively of core
-            for q in self.kni_queues.clone() {
-                ports.insert(q);
-            }
-
-            let boxed_run = closure_cloner.get_clone();
-            let core_id = *core;
-
-            let functional = Box::new(FunctionalForRun::new(
-                move |s| { boxed_run(core_id, ports.clone(), s) }
-            ));
-
-            a_channel.send(SchedulerCommand::Run(functional)).unwrap();
-        }
-    }
-*/
     /// Run a function (which installs a pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run<T>(&mut self, run: Box<T>)
-        where
-            T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
+    where
+        T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler)
+            + Send
+            + Clone
+            + 'static,
     {
         for (core, channel) in &self.scheduler_channels {
             let mut ports = match self.rx_queues.get(core) {
@@ -113,36 +91,30 @@ impl NetBricksContext {
                 ports.insert(q);
             }
             let core_id = *core;
-            let run_clone=run.clone();
+            let run_clone = run.clone();
 
             let closure = Box::new(move |s: &mut StandaloneScheduler| {
                 run_clone(core_id, ports.clone(), s)
             });
-            channel
-                .send(SchedulerCommand::Run(closure))
-                .unwrap();
-        }
-    }
-
-
-    pub fn add_test_pipeline<S>(&mut self, run: Box<S>)
-        where S: Fn(i32, Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
-    {
-        for (core, channel) in &self.scheduler_channels {
-            let port = self.virtual_ports.entry(*core).or_insert(VirtualPort::new().unwrap());
-            let queue = port.new_virtual_queue().unwrap();
-            let core_id= *core;
-            let run_clone=run.clone();
-
-            let closure = Box::new(
-                move |s: &mut StandaloneScheduler| { run_clone(core_id, vec![queue.clone()], s) }
-            );
-
             channel.send(SchedulerCommand::Run(closure)).unwrap();
         }
     }
 
+    pub fn add_test_pipeline<S>(&mut self, run: Box<S>)
+    where
+        S: Fn(i32, Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
+    {
+        for (core, channel) in &self.scheduler_channels {
+            let port = self.virtual_ports.entry(*core).or_insert(VirtualPort::new().unwrap());
+            let queue = port.new_virtual_queue().unwrap();
+            let core_id = *core;
+            let run_clone = run.clone();
 
+            let closure = Box::new(move |s: &mut StandaloneScheduler| run_clone(core_id, vec![queue.clone()], s));
+
+            channel.send(SchedulerCommand::Run(closure)).unwrap();
+        }
+    }
 
     /* TODO: update this code as above in 'add_pipeline_to_run'
         pub fn add_test_pipeline<T>(&mut self, run: Arc<T>)
@@ -216,8 +188,17 @@ impl NetBricksContext {
             }
         }
     */
-    /// Start scheduling pipelines.
+    /// Make all pipelines ready and start scheduling.
     pub fn execute(&mut self) {
+        for (core, channel) in &self.scheduler_channels {
+            debug!("start executing scheduler on core-{}", core);
+            channel.send(SchedulerCommand::SetTaskStateAll(true)).unwrap(); // this way we stay compatible with old code
+            channel.send(SchedulerCommand::Execute).unwrap();
+        }
+    }
+
+    /// Only start scheduling. Task states remain untouched.
+    pub fn execute_schedulers(&mut self) {
         for (core, channel) in &self.scheduler_channels {
             debug!("start executing scheduler on core-{}", core);
             channel.send(SchedulerCommand::Execute).unwrap();

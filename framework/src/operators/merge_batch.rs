@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use interface::PacketTx;
 use scheduler::Executable;
@@ -41,7 +41,7 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
 /// Internal interface for packets.
 impl<T: Batch> Act for MergeBatch<T> {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self)-> u32 {
         self.parents[self.which].act()
     }
 
@@ -63,10 +63,7 @@ impl<T: Batch> Act for MergeBatch<T> {
 
     #[inline]
     fn capacity(&self) -> i32 {
-        self.parents.iter().fold(
-            0,
-            |acc, x| cmp::max(acc, x.capacity()),
-        )
+        self.parents.iter().fold(0, |acc, x| cmp::max(acc, x.capacity()))
     }
 
     #[inline]
@@ -84,29 +81,30 @@ impl<T: Batch> Act for MergeBatch<T> {
         self.parents[self.which].get_packet_batch()
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        let mut deps = Vec::with_capacity(self.parents.len()); // Might actually need to be larger, will get resized
-        for parent in &self.parents {
-            deps.extend(parent.get_task_dependencies().iter())
-        }
-        // We need to eliminate duplicate tasks. Fortunately this is not called on the critical path so it is fine to do
-        // it this way.
-        deps.sort();
-        deps.dedup();
-        deps
-    }
+    //    #[inline]
+    ////    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        let mut deps = Vec::with_capacity(self.parents.len()); // Might actually need to be larger, will get resized
+    //        for parent in &self.parents {
+    //            deps.extend(parent.get_task_dependencies().iter())
+    //        }
+    //        // We need to eliminate duplicate tasks. Fortunately this is not called on the critical path so it is fine to do
+    //        // it this way.
+    //        deps.sort();
+    //        deps.dedup();
+    //        deps
+    //    }
 }
 
 impl<T: Batch> Executable for MergeBatch<T> {
     #[inline]
-    fn execute(&mut self) {
-        self.act();
+    fn execute(&mut self) -> u32 {
+        let count = self.act();
         self.done();
+        count
     }
 
-    #[inline]
-    fn dependencies(&mut self) -> Vec<usize> {
-        self.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn dependencies(&mut self) -> Vec<usize> {
+    //        self.get_task_dependencies()
+    //    }
 }

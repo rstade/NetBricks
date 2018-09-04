@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::NullHeader;
 use interface::PacketTx;
@@ -50,8 +50,4 @@ where
     act!{}
 }
 
-impl<V> Batch for ResetParsingBatch<V>
-where
-    V: Batch + BatchIterator + Act,
-{
-}
+impl<V> Batch for ResetParsingBatch<V> where V: Batch + BatchIterator + Act {}

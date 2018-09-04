@@ -1,14 +1,15 @@
+use super::act::Act;
+use super::iterator::*;
 use super::Batch;
 use super::ReceiveBatch;
 use super::RestoreHeader;
-use super::act::Act;
-use super::iterator::*;
 use headers::EndOffset;
 use interface::Packet;
 use queues::*;
-use scheduler::{Executable, Scheduler};
+use scheduler::{Executable, Runnable, Scheduler};
 use std::collections::HashMap;
 use std::marker::PhantomData;
+use uuid::Uuid;
 
 pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize + Send>;
 
@@ -21,7 +22,6 @@ where
     groups: usize,
     _phantom_t: PhantomData<T>,
     consumers: HashMap<usize, ReceiveBatch<MpscConsumer>>,
-    task: usize,
 }
 
 struct GroupByProducer<T, V>
@@ -40,7 +40,8 @@ where
     V: Batch + BatchIterator<Header = T> + Act + 'static,
 {
     #[inline]
-    fn execute(&mut self) {
+    fn execute(&mut self) -> u32 {
+        let mut count = 0;
         self.parent.act(); // Let the parent get some packets.
         {
             let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
@@ -48,16 +49,18 @@ where
                 let group = (self.group_fn)(&mut packet);
                 packet.save_header_and_offset();
                 self.producers[group].enqueue_one(packet);
+                count += 1;
             }
         }
         self.parent.get_packet_batch().clear_packets();
         self.parent.done();
+        count
     }
 
-    #[inline]
-    fn dependencies(&mut self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn dependencies(&mut self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }
 
 #[cfg_attr(feature = "dev", allow(len_without_is_empty))]
@@ -71,6 +74,7 @@ where
         groups: usize,
         group_fn: GroupFn<T, V::Metadata>,
         sched: &mut S,
+        uuid: Uuid, // task id
     ) -> GroupBy<T, V> {
         let mut producers = Vec::with_capacity(groups);
         let mut consumers = HashMap::with_capacity(groups);
@@ -79,19 +83,23 @@ where
             producers.push(prod);
             consumers.insert(i, consumer);
         }
-        let task = sched
-            .add_task(GroupByProducer {
-                parent: parent,
-                group_fn: group_fn,
-                producers: producers,
-            })
-            .unwrap();
+        let name = String::from("GroupByProducer");
+        let task = sched.add_runnable(
+            Runnable::from_task(
+                uuid,
+                name,
+                GroupByProducer {
+                    parent: parent,
+                    group_fn: group_fn,
+                    producers: producers,
+                },
+            ).unready(),
+        );
         GroupBy {
             _phantom_v: PhantomData,
             groups: groups,
             _phantom_t: PhantomData,
             consumers: consumers,
-            task: task,
         }
     }
 
@@ -99,14 +107,11 @@ where
         self.groups
     }
 
-    pub fn get_group(
-        &mut self,
-        group: usize,
-    ) -> Option<RestoreHeader<T, V::Metadata, ReceiveBatch<MpscConsumer>>> {
+    pub fn get_group(&mut self, group: usize) -> Option<RestoreHeader<T, V::Metadata, ReceiveBatch<MpscConsumer>>> {
         match self.consumers.remove(&group) {
             Some(mut p) => {
                 {
-                    p.get_packet_batch().add_parent_task(self.task)
+                    // p.get_packet_batch().add_parent_task(self.task)
                 };
                 Some(RestoreHeader::new(p))
             }

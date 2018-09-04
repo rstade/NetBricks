@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use interface::Packet;
 use interface::PacketTx;
@@ -57,8 +57,8 @@ where
 
     #[inline]
     unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<V::Header, M>> {
-        self.parent.next_payload(idx).map(|p| {
-            PacketDescriptor { packet: p.packet.reinterpret_metadata() }
+        self.parent.next_payload(idx).map(|p| PacketDescriptor {
+            packet: p.packet.reinterpret_metadata(),
         })
     }
 }
@@ -69,18 +69,21 @@ where
     V: Batch + BatchIterator + Act,
 {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self) -> u32 {
+        let mut count:u32 =0;
         if !self.applied {
             self.parent.act();
             {
                 let iter = PayloadEnumerator::<V::Header, V::Metadata>::new(&mut self.parent);
                 while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
                     let metadata = (self.generator)(&packet);
-                    packet.write_metadata(&metadata).unwrap(); // FIXME: WHat to do on error?
+                    packet.write_metadata(&metadata).unwrap(); // TODO: WHat to do on error?
+                    count += 1;
                 }
             }
             self.applied = true;
         }
+        count
     }
 
     #[inline]
@@ -114,8 +117,8 @@ where
         self.parent.get_packet_batch()
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }

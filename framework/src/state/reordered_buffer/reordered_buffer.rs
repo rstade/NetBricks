@@ -53,9 +53,7 @@ impl SegmentList {
     /// Create a segement list expecting that we will need no more than `length` segments.
     pub fn new(length: usize) -> SegmentList {
         SegmentList {
-            storage: (0..(length as isize))
-                .map(|i| Segment::new(i, 0, 0))
-                .collect(),
+            storage: (0..(length as isize)).map(|i| Segment::new(i, 0, 0)).collect(),
             available: (0..(length as isize)).collect(),
             head: -1,
             tail: -1,
@@ -140,14 +138,13 @@ impl SegmentList {
         // already have been checked).
         let mut next = self.storage[idx as usize].next;
         while next != -1 {
-            let end = self.storage[idx as usize].seq.wrapping_add(
-                self.storage[idx as usize].length as
-                    u32,
-            );
+            let end = self.storage[idx as usize]
+                .seq
+                .wrapping_add(self.storage[idx as usize].length as u32);
             if end >= self.storage[next as usize].seq {
                 // We have at least some overlap, and should merge.
-                let merge_len = self.storage[next as usize].length as usize -
-                    (end - self.storage[next as usize].seq) as usize;
+                let merge_len =
+                    self.storage[next as usize].length as usize - (end - self.storage[next as usize].seq) as usize;
                 let new_len = merge_len as usize + self.storage[idx as usize].length as usize;
                 if new_len <= u16::MAX as usize {
                     self.storage[idx as usize].length = new_len as u16;
@@ -165,8 +162,7 @@ impl SegmentList {
                     // Remove from next.
                     self.storage[next as usize].length -= max_len;
                     // Update seq
-                    self.storage[next as usize].seq =
-                        self.storage[next as usize].seq.wrapping_add(max_len as u32);
+                    self.storage[next as usize].seq = self.storage[next as usize].seq.wrapping_add(max_len as u32);
                     // No more merges are possible so exit this loop.
                     break;
                 }
@@ -221,8 +217,7 @@ impl SegmentList {
                     // println!("Overlapping");
                     // Overlapping segment
                     let new_end = max(seg_end, end);
-                    self.storage[idx as usize].length =
-                        (new_end - self.storage[idx as usize].seq) as u16;
+                    self.storage[idx as usize].length = (new_end - self.storage[idx as usize].seq) as u16;
                     break;
                 } else {
                     idx = self.storage[idx as usize].next;
@@ -308,7 +303,6 @@ pub struct ReorderedBuffer {
     tail_seq: u32,
 }
 
-
 impl ReorderedBuffer {
     /// Return the size (the maximum amount of data) this buffer can hold.
     #[inline]
@@ -341,7 +335,6 @@ impl ReorderedBuffer {
             segment_list: SegmentList::new(segment_size), // Assuming we don't receive small chunks.
         })
     }
-
 
     /// Reset buffer state.
     pub fn reset(&mut self) {
@@ -468,9 +461,7 @@ impl ReorderedBuffer {
             self.tail_seq = self.tail_seq.wrapping_add(written as u32);
             {
                 // Insert into segment list.
-                let segment = self.segment_list
-                    .insert_segment(seq, written as u16)
-                    .unwrap();
+                let segment = self.segment_list.insert_segment(seq, written as u16).unwrap();
                 // Since we are writing to the beginning, this must always be the head.
                 assert!(self.segment_list.is_head(segment));
                 // Compute the end of the segment, this might in fact be larger than size
@@ -485,7 +476,6 @@ impl ReorderedBuffer {
                 }
                 self.tail_seq = seg_end; // Advance tail_seq
                 self.data.seek_tail(incr as usize); // Increment tail for the ring buffer.
-
             }
 
             if self.segment_list.one_segment() {

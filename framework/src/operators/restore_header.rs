@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::EndOffset;
 use interface::*;
@@ -32,8 +32,7 @@ where
     V: Batch + BatchIterator + Act,
     M: Sized + Send,
     T: EndOffset + 'static,
-{
-}
+{}
 
 impl<T, M, V> RestoreHeader<T, M, V>
 where
@@ -60,8 +59,8 @@ where
     type Header = T;
     type Metadata = M;
     unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T, M>> {
-        self.parent.next_payload(idx).map(|p| {
-            PacketDescriptor { packet: p.packet.restore_saved_header().unwrap() }
+        self.parent.next_payload(idx).map(|p| PacketDescriptor {
+            packet: p.packet.restore_saved_header().unwrap(),
         })
     }
 

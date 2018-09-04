@@ -1,12 +1,11 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::NullHeader;
 use interface::PacketTx;
 use scheduler::Executable;
-
 
 pub struct SendBatch<Port, V>
 where
@@ -52,10 +51,7 @@ where
     }
 
     #[inline]
-    unsafe fn next_payload(
-        &mut self,
-        _: usize,
-    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(&mut self, _: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         panic!("Cannot iterate send batch")
     }
 }
@@ -67,19 +63,21 @@ where
     V: Batch + BatchIterator + Act,
 {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self) -> u32 {
         // debug!("SendBatch.act with port {}", self.port.port_id());
         // First everything is applied
+        let mut count:u32 =0;
         self.parent.act();
         self.parent
             .get_packet_batch()
             .send_q(&self.port)
             .and_then(|x| {
+                count=x;
                 self.sent += x as u64;
                 Ok(x)
-            })
-            .expect("Send failed");
+            }).expect("Send failed");
         self.parent.done();
+        count
     }
 
     fn done(&mut self) {}
@@ -107,10 +105,10 @@ where
         self.parent.get_packet_batch()
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }
 
 impl<Port, V> Executable for SendBatch<Port, V>
@@ -119,12 +117,12 @@ where
     V: Batch + BatchIterator + Act,
 {
     #[inline]
-    fn execute(&mut self) {
+    fn execute(&mut self) -> u32 {
         self.act()
     }
 
-    #[inline]
-    fn dependencies(&mut self) -> Vec<usize> {
-        self.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn dependencies(&mut self) -> Vec<usize> {
+    //        self.get_task_dependencies()
+    //    }
 }

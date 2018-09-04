@@ -1,5 +1,5 @@
-use super::PortStats;
 use super::super::{PacketRx, PacketTx};
+use super::PortStats;
 use allocators::*;
 use common::*;
 use config::{PortConfiguration, NUM_RXD, NUM_TXD};
@@ -10,11 +10,11 @@ use std::cmp::min;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::os::raw::c_void;
 use std::ptr;
 use std::ptr::Unique;
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::os::raw::c_void;
+use std::sync::Arc;
 use utils::FiveTupleV4;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
@@ -78,7 +78,9 @@ pub struct PortQueue {
 
 impl PartialEq for CacheAligned<PortQueue> {
     fn eq(&self, other: &CacheAligned<PortQueue>) -> bool {
-        self.port_id == other.port_id && self.txq == other.txq && self.rxq == other.rxq
+        self.port_id == other.port_id
+            && self.txq == other.txq
+            && self.rxq == other.rxq
             && self.port.is_kni() == other.port.is_kni()
     }
 }
@@ -236,7 +238,11 @@ impl PmdPort {
     }
 
     pub fn get_tcp_dst_port_mask(&self) -> u16 {
-        if self.fdir_conf.is_some() { u16::from_be(self.fdir_conf.unwrap().mask.dst_port_mask) } else { 0x0000 }
+        if self.fdir_conf.is_some() {
+            u16::from_be(self.fdir_conf.unwrap().mask.dst_port_mask)
+        } else {
+            0x0000
+        }
     }
 
     pub fn is_kni(&self) -> bool {
@@ -360,10 +366,10 @@ impl PmdPort {
             action,
         };
 
-        let fdir_filter_ptr: * mut RteEthFdirFilter= &mut fdir_filter;
+        let fdir_filter_ptr: *mut RteEthFdirFilter = &mut fdir_filter;
 
         unsafe {
-            check_os_error (rte_eth_dev_filter_ctrl(
+            check_os_error(rte_eth_dev_filter_ctrl(
                 self.port_id() as u16,
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterAdd,
@@ -429,7 +435,11 @@ impl PmdPort {
                     loopbackv,
                     tsov,
                     csumoffloadv,
-                    if fdir_conf.is_some() { fdir_conf.unwrap() as *const RteFdirConf } else { ptr::null() },
+                    if fdir_conf.is_some() {
+                        fdir_conf.unwrap() as *const RteFdirConf
+                    } else {
+                        ptr::null()
+                    },
                 )
             };
             if ret == 0 {
@@ -444,7 +454,11 @@ impl PmdPort {
                     should_close: true,
                     stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
-                    fdir_conf: if fdir_conf.is_some() {Some(fdir_conf.unwrap().clone())} else { None },
+                    fdir_conf: if fdir_conf.is_some() {
+                        Some(fdir_conf.unwrap().clone())
+                    } else {
+                        None
+                    },
                 }))
             } else {
                 Err(ErrorKind::FailedToInitializePort(port).into())
@@ -462,7 +476,7 @@ impl PmdPort {
             // This bit should not be required, but is an unfortunate problem with DPDK today.
             init_bess_eth_ring(ifname.as_ptr(), core)
         };
-        // FIXME: Can we really not close?
+        // TODO: Can we really not close?
         if port >= 0 {
             Ok(Arc::new(PmdPort {
                 port_type: PortType::Bess,

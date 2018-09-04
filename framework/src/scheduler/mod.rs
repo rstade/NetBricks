@@ -4,35 +4,35 @@
 pub use self::context::*;
 pub use self::standalone_scheduler::*;
 use common::*;
-use std::collections::HashSet;
-use allocators::CacheAligned;
-use interface::PortQueue;
 
 mod standalone_scheduler;
-pub mod embedded_scheduler;
 
 mod context;
 
 pub trait Executable {
-    fn execute(&mut self);
-    fn dependencies(&mut self) -> Vec<usize>;
+    fn execute(&mut self) -> u32;  // returns #packets processed, or a comparable metric
+    //    fn dependencies(&mut self) -> Vec<usize>;
 }
 
 impl<F> Executable for F
 where
-    F: FnMut(),
+    F: FnMut() -> u32,
 {
-    fn execute(&mut self) {
+    fn execute(&mut self) -> u32 {
         (*self)()
     }
 
-    fn dependencies(&mut self) -> Vec<usize> {
-        vec![]
-    }
+    //   fn dependencies(&mut self) -> Vec<usize> {
+    //       vec![]
+    //   }
 }
 
 pub trait Scheduler {
-    fn add_task<T: Executable + 'static>(&mut self, task: T) -> Result<usize>
+    fn add_runnable(&mut self, runnable: Runnable) -> usize
     where
         Self: Sized;
+}
+
+pub trait Message {
+
 }

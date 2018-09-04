@@ -30,8 +30,8 @@ macro_rules! batch_no_new {
 macro_rules! act {
     () => {
         #[inline]
-        fn act(&mut self) {
-            self.parent.act();
+        fn act(&mut self) -> u32 {
+            self.parent.act()
         }
 
         #[inline]
@@ -64,9 +64,9 @@ macro_rules! act {
             self.parent.get_packet_batch()
         }
 
-        #[inline]
-        fn get_task_dependencies(&self) -> Vec<usize> {
-            self.parent.get_task_dependencies()
-        }
+//        #[inline]
+//        fn get_task_dependencies(&self) -> Vec<usize> {
+//            self.parent.get_task_dependencies()
+//        }
     }
 }

@@ -1,10 +1,8 @@
 use super::{EndOffset, Header};
+use eui48::MacAddress;
 use headers::NullHeader;
 use std::default::Default;
 use std::fmt;
-use eui48::{MacAddress};
-
-
 
 /// A packet's MAC header.
 #[derive(Debug, Default, Clone, Copy)]
@@ -17,13 +15,7 @@ pub struct MacHeader {
 
 impl fmt::Display for MacHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{} > {} 0x{:04x}",
-            self.src,
-            self.dst,
-            u16::from_be(self.etype)
-        )
+        write!(f, "{} > {} 0x{:04x}", self.src, self.dst, u16::from_be(self.etype))
     }
 }
 
@@ -85,15 +77,15 @@ impl MacHeader {
     #[inline]
     pub fn swap_addresses(&mut self) {
         let src: MacAddress = self.src;
-        self.src= self.dst;
-        self.dst= src;
+        self.src = self.dst;
+        self.dst = src;
     }
 
     pub fn set_dmac(&mut self, dmac: &MacAddress) {
-        self.dst= *dmac;
+        self.dst = *dmac;
     }
 
     pub fn set_smac(&mut self, smac: &MacAddress) {
-        self.src= *smac;
+        self.src = *smac;
     }
 }

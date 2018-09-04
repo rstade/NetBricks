@@ -1,8 +1,8 @@
 use fnv::FnvHasher;
 use std::cmp::max;
 
-use std::collections::HashMap;
 use std::collections::hash_map::Iter;
+use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
@@ -16,7 +16,7 @@ use utils::FiveTupleV4;
 /// accessed from the data plane. The `cache_size` should be tuned depending on whether gets or puts are the most common
 /// operation in this table.
 ///
-/// #[FIXME]
+/// #[TODO]
 /// Garbage collection.
 /// The current version does not work well with large flow tables. The problem is we need to record a set of differences
 /// rather than copying the entire hashmap. This of course comes with some consistency issues, so we need to fix this.
@@ -40,9 +40,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
     }
 
     pub fn dp_store_with_cache_and_size(&mut self, cache: usize, size: usize) -> MergeableStoreDP<T> {
-        let hmap = Arc::new(RwLock::new(
-            HashMap::with_capacity_and_hasher(size, Default::default()),
-        ));
+        let hmap = Arc::new(RwLock::new(HashMap::with_capacity_and_hasher(size, Default::default())));
         self.hashmaps.push(hmap.clone());
         MergeableStoreDP {
             flow_counters: hmap,

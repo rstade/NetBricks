@@ -1,13 +1,13 @@
 use byteorder::{BigEndian, ByteOrder};
 use fnv::FnvHasher;
 use native::zcsi::*;
+use std::fmt;
 use std::hash::Hasher;
 use std::mem;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::slice;
-use std::fmt;
 
-// FIXME: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
+// TODO: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[repr(C, packed)]
@@ -21,19 +21,19 @@ pub struct FiveTupleV4 {
 
 impl fmt::Display for FiveTupleV4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {write!(
-            f,
-            "src_ip={}, dst_ip= {}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",
-            Ipv4Addr::from(self.src_ip),
-            Ipv4Addr::from(self.dst_ip),
-            self.src_port,
-            self.dst_port,
-            self.proto,
-        )}
+        unsafe {
+            write!(
+                f,
+                "src_ip={}, dst_ip= {}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",
+                Ipv4Addr::from(self.src_ip),
+                Ipv4Addr::from(self.dst_ip),
+                self.src_port,
+                self.dst_port,
+                self.proto,
+            )
+        }
     }
 }
-
-
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Ipv4Prefix {
@@ -97,14 +97,11 @@ impl FiveTupleV4 {
         BigEndian::write_u32(&mut bytes[12..16], self.src_ip);
         BigEndian::write_u32(&mut bytes[16..20], self.dst_ip);
         BigEndian::write_u16(&mut bytes[(port_start)..(port_start + 2)], self.src_port);
-        BigEndian::write_u16(
-            &mut bytes[(port_start + 2)..(port_start + 4)],
-            self.dst_port,
-        );
+        BigEndian::write_u16(&mut bytes[(port_start + 2)..(port_start + 4)], self.dst_port);
         BigEndian::write_u16(&mut bytes[10..12], 0);
         let csum = ipcsum(bytes);
         BigEndian::write_u16(&mut bytes[10..12], csum);
-        // FIXME: l4 cksum
+        // TODO: l4 cksum
     }
 
     pub fn src_socket_addr(&self) -> SocketAddrV4 {
@@ -115,7 +112,6 @@ impl FiveTupleV4 {
         SocketAddrV4::new(Ipv4Addr::from(self.dst_ip), self.dst_port)
     }
 }
-
 
 /// Given the MAC payload, generate a flow hash. The flow hash generated depends on the IV, so different IVs will
 /// produce different results (in cases when implementing Cuckoo hashing, etc.).

@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::EndOffset;
 use interface::Packet;
@@ -45,25 +45,24 @@ where
     V: Batch + BatchIterator<Header = T> + Act,
 {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self) -> u32 {
+        let mut count = 0;
         self.parent.act();
         // Filter during the act
         let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
-        while let Some(ParsedDescriptor {
-                           mut packet,
-                           index: idx,
-                       }) = iter.next(&mut self.parent)
-        {
+        while let Some(ParsedDescriptor { mut packet, index: idx }) = iter.next(&mut self.parent) {
             if !(self.filter)(&mut packet) {
                 self.remove.push(idx)
             }
+            count +=1;
         }
         if !self.remove.is_empty() {
-            self.parent.drop_packets(&self.remove[..]).expect(
-                "Filtering was performed incorrectly",
-            );
+            self.parent
+                .drop_packets(&self.remove[..])
+                .expect("Filtering was performed incorrectly");
         }
         self.remove.clear();
+        count
     }
 
     #[inline]
@@ -96,10 +95,10 @@ where
         self.parent.get_packet_batch()
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }
 
 impl<T, V> BatchIterator for FilterBatch<T, V>

@@ -1,5 +1,5 @@
 use super::METADATA_SLOTS;
-use config::{DEFAULT_CACHE_SIZE, DEFAULT_POOL_SIZE, NetbricksConfiguration};
+use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_POOL_SIZE};
 use native::libnuma;
 use native::zcsi;
 use std::cell::Cell;
@@ -18,10 +18,7 @@ fn init_system_wl_with_mempool(
     let name_cstr = CString::new(name).unwrap();
     let pci_cstr: Vec<_> = pci.iter().map(|p| CString::new(&p[..]).unwrap()).collect();
     let mut whitelist: Vec<_> = pci_cstr.iter().map(|p| p.as_ptr()).collect();
-    let vdevs_cstr: Vec<_> = vdevs
-        .iter()
-        .map(|p| CString::new(&p[..]).unwrap())
-        .collect();
+    let vdevs_cstr: Vec<_> = vdevs.iter().map(|p| CString::new(&p[..]).unwrap()).collect();
     let mut vdevs_ptr: Vec<_> = vdevs_cstr.iter().map(|p| p.as_ptr()).collect();
     unsafe {
         let ret = zcsi::init_system_whitelisted(
@@ -119,7 +116,9 @@ fn set_numa_domain() {
 /// Affinitize a pthread to a core and assign a DPDK thread ID.
 pub fn init_thread(tid: i32, core: i32) {
     let numa = unsafe { zcsi::init_thread(tid, core) };
-    NUMA_DOMAIN.with(|f| { f.set(numa); });
+    NUMA_DOMAIN.with(|f| {
+        f.set(numa);
+    });
     if numa == -1 {
         info!("No NUMA information found, support disabled");
     } else {

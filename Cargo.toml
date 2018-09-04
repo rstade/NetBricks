@@ -6,7 +6,6 @@ members=["framework",
         "test/shutdown-test",
         "test/chain-test",
         "test/lpm",
-        "test/lpm-embedded",
         "test/nat",
         "test/maglev",
         "test/packet_generation",
@@ -17,9 +16,7 @@ members=["framework",
         "test/config-test",
         "test/reset-parse",
         "test/tcp_reconstruction",
-        "test/acl-fw",
-        "test/embedded-scheduler-test",
-        "test/embedded-scheduler-dependency-test"]
+        "test/acl-fw",]
 [profile.release]
 opt-level = 3
 lto = true

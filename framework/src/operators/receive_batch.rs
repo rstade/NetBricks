@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::NullHeader;
 use interface::{PacketRx, PacketTx};
@@ -49,10 +49,7 @@ impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
     }
 
     #[inline]
-    unsafe fn next_payload(
-        &mut self,
-        idx: usize,
-    ) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
         self.parent.next_payload(idx)
     }
 }
@@ -60,7 +57,8 @@ impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
 /// Internal interface for packets.
 impl<T: PacketRx> Act for ReceiveBatch<T> {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self) -> u32 {
+        let mut count = 0;
         self.parent.act();
         self.parent
             .recv(&self.packet_rx)
@@ -75,9 +73,10 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
                 }
 */
                 self.received += x as u64;
+                count = x;
                 Ok(x)
-            })
-            .expect("Receive failure");
+            }).expect("Receive failure");
+        count
     }
 
     #[inline]
@@ -111,8 +110,8 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
         &mut self.parent
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }

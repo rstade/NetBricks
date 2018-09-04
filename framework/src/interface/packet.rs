@@ -122,12 +122,9 @@ pub fn new_packet_array(pkts: &mut [*mut MBuf]) -> Vec<Packet<NullHeader, EmptyM
         if alloc_ret == 0 {
             //            array.set_len(count);
         }
-        pkts.iter()
-            .map(|m| packet_from_mbuf_no_increment(*m, 0))
-            .collect()
+        pkts.iter().map(|m| packet_from_mbuf_no_increment(*m, 0)).collect()
     }
 }
-
 
 impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     // --------------------- Not using packet offsets ------------------------------------------------------
@@ -140,7 +137,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     fn header_u8(&self) -> *mut u8 {
         self.header as *mut u8
     }
-
 
     #[inline]
     fn offset(&self) -> usize {
@@ -256,7 +252,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         unsafe { (*self.mbuf).data_len() }
     } // this includes also any ethernet padding, sta
 
-
     // this includes any ethernet padding,
     // and therefore can be larger than the actual payload, sta
     #[inline]
@@ -319,7 +314,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             }
         }
     }
-
 
     #[inline]
     pub fn read_metadata(&self) -> &M {
@@ -447,17 +441,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             assert!{self.payload_size() >= T2::size()}
             let hdr = self.payload() as *mut T2;
             let offset = self.offset() + self.payload_offset();
-            //            create_packet(self.get_mbuf_ref(), hdr, offset)
-            create_follow_packet(
-                //alloc_osi_header(
-                //  self.header,
-                /* self.offset,*/
-                // self.previous_header,
-                //),
-                self, //.get_mbuf_ref(),
-                hdr,
-                offset,
-            )
+            create_follow_packet(self, hdr, offset)
         }
     }
 
@@ -468,7 +452,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             let hdr = self.payload() as *mut T2;
             let payload_offset = self.payload_offset();
             let offset = self.offset() + payload_offset;
-            // FIXME: Log failure?
+            // TODO: Log failure?
             self.push_offset(payload_offset).unwrap();
             create_packet(self.get_mbuf_ref(), hdr, offset)
         }
@@ -508,7 +492,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     pub fn deparse_header_stack(mut self) -> Option<Packet<T::PreviousHeader, M>> {
         self.pop_offset().map(|offset| self.deparse_header(offset))
     }
-
 
     #[inline]
     pub fn reset(mut self) -> Packet<NullHeader, EmptyMetadata> {
@@ -652,15 +635,7 @@ pub fn update_tcp_checksum<M: Sized + Send>(
 ) {
     let chk;
     {
-        chk = ipv4_checksum(
-            p.header as *mut u8,
-            ip_payload_size,
-            8,
-            &[],
-            ip_src,
-            ip_dst,
-            6u32,
-        );
+        chk = ipv4_checksum(p.header as *mut u8, ip_payload_size, 8, &[], ip_src, ip_dst, 6u32);
     }
     p.get_mut_header().set_checksum(chk);
 }

@@ -1,6 +1,6 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
+use super::Batch;
 use common::*;
 use headers::NullHeader;
 use interface::*;
@@ -13,7 +13,7 @@ use std::result;
 pub struct PacketBatch {
     array: Vec<*mut MBuf>,
     scratch: Vec<*mut MBuf>,
-    parent_tasks: Vec<usize>,
+//    parent_tasks: Vec<usize>,
     b_keep_mbuf: bool, // if false the mbuf array will be de-allocated, each time new packets are received
                        //    port_id: Option<i32>,
 }
@@ -21,27 +21,26 @@ pub struct PacketBatch {
 // *mut MBuf is not send by default.
 unsafe impl Send for PacketBatch {}
 
-
 impl PacketBatch {
     /// Create a new PacketBatch capable of holding up to `cnt` packets.
     pub fn new(cnt: i32, b_keep_mbuf: bool) -> PacketBatch {
         PacketBatch {
             array: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
-            parent_tasks: vec![],
+//            parent_tasks: vec![],
             b_keep_mbuf: b_keep_mbuf,
         }
     }
-
-    #[inline]
-    pub fn add_parent_task(&mut self, task: usize) {
-        self.parent_tasks.push(task);
-    }
-
-    #[inline]
-    pub fn get_parent_task(&self) -> &Vec<usize> {
-        &self.parent_tasks
-    }
+    //
+    //    #[inline]
+    //    pub fn add_parent_task(&mut self, task: usize) {
+    //        self.parent_tasks.push(task);
+    //    }
+    //
+    //    #[inline]
+    //    pub fn get_parent_task(&self) -> &Vec<usize> {
+    //        &self.parent_tasks
+    //    }
 
     /// Allocate as many mbufs as batch can hold. `len` here merely sets the extent of the mbuf considered when sending
     /// a packet. We always allocate mbuf's of the same size.
@@ -149,7 +148,11 @@ impl PacketBatch {
                     let array_ptr = self.scratch.as_mut_ptr();
                     let ret = mbuf_free_bulk(array_ptr, len as i32);
                     self.scratch.clear();
-                    if ret == 0 { Some(len) } else { None }
+                    if ret == 0 {
+                        Some(len)
+                    } else {
+                        None
+                    }
                 }
             }
         }
@@ -211,7 +214,11 @@ impl PacketBatch {
                 };
                 // If free fails, I am not sure we can do much to recover this batch.
                 self.array.set_len(0);
-                if ret == 0 { Ok(()) } else { Err(()) }
+                if ret == 0 {
+                    Ok(())
+                } else {
+                    Err(())
+                }
             }
         }
     }
@@ -240,7 +247,7 @@ impl BatchIterator for PacketBatch {
 /// Internal interface for packets.
 impl Act for PacketBatch {
     #[inline]
-    fn act(&mut self) {}
+    fn act(&mut self) -> u32 { 0 }
 
     #[inline]
     fn done(&mut self) {}
@@ -248,7 +255,7 @@ impl Act for PacketBatch {
     #[inline]
     fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
         let mut total_sent = 0;
-        // FIXME: Make it optionally possible to wait for all packets to be sent.
+        // TODO: Make it optionally possible to wait for all packets to be sent.
         unsafe {
             /*
             for p in &self.array {
@@ -260,7 +267,7 @@ impl Act for PacketBatch {
                 );
             }
 */
-            try!(port.send(self.packet_ptr()).and_then(|sent| {
+            port.send(self.packet_ptr()).and_then(|sent| {
                 /*
                 for p in &self.array {
                     trace!("&mbuf= {:p}, {}", *p, **p);
@@ -269,7 +276,7 @@ impl Act for PacketBatch {
                 self.consume_batch_partial(sent as usize);
                 total_sent += sent;
                 Ok(sent)
-            }));
+            })?;
         }
 
         Ok(total_sent)
@@ -295,10 +302,10 @@ impl Act for PacketBatch {
         self
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.get_parent_task().clone()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.get_parent_task().clone()
+    //    }
 }
 
 impl Batch for PacketBatch {}

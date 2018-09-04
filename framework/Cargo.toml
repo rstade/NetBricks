@@ -33,6 +33,7 @@ error-chain = "*"
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
 eui48 = "0.3"
+separator =  ">= 0.3"
 
 [features]
 default = []

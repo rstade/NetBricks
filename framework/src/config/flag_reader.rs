@@ -1,7 +1,7 @@
 extern crate getopts;
-use self::getopts::{Options, Matches};
+use self::getopts::{Matches, Options};
 
-use super::{NetbricksConfiguration, PortConfiguration, read_configuration};
+use super::{read_configuration, NetbricksConfiguration, PortConfiguration};
 use common::print_error;
 use std::collections::HashMap;
 
@@ -52,9 +52,11 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
 
     let configuration = if matches.opt_present("m") {
         NetbricksConfiguration {
-            primary_core: matches.opt_str("m").unwrap().parse().expect(
-                "Could not parse master core",
-            ),
+            primary_core: matches
+                .opt_str("m")
+                .unwrap()
+                .parse()
+                .expect("Could not parse master core"),
             strict: true,
             ..configuration
         }
@@ -81,20 +83,14 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
     };
 
     let mut configuration = if matches.opt_present("c") {
-
         let cores_str = matches.opt_strs("c");
 
         let mut cores: Vec<i32> = cores_str
             .iter()
-            .map(|n: &String| {
-                n.parse().ok().expect(
-                    &format!("Core cannot be parsed {}", n),
-                )
-            })
+            .map(|n: &String| n.parse().ok().expect(&format!("Core cannot be parsed {}", n)))
             .collect();
 
         debug!("cores = {:?}", cores);
-
 
         let cores_for_port = extract_cores_for_port(&matches.opt_strs("p"), &cores);
 
@@ -131,9 +127,7 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
 fn extract_cores_for_port(ports: &[String], cores: &[i32]) -> HashMap<String, Vec<i32>> {
     let mut cores_for_port = HashMap::<String, Vec<i32>>::new();
     for (port, core) in ports.iter().zip(cores.iter()) {
-        cores_for_port.entry(port.clone()).or_insert(vec![]).push(
-            *core,
-        )
+        cores_for_port.entry(port.clone()).or_insert(vec![]).push(*core)
     }
     cores_for_port
 }

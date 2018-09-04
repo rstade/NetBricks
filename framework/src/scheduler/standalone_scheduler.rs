@@ -1,31 +1,54 @@
-use super::{Scheduler, Executable};
-use common::*;
-use std::sync::Arc;
-use std::sync::mpsc::{SyncSender, Receiver, sync_channel, RecvError};
+use super::{Executable, Scheduler};
+use std::collections::HashMap;
+use std::sync::mpsc::{ Receiver, RecvError, Sender, SyncSender};
 use std::thread;
 use utils;
+use uuid::Uuid;
+use separator::Separatable;
 
 /// Used to keep stats about each pipeline and eventually grant tokens, etc.
-struct Runnable {
+pub struct Runnable {
     pub task: Box<Executable>,
-    pub cycles: u64,
+    pub uuid: Uuid,
+    pub name: String,
+    pub cycles: u64,    // cycles used while doing some work (i.e. increasing 'count' metric)
+    pub count: u64,     // packets processed (or some comparable metric for the work done)
     pub last_run: u64,
+    pub is_ready: bool,
 }
 
 impl Runnable {
-    pub fn from_task<T: Executable + 'static>(task: T) -> Runnable {
+    pub fn from_task<T: Executable + 'static>(uuid: Uuid, name: String, task: T) -> Runnable {
         Runnable {
             task: box task,
+            uuid,
+            name,
             cycles: 0,
+            count: 0,
             last_run: utils::rdtsc_unsafe(),
+            is_ready: false,
         }
     }
-    pub fn from_boxed_task(task: Box<Executable>) -> Runnable {
+    pub fn from_boxed_task(uuid: Uuid, name: String, task: Box<Executable>) -> Runnable {
         Runnable {
-            task: task,
+            task,
+            uuid,
+            name,
             cycles: 0,
+            count: 0,
             last_run: utils::rdtsc_unsafe(),
+            is_ready: false,
         }
+    }
+
+    pub fn ready(mut self) -> Self {
+        self.is_ready = true;
+        self
+    }
+
+    pub fn unready(mut self) -> Self {
+        self.is_ready = false;
+        self
     }
 }
 
@@ -33,10 +56,16 @@ impl Runnable {
 pub struct StandaloneScheduler {
     /// The set of runnable items. Note we currently don't have a blocked queue.
     run_q: Vec<Runnable>,
+    /// A map from uuid of runnable item to index of runnable item in run_q
+    uuid2index: HashMap<Uuid, usize>,
     /// Next task to run.
     next_task: usize,
     /// Channel to communicate and synchronize with scheduler.
     sched_channel: Receiver<SchedulerCommand>,
+    /// Reply channel e.g. for sending performance data
+    sender: Sender<SchedulerReply>,
+    /// core id
+    core: i32,
     /// Signal scheduler should continue executing tasks.
     execute_loop: bool,
     /// Signal scheduler should shutdown.
@@ -45,12 +74,18 @@ pub struct StandaloneScheduler {
 
 /// Messages that can be sent on the scheduler channel to add or remove tasks.
 pub enum SchedulerCommand {
-    Add(Box<Executable + Send>),
+    Add((Uuid, String, Box<Executable + Send>)),
     Run(Box<Fn(&mut StandaloneScheduler) + Send>),
-    //Run(Box<Functional + Send>),    // allows for closures which are not Sync, e.g. closures using mpsc::Sender
+    SetTaskState(Uuid, bool),
+    SetTaskStateAll(bool),
     Execute,
     Shutdown,
     Handshake(SyncSender<bool>),
+    GetPerformance,
+}
+
+pub enum SchedulerReply {
+    PerformanceData(i32, HashMap<Uuid, (String, u64, u64)>), //core id, uuid of task, task name, consumed cycles, count
 }
 
 const DEFAULT_Q_SIZE: usize = 256;
@@ -64,45 +99,81 @@ impl Default for StandaloneScheduler {
 */
 
 impl Scheduler for StandaloneScheduler {
-    /// Add a task to the current scheduler.
-    fn add_task<T: Executable + 'static>(&mut self, task: T) -> Result<usize> {
-        self.run_q.push(Runnable::from_task(task));
-        Ok(self.run_q.len())
+    /// Add a task to the current scheduler. The  caller must assign a uuid to the task.
+    fn add_runnable(&mut self, runnable: Runnable) -> usize {
+        let index = self.run_q.len();
+        self.uuid2index.insert(runnable.uuid, index);
+        self.run_q.push(runnable);
+        index
     }
 }
 
 impl StandaloneScheduler {
-    pub fn new() -> StandaloneScheduler {
-        let (_, receiver) = sync_channel(0);
-        StandaloneScheduler::new_with_channel(receiver)
-    }
-
-    pub fn new_with_channel(channel: Receiver<SchedulerCommand>) -> StandaloneScheduler {
-        StandaloneScheduler::new_with_channel_and_capacity(channel, DEFAULT_Q_SIZE)
+    pub fn new_with_channel(
+        core: i32,
+        receiver: Receiver<SchedulerCommand>,
+        sender: Sender<SchedulerReply>,
+    ) -> StandaloneScheduler {
+        StandaloneScheduler::new_with_channel_and_capacity(core, receiver, sender, DEFAULT_Q_SIZE)
     }
 
     pub fn new_with_channel_and_capacity<'b>(
-        channel: Receiver<SchedulerCommand>,
+        core: i32,
+        receiver: Receiver<SchedulerCommand>,
+        sender: Sender<SchedulerReply>,
         capacity: usize,
     ) -> StandaloneScheduler {
         StandaloneScheduler {
             run_q: Vec::with_capacity(capacity),
+            uuid2index: HashMap::with_capacity(capacity),
             next_task: 0,
-            sched_channel: channel,
+            sched_channel: receiver,
+            sender,
+            core,
             execute_loop: false,
             shutdown: true,
         }
     }
 
+    #[inline]
+    pub fn set_task_state(&mut self, uuid: &Uuid, ready: bool) -> Option<bool> {
+        match self.uuid2index.get(uuid) {
+            Some(index) => {
+                let previous= self.run_q[*index].is_ready;
+                self.run_q[*index].is_ready = ready;
+                Some(previous)
+            }
+            None => { None }
+        }
+    }
+
     fn handle_request(&mut self, request: SchedulerCommand) {
         match request {
-            SchedulerCommand::Add(ex) => self.run_q.push(Runnable::from_boxed_task(ex)),
+            SchedulerCommand::Add((uuid, name, ex)) => {
+                self.uuid2index.insert(uuid, self.run_q.len());
+                self.run_q.push(Runnable::from_boxed_task(uuid, name, ex));
+            }
             SchedulerCommand::Run(f) => f(self),
-            //SchedulerCommand::Run(f) => f.run(self),
             SchedulerCommand::Execute => self.execute_loop(),
             SchedulerCommand::Shutdown => {
                 self.execute_loop = false;
                 self.shutdown = true;
+            }
+            SchedulerCommand::SetTaskState(uuid, state) => {
+                self.set_task_state(&uuid, state);
+            }
+            SchedulerCommand::SetTaskStateAll(state) => {
+                for r in &mut self.run_q {
+                    r.is_ready=state;
+                }
+                debug!("core {}: set task state all {:?} at {:>20}", self.core, state, utils::rdtsc_unsafe().separated_string());
+            }
+            SchedulerCommand::GetPerformance => {
+                let mut data:  HashMap<Uuid, (String, u64, u64)> = HashMap::with_capacity(DEFAULT_Q_SIZE);
+                for r in &self.run_q {
+                    data.insert(r.uuid, (r.name.clone(), r.cycles, r.count));
+                }
+                self.sender.send(SchedulerReply::PerformanceData(self.core, data)).unwrap();
             }
             SchedulerCommand::Handshake(chan) => {
                 chan.send(true).unwrap(); // Inform context about reaching barrier.
@@ -120,8 +191,7 @@ impl StandaloneScheduler {
             } else {
                 self.sched_channel.recv()
             }
-        }
-        {
+        } {
             self.handle_request(cmd)
         }
         info!(
@@ -134,12 +204,20 @@ impl StandaloneScheduler {
     fn execute_internal(&mut self, begin: u64) -> u64 {
         let time = {
             let task = &mut (&mut self.run_q[self.next_task]);
-            task.task.execute();
-            let end = utils::rdtsc_unsafe();
-            task.cycles += end - begin;
-            task.last_run = end;
-            end
+            if task.is_ready {
+                let count = task.task.execute();
+                let end = utils::rdtsc_unsafe();
+                if count > 0 {
+                    task.count += count as u64;
+                    task.cycles += end - begin;
+                }
+                task.last_run = end;
+                end
+            } else {
+                utils::rdtsc_unsafe()
+            }
         };
+
         let len = self.run_q.len();
         let next = self.next_task + 1;
         if next == len {
@@ -156,10 +234,9 @@ impl StandaloneScheduler {
     /// Run the scheduling loop.
     pub fn execute_loop(&mut self) {
         self.execute_loop = true;
-        let mut begin_time = utils::rdtsc_unsafe();
         if !self.run_q.is_empty() {
             while self.execute_loop {
-                begin_time = self.execute_internal(begin_time)
+                self.execute_internal(utils::rdtsc_unsafe());
             }
         }
     }

@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::EndOffset;
 use headers::NullHeader;
@@ -18,7 +18,9 @@ impl CompositionBatch {
     pub fn new<T: EndOffset, M: Sized + Send, V: 'static + Batch<Header = T, Metadata = M>>(
         parent: V,
     ) -> CompositionBatch {
-        CompositionBatch { parent: box parent.reset() }
+        CompositionBatch {
+            parent: box parent.reset(),
+        }
     }
 }
 
@@ -46,13 +48,14 @@ impl Act for CompositionBatch {
 
 impl Executable for CompositionBatch {
     #[inline]
-    fn execute(&mut self) {
-        self.act();
+    fn execute(&mut self) -> u32 {
+        let count= self.act();
         self.done();
+        count
     }
 
-    #[inline]
-    fn dependencies(&mut self) -> Vec<usize> {
-        self.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn dependencies(&mut self) -> Vec<usize> {
+    //        self.get_task_dependencies()
+    //    }
 }

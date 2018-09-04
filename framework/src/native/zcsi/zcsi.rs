@@ -1,12 +1,12 @@
 use super::MBuf;
 use eui48::MacAddress;
-use std::os::raw::{ c_char, c_void };
-use std::ptr;
-use std::ffi::CStr;
-use std::str::Utf8Error;
-use std::fmt;
 use std::convert;
+use std::ffi::CStr;
+use std::fmt;
 use std::io;
+use std::os::raw::{c_char, c_void};
+use std::ptr;
+use std::str::Utf8Error;
 
 pub enum RteKni {}
 pub enum RteFlow {}
@@ -63,28 +63,27 @@ pub enum RteLogLevel {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub enum RteLogtype {
-	RteLogtypeEal = 0,
-	RteLogtypeMalloc = 1,
-	RteLogtypeRing = 2,		
-	RteLogtypeMempool = 3,
-	RteLogtypeTimer = 4,
-	RteLogtypePmd = 5,		
-	RteLogtypeHash = 6,
-	RteLogtypeLpm = 7,
-	RteLogtypeKni = 8,		
-	RteLogtypeAcl = 9,
-	RteLogtypePower = 10,
-	RteLogtypeMeter = 11,		
-	RteLogtypeSched = 12,
-	RteLogtypePort = 13,
-	RteLogtypeTable = 14,		
-	RteLogtypePipeline = 15,
-	RteLogtypeMbuf = 16,
-	RteLogtypeCryptodef = 17,		
-	RteLogtypeEfd = 18,
-	RteLogtypeEventdev = 19,
-	RteLogtypeGso = 20,		
-	
+    RteLogtypeEal = 0,
+    RteLogtypeMalloc = 1,
+    RteLogtypeRing = 2,
+    RteLogtypeMempool = 3,
+    RteLogtypeTimer = 4,
+    RteLogtypePmd = 5,
+    RteLogtypeHash = 6,
+    RteLogtypeLpm = 7,
+    RteLogtypeKni = 8,
+    RteLogtypeAcl = 9,
+    RteLogtypePower = 10,
+    RteLogtypeMeter = 11,
+    RteLogtypeSched = 12,
+    RteLogtypePort = 13,
+    RteLogtypeTable = 14,
+    RteLogtypePipeline = 15,
+    RteLogtypeMbuf = 16,
+    RteLogtypeCryptodef = 17,
+    RteLogtypeEfd = 18,
+    RteLogtypeEventdev = 19,
+    RteLogtypeGso = 20,
 }
 
 #[repr(C)]
@@ -117,10 +116,9 @@ impl convert::From<i32> for RteFilterType {
             7 => RteFilterType::RteEthFilterFdir,
             8 => RteFilterType::RteEthFilterHash,
             9 => RteFilterType::RteEthFilterL2Tunnel,
-            10=> RteFilterType::RteEthFilterGeneric,
-            11=> RteFilterType::RteEthFilterMax,
+            10 => RteFilterType::RteEthFilterGeneric,
+            11 => RteFilterType::RteEthFilterMax,
             _ => RteFilterType::RteEthFilterNone,
-
         }
     }
 }
@@ -136,17 +134,24 @@ impl fmt::Display for RteFilterType {
 pub enum RteFilterOp {
     /** used to check whether the type filter is supported */
     RteEthFilterNop = 0,
-    RteEthFilterAdd =1,      /**< add filter entry */
-    RteEthFilterUpdate =2,   /**< update filter entry */
-    RteEthFilterDelete =3,   /**< delete filter entry */
-    RteEthFilterFlush =4,    /**< flush all entries */
-    RteEthFilterGet =5,      /**< get filter entry */
-    RteEthFilterSet =6,      /**< configurations */
-    RteEthFilterInfo =7,     /**< retrieve information */
-    RteEthFilterStats =8,    /**< retrieve statistics */
-    RteEthFilterOpMax
+    RteEthFilterAdd = 1,
+    /**< add filter entry */
+    RteEthFilterUpdate = 2,
+    /**< update filter entry */
+    RteEthFilterDelete = 3,
+    /**< delete filter entry */
+    RteEthFilterFlush = 4,
+    /**< flush all entries */
+    RteEthFilterGet = 5,
+    /**< get filter entry */
+    RteEthFilterSet = 6,
+    /**< configurations */
+    RteEthFilterInfo = 7,
+    /**< retrieve information */
+    RteEthFilterStats = 8,
+    /**< retrieve statistics */
+    RteEthFilterOpMax,
 }
-
 
 /* see kni.c
 struct kni_port_params {
@@ -181,12 +186,12 @@ pub struct KniPortParams {
 impl KniPortParams {
     pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
         let mut params = KniPortParams {
-            port_id: port_id, // Port ID
-            lcore_rx: lcore_rx, // lcore ID for RX
-            lcore_tx: lcore_tx, // lcore ID for TX
+            port_id: port_id,                 // Port ID
+            lcore_rx: lcore_rx,               // lcore ID for RX
+            lcore_tx: lcore_tx,               // lcore ID for TX
             nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
             nb_kni: 1,
-            lcore_k: [0u32; KNI_MAX_KTHREAD], // lcore ID list for kthreads
+            lcore_k: [0u32; KNI_MAX_KTHREAD],        // lcore ID list for kthreads
             kni: [ptr::null_mut(); KNI_MAX_KTHREAD], // KNI context pointers
         };
         for i in 0..lcore_k.len() {
@@ -203,16 +208,16 @@ pub struct RteFlowError {
     pub message: *mut c_char,
 }
 
-pub unsafe fn kni_get_name(p_kni : *const RteKni) -> Option<String> {
+pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> {
     let kni_if_raw: *const c_char = rte_kni_get_name(p_kni);
-    let slice=CStr::from_ptr(kni_if_raw).to_str();
+    let slice = CStr::from_ptr(kni_if_raw).to_str();
     match slice {
         Ok(slice) => Some(String::from(slice)),
         Err(_) => None,
     }
 }
 
-const RTE_ETHDEV_QUEUE_STAT_CNTRS: usize=16;
+const RTE_ETHDEV_QUEUE_STAT_CNTRS: usize = 16;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -225,11 +230,11 @@ pub struct RteEthStats {
     pub ierrors: u64,
     pub oerrors: u64,
     pub rx_nombuf: u64,
-    pub q_ipackets: [u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_opackets: [u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_ibytes: [u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_obytes: [u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_errors: [u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
+    pub q_ipackets: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+    pub q_opackets: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+    pub q_ibytes: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+    pub q_obytes: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+    pub q_errors: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
 }
 
 impl RteEthStats {
@@ -243,18 +248,17 @@ impl RteEthStats {
             ierrors: 0u64,
             oerrors: 0u64,
             rx_nombuf: 0u64,
-            q_ipackets: [0u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-            q_opackets: [0u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-            q_ibytes: [0u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-            q_obytes: [0u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
-            q_errors: [0u64;RTE_ETHDEV_QUEUE_STAT_CNTRS],
+            q_ipackets: [0u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+            q_opackets: [0u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+            q_ibytes: [0u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+            q_obytes: [0u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
+            q_errors: [0u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
         }
     }
 }
 
 impl fmt::Display for RteEthStats {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-
         write!(f, "imissed= {}, rx_no_mbuf= {}\n", self.imissed, self.rx_nombuf).unwrap();
         write!(
             f,
@@ -267,7 +271,7 @@ impl fmt::Display for RteEthStats {
                 "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | \n",
                 q, self.q_ipackets[q], self.q_opackets[q], self.q_ibytes[q], self.q_obytes[q], self.q_errors[q],
             ).unwrap();
-        };
+        }
         write!(
             f,
             "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
@@ -277,9 +281,7 @@ impl fmt::Display for RteEthStats {
     }
 }
 
-
-
-pub const RTE_ETH_XSTATS_NAME_SIZE : usize= 64;
+pub const RTE_ETH_XSTATS_NAME_SIZE: usize = 64;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -302,11 +304,11 @@ impl RteEthXstatName {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv4Flow {
-    pub src_ip : u32,      // < IPv4 source address in big endian.
-    pub dst_ip : u32,      // < IPv4 destination address in big endian.
-    pub tos    : u8,       // < Type of service to match.
-    pub ttl    : u8,       // < Time to live to match.
-    pub proto  : u8,       // < Protocol, next header in big endian.
+    pub src_ip: u32, // < IPv4 source address in big endian.
+    pub dst_ip: u32, // < IPv4 destination address in big endian.
+    pub tos: u8,     // < Type of service to match.
+    pub ttl: u8,     // < Time to live to match.
+    pub proto: u8,   // < Protocol, next header in big endian.
 }
 
 /**
@@ -315,13 +317,12 @@ pub struct RteEthIpv4Flow {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv6Flow {
-    pub src_ip: [u32; 4],       // IPv6 source address in big endian.
-    pub dst_ip: [u32; 4],       // IPv6 destination address in big endian.
-    pub tc: u8,                 // Traffic class to match.
-    pub proto: u8,              // Protocol, next header to match.
-    pub hop_limits: u8,         // Hop limits to match.
+    pub src_ip: [u32; 4], // IPv6 source address in big endian.
+    pub dst_ip: [u32; 4], // IPv6 destination address in big endian.
+    pub tc: u8,           // Traffic class to match.
+    pub proto: u8,        // Protocol, next header to match.
+    pub hop_limits: u8,   // Hop limits to match.
 }
-
 
 /**
  * A structure used to define the input for IPV4 UDP flow
@@ -329,9 +330,9 @@ pub struct RteEthIpv6Flow {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthUdpv4Flow {
-    pub ip: RteEthIpv4Flow,      // < IPv4 fields to match.
-    pub src_port: u16,           // < UDP source port in big endian.
-    pub dst_port: u16,           // < UDP destination port in big endian.
+    pub ip: RteEthIpv4Flow, // < IPv4 fields to match.
+    pub src_port: u16,      // < UDP source port in big endian.
+    pub dst_port: u16,      // < UDP destination port in big endian.
 }
 
 /**
@@ -340,12 +341,11 @@ pub struct RteEthUdpv4Flow {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthTcpv4Flow {
-    pub ip: RteEthIpv4Flow,     // < IPv4 fields to match.
-    pub src_port: u16,          // < TCP source port in big endian.
-    pub dst_port: u16,          // < TCP destination port in big endian.
-    pub _padding: [u8; 28]
+    pub ip: RteEthIpv4Flow, // < IPv4 fields to match.
+    pub src_port: u16,      // < TCP source port in big endian.
+    pub dst_port: u16,      // < TCP destination port in big endian.
+    pub _padding: [u8; 28],
 }
-
 
 /**
  * A structure used to contain extend input of flow
@@ -356,10 +356,9 @@ pub struct RteEthFdirFlowExt {
     pub vlan_tci: u16,
     /**< It is filled by the flexible payload to match. */
     pub flexbytes: [u8; 16],
-    pub is_vf: u8,      // 1 for VF, 0 for port dev
-    pub dst_id: u16,    // VF ID, available when is_vf is 1
+    pub is_vf: u8,   // 1 for VF, 0 for port dev
+    pub dst_id: u16, // VF ID, available when is_vf is 1
 }
-
 
 /*
  * An union contains the inputs for all types of flow
@@ -387,7 +386,7 @@ union rte_eth_fdir_flow {
 #[repr(C)]
 pub struct RteEthFdirInputTcpv4 {
     pub flow_type: u16, // e.g. RTE_ETH_FLOW_NONFRAG_IPV4_TCP
-    pub flow : RteEthTcpv4Flow,
+    pub flow: RteEthTcpv4Flow,
     // < Flow fields to match, dependent on flow_type */
     pub flow_ext: RteEthFdirFlowExt,
     // < Additional fields to match */
@@ -404,7 +403,6 @@ pub enum RteEthFdirBehavior {
     RteEthFdirPassthru = 2,
 }
 
-
 /**
  * Flow director report status
  * It defines what will be reported if FDIR entry is matched.
@@ -412,10 +410,10 @@ pub enum RteEthFdirBehavior {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteEthFdirStatus {
-    RteEthFdirNoReportStatus = 0,     // < Report nothing.
-    RteEthFdirReportId = 1,            // < Only report FD ID.
-    RteEthFdirReportIdFlex4 = 2,     // < Report FD ID and 4 flex bytes.
-    RteEthFdirReportFlex8 = 3,        // < Report 8 flex bytes.
+    RteEthFdirNoReportStatus = 0, // < Report nothing.
+    RteEthFdirReportId = 1,       // < Only report FD ID.
+    RteEthFdirReportIdFlex4 = 2,  // < Report FD ID and 4 flex bytes.
+    RteEthFdirReportFlex8 = 3,    // < Report 8 flex bytes.
 }
 
 /**
@@ -424,15 +422,14 @@ pub enum RteEthFdirStatus {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirAction {
-    pub rx_queue: u16,                    // < Queue assigned to if FDIR match.
-    pub behavior: RteEthFdirBehavior,     // < Behavior will be taken
-    pub report_status: RteEthFdirStatus,  // < Status report option
+    pub rx_queue: u16,                   // < Queue assigned to if FDIR match.
+    pub behavior: RteEthFdirBehavior,    // < Behavior will be taken
+    pub report_status: RteEthFdirStatus, // < Status report option
     pub flex_off: u8,
-//   If report_status is RteEthFdirReportIdFlex4 or
-//   RteEthFdirReportFlex8, flex_off specifies where the reported
-//   flex bytes start from in flexible payload.
+    //   If report_status is RteEthFdirReportIdFlex4 or
+    //   RteEthFdirReportFlex8, flex_off specifies where the reported
+    //   flex bytes start from in flexible payload.
 }
-
 
 /**
  * A structure used to define the flow director filter entry by filter_ctrl API
@@ -444,8 +441,8 @@ pub struct RteEthFdirAction {
 pub struct RteEthFdirFilter {
     pub soft_id: u32,
     /**< ID, an unique value is required when deal with FDIR entry */
-    pub input: RteEthFdirInputTcpv4,    // < Input set
-    pub action: RteEthFdirAction,  // < Action taken when match
+    pub input: RteEthFdirInputTcpv4, // < Input set
+    pub action: RteEthFdirAction, // < Action taken when match
 }
 
 /**
@@ -455,7 +452,7 @@ pub struct RteEthFdirFilter {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirMasks {
-    pub vlan_tci_mask: u16,        // < Bit mask for vlan_tci in big endian
+    pub vlan_tci_mask: u16, // < Bit mask for vlan_tci in big endian
     /** Bit mask for ipv4 flow in big endian. */
     pub ipv4_mask: RteEthIpv4Flow,
     /** Bit maks for ipv6 flow in big endian. */
@@ -478,11 +475,11 @@ pub struct RteEthFdirMasks {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirMode {
-    RteFdirModeNone = 0,            // Disable FDIR support.
-    RteFdirModeSignature = 1,       // Enable FDIR signature filter mode.
-    RteFdirModePerfect = 2,         // Enable FDIR perfect filter mode.
-    RteFdirModePerfectMacVlan = 3,  // Enable FDIR filter mode - MAC VLAN.
-    RteFdirModePerfectTunnel = 4,   // Enable FDIR filter mode - tunnel.
+    RteFdirModeNone = 0,           // Disable FDIR support.
+    RteFdirModeSignature = 1,      // Enable FDIR signature filter mode.
+    RteFdirModePerfect = 2,        // Enable FDIR perfect filter mode.
+    RteFdirModePerfectMacVlan = 3, // Enable FDIR filter mode - MAC VLAN.
+    RteFdirModePerfectTunnel = 4,  // Enable FDIR filter mode - tunnel.
 }
 
 impl convert::From<i32> for RteFdirMode {
@@ -494,7 +491,6 @@ impl convert::From<i32> for RteFdirMode {
             3 => RteFdirMode::RteFdirModePerfectMacVlan,
             4 => RteFdirMode::RteFdirModePerfectTunnel,
             _ => RteFdirMode::RteFdirModeNone,
-
         }
     }
 }
@@ -514,7 +510,6 @@ impl convert::From<i32> for RteFdirPballocType {
             1 => RteFdirPballocType::RteFdirPballoc128k,
             2 => RteFdirPballocType::RteFdirPballoc256k,
             _ => RteFdirPballocType::RteFdirPballoc64k,
-
         }
     }
 }
@@ -527,7 +522,7 @@ impl convert::From<i32> for RteFdirPballocType {
 pub enum RteEthPayloadType {
     RteEthPayloadUnknown = 0,
     RteEthRawPayload = 1,
-    RteEthL2Payload = 2 ,
+    RteEthL2Payload = 2,
     RteEthL3Payload = 3,
     RteEthL4Payload = 4,
     RteEthPayloadMax = 8,
@@ -539,9 +534,9 @@ pub enum RteEthPayloadType {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirStatusMode {
-    RteFdirNoReportStatus = 0,          // Never report FDIR hash.
-    RteFdirReportStatus = 1,            // Only report FDIR hash for matching pkts.
-    RteFdirReportStatusAlways = 2,      // Always report FDIR hash.
+    RteFdirNoReportStatus = 0,     // Never report FDIR hash.
+    RteFdirReportStatus = 1,       // Only report FDIR hash for matching pkts.
+    RteFdirReportStatusAlways = 2, // Always report FDIR hash.
 }
 
 impl convert::From<i32> for RteFdirStatusMode {
@@ -551,26 +546,25 @@ impl convert::From<i32> for RteFdirStatusMode {
             1 => RteFdirStatusMode::RteFdirReportStatus,
             2 => RteFdirStatusMode::RteFdirReportStatusAlways,
             _ => RteFdirStatusMode::RteFdirNoReportStatus,
-
         }
     }
 }
-
 
 /**
  * A structure used to select bytes extracted from the protocol layers to
  * flexible payload for filter
  */
 
-const RTE_ETH_FDIR_MAX_FLEXLEN:usize = 16;
-const RTE_ETH_FLOW_MAX:usize = 22;
+const RTE_ETH_FDIR_MAX_FLEXLEN: usize = 16;
+const RTE_ETH_FLOW_MAX: usize = 22;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFlexPayloadCfg {
-    payloadtype: RteEthPayloadType,   /**< Payload type */
+    payloadtype: RteEthPayloadType,
+    /**< Payload type */
 
-/**< Offset in bytes from the beginning of packet's payload
+    /**< Offset in bytes from the beginning of packet's payload
      src_offset[i] indicates the flexbyte i's offset in original
      packet payload. This value should be less than
      flex_payload_limit in struct rte_eth_fdir_info.*/
@@ -595,8 +589,8 @@ pub struct RteEthFdirFlexMask {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFlexConf {
-    nb_payloads: u16,                 // The number of following payload cfg
-    nb_flexmasks: u16,                // The number of following mask */
+    nb_payloads: u16,  // The number of following payload cfg
+    nb_flexmasks: u16, // The number of following mask */
     flex_set: [RteEthFlexPayloadCfg; RteEthPayloadType::RteEthPayloadMax as usize],
     // Flex payload configuration for each payload type
     flex_mask: [RteEthFdirFlexMask; RTE_ETH_FLOW_MAX],
@@ -606,9 +600,9 @@ pub struct RteEthFdirFlexConf {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RteFdirConf {
-    pub mode: RteFdirMode,                  // Flow Director mode.
-    pub pballoc: RteFdirPballocType,        // Space for FDIR filters.
-    pub status: RteFdirStatusMode,          // How to report FDIR hash.
+    pub mode: RteFdirMode,           // Flow Director mode.
+    pub pballoc: RteFdirPballocType, // Space for FDIR filters.
+    pub status: RteFdirStatusMode,   // How to report FDIR hash.
     // RX queue of packets matching a "drop" filter in perfect mode.
     pub drop_queue: u8,
     pub mask: RteEthFdirMasks,
@@ -616,9 +610,9 @@ pub struct RteFdirConf {
     // Flex payload configuration.
 }
 
-
 impl RteFdirConf {
-    pub fn new()-> RteFdirConf { // creates (almost) empty RteFdirConf
+    pub fn new() -> RteFdirConf {
+        // creates (almost) empty RteFdirConf
         RteFdirConf {
             mode: RteFdirMode::RteFdirModePerfect,
             pballoc: RteFdirPballocType::RteFdirPballoc64k,
@@ -626,16 +620,16 @@ impl RteFdirConf {
             drop_queue: 0,
             mask: RteEthFdirMasks {
                 vlan_tci_mask: 0,
-                ipv4_mask: RteEthIpv4Flow{
+                ipv4_mask: RteEthIpv4Flow {
                     src_ip: 0,
                     dst_ip: 0,
                     tos: 0,
                     ttl: 0,
                     proto: 0,
                 },
-                ipv6_mask: RteEthIpv6Flow{
-                    src_ip: [0u32;4],
-                    dst_ip: [0u32;4],
+                ipv6_mask: RteEthIpv6Flow {
+                    src_ip: [0u32; 4],
+                    dst_ip: [0u32; 4],
                     tc: 0,
                     proto: 0,
                     hop_limits: 0,
@@ -649,23 +643,26 @@ impl RteFdirConf {
             flex_conf: RteEthFdirFlexConf {
                 nb_payloads: 0,
                 nb_flexmasks: 0,
-                flex_set: [
-                    RteEthFlexPayloadCfg{ payloadtype: RteEthPayloadType::RteEthPayloadUnknown, src_offset: [0u16; RTE_ETH_FDIR_MAX_FLEXLEN] };
-                    RteEthPayloadType::RteEthPayloadMax as usize
-                ],
-                flex_mask: [RteEthFdirFlexMask{ flow_type: 0, mask: [0u8; RTE_ETH_FDIR_MAX_FLEXLEN] }; RTE_ETH_FLOW_MAX],
+                flex_set: [RteEthFlexPayloadCfg {
+                    payloadtype: RteEthPayloadType::RteEthPayloadUnknown,
+                    src_offset: [0u16; RTE_ETH_FDIR_MAX_FLEXLEN],
+                }; RteEthPayloadType::RteEthPayloadMax as usize],
+                flex_mask: [RteEthFdirFlexMask {
+                    flow_type: 0,
+                    mask: [0u8; RTE_ETH_FDIR_MAX_FLEXLEN],
+                }; RTE_ETH_FLOW_MAX],
             },
         }
     }
 }
 
-
-pub fn check_os_error(code: i32) ->io::Result<i32> {
-    if code < 0 { Err(io::Error::from_raw_os_error(-code)) }
-    else { Ok(code) }
+pub fn check_os_error(code: i32) -> io::Result<i32> {
+    if code < 0 {
+        Err(io::Error::from_raw_os_error(-code))
+    } else {
+        Ok(code)
+    }
 }
-
-
 
 #[link(name = "zcsi")]
 extern "C" {
@@ -706,7 +703,7 @@ extern "C" {
     ) -> i32;
     pub fn free_pmd_port(port: i32) -> i32;
     pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
-    //rte_eth_tx_burst is inline C, we cannot directly use it here:
+                                                                                     //rte_eth_tx_burst is inline C, we cannot directly use it here:
     pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32;
     pub fn num_pmd_ports() -> i32;
     pub fn rte_eth_macaddr_get(port: i32, address: *mut MacAddress);
@@ -714,7 +711,7 @@ extern "C" {
     pub fn init_ovs_eth_ring(iface: i32, core: i32) -> i32;
     pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
     pub fn attach_pmd_device(dev: *const c_char) -> i32;
-    // FIXME: Generic PMD info
+    // TODO: Generic PMD info
     pub fn max_rxqs(port: i32) -> i32;
     pub fn max_txqs(port: i32) -> i32;
     pub fn mbuf_alloc() -> *mut MBuf;
@@ -737,16 +734,33 @@ extern "C" {
     pub fn rte_log_get_global_level() -> u32;
     pub fn rte_log_set_level(logtype: RteLogtype, level: RteLogLevel) -> i32;
     pub fn rte_log_get_level(logtype: RteLogtype) -> i32;
-    pub fn add_tcp_flow(port_id: u16, rx_q: u16,
-                        src_ip: u32, src_mask: u32,
-                        dest_ip: u32, dest_mask: u32,
-                        src_port: u16, src_port_mask: u16,
-                        dst_port: u16, dst_port_mask: u16,
-                        error: *const RteFlowError) -> *mut RteFlow;
-    pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType)-> i32;
-    pub fn rte_eth_dev_filter_ctrl(port_id: u16, filter_type: RteFilterType, filter_op: RteFilterOp, arg: *mut c_void) -> i32;
+    pub fn add_tcp_flow(
+        port_id: u16,
+        rx_q: u16,
+        src_ip: u32,
+        src_mask: u32,
+        dest_ip: u32,
+        dest_mask: u32,
+        src_port: u16,
+        src_port_mask: u16,
+        dst_port: u16,
+        dst_port_mask: u16,
+        error: *const RteFlowError,
+    ) -> *mut RteFlow;
+    pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
+    pub fn rte_eth_dev_filter_ctrl(
+        port_id: u16,
+        filter_type: RteFilterType,
+        filter_op: RteFilterOp,
+        arg: *mut c_void,
+    ) -> i32;
 
-    pub fn rte_eth_xstats_get_names_by_id(port_id: u16, xstats_names: *const RteEthXstatName, size: u32, ids: *const u64) -> i32;
+    pub fn rte_eth_xstats_get_names_by_id(
+        port_id: u16,
+        xstats_names: *const RteEthXstatName,
+        size: u32,
+        ids: *const u64,
+    ) -> i32;
     pub fn rte_eth_xstats_get_by_id(port_id: u16, ids: *const u64, values: *const u64, size: u32) -> i32;
     pub fn rte_eth_xstats_get_id_by_name(port_id: u16, xstat_name: *const c_char, id: *const u64) -> i32;
 

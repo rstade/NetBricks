@@ -6,7 +6,6 @@ export examples=(
         test/shutdown-test
         test/chain-test
         test/lpm
-        test/lpm-embedded
         test/nat
         test/maglev
         test/tcp_check
@@ -17,8 +16,6 @@ export examples=(
         test/acl-fw
         test/packet_generation
         test/packet_test
-        test/embedded-scheduler-test
-        test/embedded-scheduler-dependency-test
         test/tcp_payload
         test/macswap
 )

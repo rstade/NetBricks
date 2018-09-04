@@ -1,7 +1,7 @@
-use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
+use super::Batch;
 use common::*;
 use headers::EndOffset;
 use interface::Packet;
@@ -49,17 +49,20 @@ where
     V: Batch + BatchIterator<Header = T> + Act,
 {
     #[inline]
-    fn act(&mut self) {
+    fn act(&mut self) -> u32 {
+        let mut count = 0;
         if !self.applied {
             self.parent.act();
             {
                 let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
                 while let Some(ParsedDescriptor { packet, .. }) = iter.next(&mut self.parent) {
                     (self.transformer)(&packet);
+                    count +=1 ;
                 }
             }
             self.applied = true;
         }
+        count
     }
 
     #[inline]
@@ -93,10 +96,10 @@ where
         self.parent.get_packet_batch()
     }
 
-    #[inline]
-    fn get_task_dependencies(&self) -> Vec<usize> {
-        self.parent.get_task_dependencies()
-    }
+    //    #[inline]
+    //    fn get_task_dependencies(&self) -> Vec<usize> {
+    //        self.parent.get_task_dependencies()
+    //    }
 }
 
 impl<T, V> BatchIterator for MapBatch<T, V>

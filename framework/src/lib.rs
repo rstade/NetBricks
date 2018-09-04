@@ -25,6 +25,7 @@ extern crate libc;
 extern crate net2;
 extern crate regex;
 extern crate twox_hash;
+extern crate separator;
 
 #[macro_use]
 extern crate lazy_static;
@@ -53,15 +54,15 @@ extern crate eui48;
 extern crate nix;
 
 pub mod allocators;
-pub mod headers;
-pub mod scheduler;
-pub mod utils;
-pub mod queues;
-pub mod state;
-pub mod operators;
-pub mod interface;
 pub mod common;
-pub mod control;
-pub mod shared_state;
 pub mod config;
+pub mod control;
+pub mod headers;
+pub mod interface;
 pub mod native;
+pub mod operators;
+pub mod queues;
+pub mod scheduler;
+pub mod shared_state;
+pub mod state;
+pub mod utils;
