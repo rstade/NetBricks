@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::ffi::CString;
 
 /// Initialize the system, whitelisting some set of NICs and allocating mempool of given size.
-fn init_system_wl_with_mempool(
+pub fn init_system_wl_with_mempool(
     name: &str,
     lcore_mask: u64,
     core: i32,

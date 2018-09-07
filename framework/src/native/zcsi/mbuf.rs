@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ptr;
 
 #[repr(C)]
 pub struct MBuf {
@@ -153,6 +154,15 @@ impl MBuf {
     #[inline]
     pub fn set_refcnt(&mut self, new_value: u16) {
         self.refcnt = new_value;
+    }
+
+    // copy payload and selected fields to target tmb
+    #[inline]
+    pub fn copy_to(&self, tmb: &mut MBuf) {
+        (*tmb).data_len = (*self).data_len;
+        (*tmb).data_off = (*self).data_off;
+        (*tmb).pkt_len = (*self).pkt_len;
+        unsafe { ptr::copy_nonoverlapping(self.data_address(0), (*tmb).data_address(0), self.data_len()); }
     }
 }
 

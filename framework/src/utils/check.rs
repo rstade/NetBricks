@@ -38,7 +38,7 @@ pub type u16be = u16;
 /// Sum all words (16 bit chunks) in the given data. The word at word offset
 /// `skipword` will be skipped. Each word is treated as big endian.
 use std::slice;
-
+#[inline]
 fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
     let len = data.len();
     let wdata: &[u16] = unsafe { slice::from_raw_parts(data.as_ptr() as *const u16, len / 2) };
@@ -63,6 +63,7 @@ fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
     sum
 }
 
+#[inline]
 fn sum_be_words_ptr(data: *mut u8, len: usize, mut skipword: usize) -> u32 {
     let wdata: &[u16] = unsafe { slice::from_raw_parts(data as *const u16, len / 2) };
     skipword = ::std::cmp::min(skipword, wdata.len());
@@ -88,11 +89,13 @@ fn sum_be_words_ptr(data: *mut u8, len: usize, mut skipword: usize) -> u32 {
 
 /// Calculates a checksum. Used by ipv4 and icmp. The two bytes starting at `skipword * 2` will be
 /// ignored. Supposed to be the checksum field, which is regarded as zero during calculation.
+#[inline]
 pub fn checksum(data: &[u8], skipword: usize) -> u16be {
     let sum = sum_be_words(data, skipword);
     finalize_checksum(sum)
 }
 
+#[inline]
 pub fn finalize_checksum(mut sum: u32) -> u16be {
     while sum >> 16 != 0 {
         sum = (sum >> 16) + (sum & 0xFFFF);
@@ -101,6 +104,7 @@ pub fn finalize_checksum(mut sum: u32) -> u16be {
 }
 
 /// Calculate the checksum for a packet built on IPv4. Used by udp and tcp.
+#[inline]
 pub fn ipv4_checksum(
     data: *mut u8,
     len: usize,
@@ -131,6 +135,7 @@ pub fn ipv4_checksum(
 }
 
 // everything in host byte order:
+#[inline]
 pub fn update_checksum_incremental(old_check: u16, old_data_csum: u16, new_data_csum: u16) -> u16be {
     let tmp: u32;
     tmp = (!old_check) as u32 + (!old_data_csum) as u32 + new_data_csum as u32;

@@ -222,6 +222,12 @@ impl MpscProducer {
         self.mpsc_queue.enqueue(&mbufs[..])
     }
 
+    #[inline]
+    pub fn enqueue_mbufs (&self, mbufs: &[*mut MBuf])  -> usize {
+        self.mpsc_queue.enqueue(mbufs)
+    }
+
+    #[inline]
     pub fn enqueue_one<T: EndOffset, M: Sized + Send>(&self, packet: Packet<T, M>) -> bool {
         unsafe { self.mpsc_queue.enqueue_one(packet.get_mbuf()) }
     }

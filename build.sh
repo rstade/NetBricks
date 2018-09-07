@@ -410,6 +410,12 @@ case $TASK in
           popd
         done
         ;;
+    unittest)
+        pushd $BASE_DIR/framework
+        export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
+        sudo -E env "PATH=$PATH, HOME=$HOME" ${CARGO} test --release
+        popd
+        ;;
     run)
         shift
         if [ $# -le 0 ]; then

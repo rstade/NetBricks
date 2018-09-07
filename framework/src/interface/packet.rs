@@ -13,7 +13,6 @@ use utils::ipv4_checksum;
 
 pub struct Packet<T: EndOffset, M: Sized + Send> {
     mbuf: *mut MBuf,
-    _phantom_t: PhantomData<T>,
     _phantom_m: PhantomData<M>,
     pre_pre_header: Option<*mut <<T as EndOffset>::PreviousHeader as EndOffset>::PreviousHeader>,
     pre_header: Option<*mut T::PreviousHeader>,
@@ -25,12 +24,14 @@ impl<T: EndOffset, M: Sized + Send> fmt::Display for Packet<T, M> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "(&mbuf={:p}, {}, payload_size= {}, header= {:?}, offset={})",
+            "(&mbuf={:p}, {}, payload_size= {}, offset={}, header= {:?}, pre_header= {:?}, pre_pre_header= {:?})",
             self.mbuf,
             unsafe { &*self.mbuf },
             self.payload_size(),
+            self.offset,
             self.header as *mut T,
-            self.offset
+            self.pre_header,
+            self.pre_pre_header,
         )
     }
 }
@@ -39,7 +40,6 @@ impl<T: EndOffset, M: Sized + Send> fmt::Display for Packet<T, M> {
 unsafe fn create_packet<T: EndOffset, M: Sized + Send>(mbuf: *mut MBuf, hdr: *mut T, offset: usize) -> Packet<T, M> {
     let pkt = Packet::<T, M> {
         mbuf: mbuf,
-        _phantom_t: PhantomData,
         _phantom_m: PhantomData,
         offset: offset,
         pre_pre_header: None,
@@ -57,7 +57,6 @@ unsafe fn create_follow_packet<T: EndOffset, M: Sized + Send>(
 ) -> Packet<T, M> {
     let pkt = Packet::<T, M> {
         mbuf: p.get_mbuf_ref(),
-        _phantom_t: PhantomData,
         _phantom_m: PhantomData,
         offset: offset,
         header: hdr,
@@ -243,8 +242,58 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         unsafe { (*self.mbuf).data_address(0) }
     }
 
-    pub fn clone(&self) -> Packet<T, EmptyMetadata> {
-        unsafe { packet_from_mbuf(self.mbuf, self.offset) }
+    /// clone has same mbuf as the original
+    pub fn clone(&mut self) -> Packet<T, M> {
+        // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
+        reference_mbuf(self.mbuf);
+
+        Packet::<T, M> {
+            mbuf: self.mbuf,
+            _phantom_m: PhantomData,
+            offset: self.offset,
+            pre_pre_header: self.pre_pre_header,
+            pre_header: self.pre_header,
+            header: self.header,
+        }
+    }
+
+        /// copy gets us a new mbuf
+    pub unsafe fn copy (&self) -> Packet<T, M> {
+        // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
+        // This sets refcnt = 1
+        let mut mbuf = mbuf_alloc();
+        self.copy_use_mbuf(mbuf)
+    }
+
+    #[inline]
+    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Packet<T, M> {
+        assert!(!mbuf.is_null());
+        let u8_header = (*mbuf).data_address(self.offset);
+        let header = u8_header as *mut T;
+        (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
+
+        let pre_header = if self.pre_header.is_some() {
+            Some(u8_header.
+                offset(
+                    (self.pre_header.unwrap() as *mut u8).offset_from(self.header as *mut u8)
+                ) as *mut T::PreviousHeader)
+        } else { None };
+
+        let pre_pre_header = if self.pre_pre_header.is_some() {
+            Some(u8_header.
+                offset(
+                    (self.pre_pre_header.unwrap() as *mut u8).offset_from(self.header as *mut u8)
+                ) as *mut <<T as EndOffset>::PreviousHeader as EndOffset>::PreviousHeader)
+        } else { None };
+
+        Packet::<T, M> {
+            mbuf,
+            _phantom_m: PhantomData,
+            offset: self.offset,
+            pre_pre_header: None,
+            pre_header: None,
+            header,
+        }
     }
 
     #[inline]
@@ -351,7 +400,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             let len = self.data_len();
             let size = header.offset();
             let added = (*self.mbuf).add_data_end(size);
-            // let header = self.payload();	this seems to be just wrong as it hides the 'header' from the argument list !!, sta
+
             let hdr = header as *const T2;
             let offset = self.offset() + self.payload_offset();
             if added >= size {
@@ -366,7 +415,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
                     self.payload() as *mut T2
                 };
                 ptr::copy_nonoverlapping(hdr, dst, 1);
-                //              Some(create_packet(self.get_mbuf_ref(), hdr, offset))
                 Some(create_follow_packet(self, dst, offset))
             } else {
                 None
@@ -638,4 +686,74 @@ pub fn update_tcp_checksum<M: Sized + Send>(
         chk = ipv4_checksum(p.header as *mut u8, ip_payload_size, 8, &[], ip_src, ip_dst, 6u32);
     }
     p.get_mut_header().set_checksum(chk);
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use headers::IpHeader;
+    use headers::TcpHeader;
+    use headers::MacHeader;
+    use eui48::MacAddress;
+    use native::zcsi;
+    use interface::dpdk::init_system_wl_with_mempool;
+
+    #[test]
+    fn packet_copy() {
+        let name=String::from("packet_copy_test");
+
+
+        init_system_wl_with_mempool(
+            &name[..],
+            1u64,
+            0,
+            &[],
+            2048,
+            32,
+            &vec![],
+        );
+
+        let mut mac = MacHeader::new();
+        mac.src = MacAddress::new([1;6]);
+        mac.set_etype(0x0800);
+        let mut ip = IpHeader::new();
+        ip.set_src(511);
+        ip.set_ttl(128);
+        ip.set_version(4);
+        ip.set_protocol(6); //tcp
+        ip.set_ihl(5);
+        ip.set_length(40);
+        ip.set_flags(0x2); // DF=1, MF=0 flag: don't fragment
+        let mut tcp = TcpHeader::new();
+        tcp.set_syn_flag();
+        tcp.set_src_port(80);
+        tcp.set_data_offset(5);
+
+        let packet =
+            new_packet()
+                .unwrap()
+                .push_header(&mac)
+                .unwrap()
+                .push_header(&ip)
+                .unwrap()
+                .push_header(&tcp)
+                .unwrap();
+
+        let copy;
+        unsafe {
+            copy = packet.copy();
+        }
+
+        //println!("original: {}", packet );
+        //println!("copy: {}", copy );
+        unsafe {
+            assert_eq!(packet.header.as_ref().unwrap().src_port(), copy.header.as_ref().unwrap().src_port());
+            assert_eq!(packet.pre_header.unwrap().as_ref().unwrap().src(), 511);
+            assert_eq!(511, copy.pre_header.unwrap().as_ref().unwrap().src());
+            assert_eq!(packet.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src );
+            assert_eq!(copy.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src );
+        }
+    }
 }

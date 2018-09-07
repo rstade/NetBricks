@@ -1,8 +1,8 @@
-use std::alloc::{self, Alloc, Global, Layout};
+use std::alloc::{self, Alloc, Layout};
 use std::fmt;
 use std::mem::size_of;
 use std::ops::{Deref, DerefMut};
-use std::ptr::{self, NonNull, Unique};
+use std::ptr::{self, Unique};
 
 const CACHE_LINE_SIZE: usize = 64;
 unsafe fn allocate_cache_line(size: usize) -> *mut u8 {

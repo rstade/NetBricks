@@ -8,6 +8,7 @@
 #![feature(alloc)]
 #![feature(ptr_internals)]
 #![feature(rustc_private)]
+#![feature(ptr_offset_from)]
 // Used for cache alignment.
 #![feature(allocator_api)]
 #![allow(unused_features)]
@@ -38,7 +39,7 @@ extern crate toml;
 extern crate uuid;
 
 // For cache aware allocation
-extern crate alloc;
+// extern crate alloc;
 
 // Better error handling.
 #[macro_use]
@@ -66,3 +67,6 @@ pub mod scheduler;
 pub mod shared_state;
 pub mod state;
 pub mod utils;
+
+
+
