@@ -10,13 +10,26 @@ use std::cmp;
 pub struct MergeBatch<T: Batch> {
     parents: Vec<T>,
     which: usize,
+    slot: usize,   // index into selector
+    selector: Vec<usize>,
 }
 
 impl<T: Batch> MergeBatch<T> {
     pub fn new(parents: Vec<T>) -> MergeBatch<T> {
+        let selector:Vec<usize>= (0..parents.len()).collect();
         MergeBatch {
             parents: parents,
-            which: 0,
+            which: selector[0],
+            slot: 0,
+            selector,
+        }
+    }
+    pub fn new_with_selector(parents: Vec<T>, selector: Vec<usize>) -> MergeBatch<T> {
+        MergeBatch {
+            parents: parents,
+            which: selector[0],
+            slot: 0,
+            selector,
         }
     }
 }
@@ -48,12 +61,13 @@ impl<T: Batch> Act for MergeBatch<T> {
     #[inline]
     fn done(&mut self) {
         self.parents[self.which].done();
-        let next = self.which + 1;
-        if next == self.parents.len() {
-            self.which = 0
+        let next = self.slot + 1;
+        if next == self.selector.len() {
+            self.slot = 0
         } else {
-            self.which = next
+            self.slot = next
         }
+        self.which=self.selector[self.slot]
     }
 
     #[inline]

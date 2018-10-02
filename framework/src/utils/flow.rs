@@ -68,15 +68,15 @@ const IHL_TO_BYTE_FACTOR: usize = 4; // IHL is in terms of number of 32-bit word
 
 /// This assumes the function is given the Mac Payload
 #[inline]
-pub fn ipv4_extract_flow(bytes: &[u8]) -> Option<FiveTupleV4> {
+pub fn ipv4_extract_flow(bytes: &[u8]) -> FiveTupleV4 {
     let port_start = (bytes[0] & 0xf) as usize * IHL_TO_BYTE_FACTOR;
-    Some(FiveTupleV4 {
+    FiveTupleV4 {
         proto: bytes[9],
         src_ip: BigEndian::read_u32(&bytes[12..16]),
         dst_ip: BigEndian::read_u32(&bytes[16..20]),
         src_port: BigEndian::read_u16(&bytes[(port_start)..(port_start + 2)]),
         dst_port: BigEndian::read_u16(&bytes[(port_start + 2)..(port_start + 4)]),
-    })
+    }
 }
 
 impl FiveTupleV4 {
@@ -117,11 +117,8 @@ impl FiveTupleV4 {
 /// produce different results (in cases when implementing Cuckoo hashing, etc.).
 #[inline]
 pub fn ipv4_flow_hash(bytes: &[u8], _iv: u32) -> usize {
-    if let Some(flow) = ipv4_extract_flow(bytes) {
-        flow_hash(&flow)
-    } else {
-        0
-    }
+    let flow = ipv4_extract_flow(bytes);
+    flow_hash(&flow)
 }
 
 #[inline]

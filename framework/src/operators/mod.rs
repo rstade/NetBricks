@@ -55,6 +55,11 @@ pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
     MergeBatch::new(batches)
 }
 
+#[inline]
+pub fn merge_with_selector<T: Batch>(batches: Vec<T>, selector:Vec<usize>) -> MergeBatch<T> {
+    MergeBatch::new_with_selector(batches, selector)
+}
+
 /// Public trait implemented by every packet batch type. This trait should be used as a constraint for any functions or
 /// places where a Batch type is required. We declare batches as sendable, they cannot be copied but we allow it to be
 /// sent to another thread.
