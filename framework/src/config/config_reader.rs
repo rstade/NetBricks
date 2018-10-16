@@ -162,12 +162,13 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                     Value::Table(ref fdir_def) => {
                         match fdir_def.get("pballoc") {
                             Some(&Value::Integer(pb)) => fdir_conf.pballoc = RteFdirPballocType::from(pb as i32),
-                            v => {
+                            Some(v) => {
                                 return Err(ErrorKind::ConfigurationError(format!(
-                                    "Could not parse fdir pballoc spec {:?}",
+                                    "Could not parse fdir pballoc spec: {:?}",
                                     v
                                 )).into())
-                            }
+                            },
+                            None => () // X710 does not support pballoc
                         };
                         match fdir_def.get("mode") {
                             Some(&Value::Integer(m)) => fdir_conf.mode = RteFdirMode::from(m as i32),
