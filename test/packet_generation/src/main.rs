@@ -6,7 +6,9 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+extern crate uuid;
 
+use uuid::Uuid;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
@@ -39,9 +41,12 @@ fn test<T, S>(ports: HashSet<T>, sched: &mut S)
     let (producer, consumer) = new_mpsc_queue_pair();
     let pipeline = consumer.send(ports.iter().next().unwrap().clone());
     let creator = PacketCreator::new(producer);
-
-    sched.add_task(creator).unwrap();
-    sched.add_task(pipeline).unwrap();
+    let uuid = Uuid::new_v4();
+    let name = String::from("creator");
+    sched.add_runnable(Runnable::from_task(uuid, name, creator).ready());
+    let uuid = Uuid::new_v4();
+    let name = String::from("pipeline");
+    sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
 }
 
 fn main() {

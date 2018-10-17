@@ -5,6 +5,9 @@ extern crate getopts;
 extern crate rand;
 extern crate time;
 extern crate twox_hash;
+extern crate uuid;
+
+use uuid::Uuid;
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
@@ -33,7 +36,9 @@ where
         .map(|port| maglev(ReceiveBatch::new(port.clone()), sched, &vec!["Larry", "Curly", "Moe"]).send(port.clone()))
         .collect();
     println!("Running {} pipelines", pipelines.len());
-    sched.add_task(merge(pipelines)).unwrap();
+    let uuid = Uuid::new_v4();
+    let name = String::from("pipeline");
+    sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).ready());
 }
 
 fn main() {

@@ -412,8 +412,7 @@ case $TASK in
         ;;
     unittest)
         pushd $BASE_DIR/framework
-        export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
-        sudo -E env "PATH=$PATH, HOME=$HOME" ${CARGO} test --release
+        ./test.sh all --release
         popd
         ;;
     run)

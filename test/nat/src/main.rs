@@ -4,6 +4,9 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+extern crate uuid;
+
+use uuid::Uuid;
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
@@ -33,10 +36,12 @@ where
         .map(|port| nat(ReceiveBatch::new(port.clone()), sched, &Ipv4Addr::new(10, 0, 0, 1)).send(port.clone()))
         .collect();
     println!("Running {} pipelines", pipelines.len());
+    let uuid = Uuid::new_v4();
+    let name = String::from("pipeline");
     if pipelines.len() > 1 {
-        sched.add_task(merge(pipelines)).unwrap()
+        sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).ready());
     } else {
-        sched.add_task(pipelines.pop().unwrap()).unwrap()
+        sched.add_runnable(Runnable::from_task(uuid, name, pipelines.pop().unwrap()).ready());
     };
 }
 

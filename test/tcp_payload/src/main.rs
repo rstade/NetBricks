@@ -5,7 +5,9 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+extern crate uuid;
 
+use uuid::Uuid;
 use self::nf::*;
 use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
@@ -25,7 +27,9 @@ fn test<S: Scheduler + Sized>(ports: HashSet<CacheAligned<PortQueue>>, sched: &m
         .map(|port| reconstruction(ReceiveBatch::new(port.clone()), sched).send(port.clone()))
         .collect();
     for pipeline in pipelines {
-        sched.add_task(pipeline).unwrap();
+        let uuid = Uuid::new_v4();
+        let name = String::from("pipeline");
+        sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
     }
 }
 

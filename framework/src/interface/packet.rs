@@ -290,8 +290,8 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             mbuf,
             _phantom_m: PhantomData,
             offset: self.offset,
-            pre_pre_header: None,
-            pre_header: None,
+            pre_pre_header,
+            pre_header,
             header,
         }
     }

@@ -7,6 +7,7 @@ use fnv::FnvHasher;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::hash::BuildHasherDefault;
+use uuid::Uuid;
 
 type FnvHash = BuildHasherDefault<FnvHasher>;
 const BUFFER_SIZE: usize = 2048;
@@ -18,6 +19,7 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
 ) -> CompositionBatch {
     let mut cache = HashMap::<FiveTupleV4, ReorderedBuffer, FnvHash>::with_hasher(Default::default());
     let mut read_buf: Vec<u8> = (0..PRINT_SIZE).map(|_| 0).collect();
+    let uuid = Uuid::new_v4();
     let mut groups = parent
         .parse::<MacHeader>()
         .transform(box move |p| { p.get_mut_header().swap_addresses(); })
@@ -26,6 +28,7 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
             2,
             box move |p| if p.get_header().protocol() == 6 { 0 } else { 1 },
             sched,
+            uuid,
         );
     let pipe = groups
         .get_group(0)

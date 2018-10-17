@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::hash::BuildHasherDefault;
 use twox_hash::XxHash;
+use uuid::Uuid;
 
 type FnvHash = BuildHasherDefault<FnvHasher>;
 type XxHashFactory = BuildHasherDefault<XxHash>;
@@ -93,6 +94,7 @@ pub fn maglev<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
     let ct = backends.len();
     let lut = Maglev::new(backends, 65537);
     let mut cache = HashMap::<usize, usize, FnvHash>::with_hasher(Default::default());
+    let uuid = Uuid::new_v4();
     let mut groups = parent
         .parse::<MacHeader>()
         .transform(box move |pkt| {
@@ -109,6 +111,7 @@ pub fn maglev<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
                 *out
             },
             s,
+            uuid,
         );
     let pipeline = merge((0..ct).map(|i| groups.get_group(i).unwrap()).collect());
     pipeline.compose()

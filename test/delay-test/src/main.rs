@@ -5,6 +5,8 @@ extern crate fnv;
 extern crate getopts;
 extern crate rand;
 extern crate time;
+extern crate uuid;
+
 use self::nf::*;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
@@ -17,6 +19,8 @@ use std::fmt::Display;
 use std::process;
 use std::thread;
 use std::time::Duration;
+use uuid::Uuid;
+
 mod nf;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
@@ -36,7 +40,9 @@ where
         .collect();
     println!("Running {} pipelines", pipelines.len());
     for pipeline in pipelines {
-        sched.add_task(pipeline).unwrap();
+        let uuid = Uuid::new_v4();
+        let name = String::from("pipeline");
+        sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
     }
 }
 
@@ -55,7 +61,9 @@ where
         .collect();
     println!("Running {} pipelines", pipelines.len());
     for pipeline in pipelines {
-        sched.add_task(pipeline).unwrap();
+        let uuid = Uuid::new_v4();
+        let name = String::from("pipeline");
+        sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
     }
 }
 

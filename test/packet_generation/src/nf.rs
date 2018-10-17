@@ -49,12 +49,10 @@ impl PacketCreator {
 }
 
 impl Executable for PacketCreator {
-    fn execute(&mut self) {
+    fn execute(&mut self) -> u32 {
         for _ in 0..16 {
             self.producer.enqueue_one(self.create_packet());
-        }
-    }
-    fn dependencies(&mut self) -> Vec<usize> {
-        vec![]
+        };
+        16
     }
 }

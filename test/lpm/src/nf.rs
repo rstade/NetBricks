@@ -8,6 +8,8 @@ use std::convert::From;
 use std::hash::BuildHasherDefault;
 use std::net::Ipv4Addr;
 
+use uuid::Uuid;
+
 type FnvHash = BuildHasherDefault<FnvHasher>;
 pub struct IPLookup {
     tbl24: Vec<u16>,
@@ -209,6 +211,7 @@ pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S:
     lpm_table.insert_ipv4(&Ipv4Addr::new(95, 215, 103, 88), 32, 1);
     lpm_table.insert_ipv4(&Ipv4Addr::new(5, 167, 65, 50), 32, 1);
     lpm_table.construct_table();
+    let uuid = Uuid::new_v4();
     let mut groups = parent
         .parse::<MacHeader>()
         .transform(box |p| p.get_mut_header().swap_addresses())
@@ -220,6 +223,7 @@ pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S:
                 lpm_table.lookup_entry(hdr.src()) as usize
             },
             s,
+            uuid,
         );
     let pipeline = merge(vec![
         groups.get_group(0).unwrap(),

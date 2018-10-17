@@ -10,6 +10,7 @@ getopts = "*"
 rand = "0.3"
 fnv = "*"
 twox-hash = "*"
+uuid = { version = ">=0.7", features = ["v4"] }
 
 [features]
 default = []
