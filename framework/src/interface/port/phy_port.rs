@@ -421,8 +421,8 @@ impl PmdPort {
         let actual_rxqs = min(max_rxqs, rxqs);
         let actual_txqs = min(max_txqs, txqs);
         debug!("max_rxqs={}, max_txqs={}", max_rxqs, max_txqs);
-
         if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
+            debug!("calling init_pmd_port");
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -563,6 +563,7 @@ impl PmdPort {
         fdir_conf: Option<&RteFdirConf>,
     ) -> Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
+        debug!("attach_pmd_device, port = {:?}", cannonical_spec);
         let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
         if port >= 0 {
             debug!("Going to initialize dpdk port {} ({})", port, spec);
