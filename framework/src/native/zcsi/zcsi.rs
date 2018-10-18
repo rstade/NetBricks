@@ -4,6 +4,7 @@ use std::convert;
 use std::ffi::CStr;
 use std::fmt;
 use std::io;
+use std::net::Ipv4Addr;
 use std::os::raw::{c_char, c_void};
 use std::ptr;
 use std::str::Utf8Error;
@@ -311,6 +312,19 @@ pub struct RteEthIpv4Flow {
     pub proto: u8,   // < Protocol, next header in big endian.
 }
 
+impl fmt::Display for RteEthIpv4Flow {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "(src_ip= {}, dst_ip= {}, tos= {}, ttl= {}, proto= {})",
+            Ipv4Addr::from(self.src_ip),
+            Ipv4Addr::from(self.dst_ip),
+            self.tos,
+            self.ttl,
+            self.proto
+        )
+    }
+}
 /**
 * A structure used to define the input for IPV6 flow
 */
@@ -656,10 +670,17 @@ impl RteFdirConf {
     }
 }
 
-
 impl fmt::Display for RteFdirConf {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "RteFdirConf(mode = {}, pballoc= {:?})", self.mode as i32, self.pballoc as i32, )
+        write!(
+            f,
+            "RteFdirConf(mode = {}, pballoc= {}, ipv4_mask= {}. src_port_mask= {:x}, dst_port_mask= {:x})",
+            self.mode as i32,
+            self.pballoc as i32,
+            self.mask.ipv4_mask,
+            self.mask.src_port_mask,
+            self.mask.dst_port_mask
+        )
     }
 }
 
