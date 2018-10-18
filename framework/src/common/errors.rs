@@ -89,5 +89,6 @@ error_chain! {
     foreign_links {
         Io(::std::io::Error);
         AddrParse(::std::net::AddrParseError);
+        Toml(::toml::de::Error);
     }
 }

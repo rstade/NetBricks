@@ -301,7 +301,7 @@ impl RteEthXstatName {
 /**
  * A structure used to define the input for IPV4 flow
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv4Flow {
     pub src_ip: u32, // < IPv4 source address in big endian.
@@ -314,7 +314,7 @@ pub struct RteEthIpv4Flow {
 /**
 * A structure used to define the input for IPV6 flow
 */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthIpv6Flow {
     pub src_ip: [u32; 4], // IPv6 source address in big endian.
@@ -449,7 +449,7 @@ pub struct RteEthFdirFilter {
  *  A structure used to configure FDIR masks that are used by the device
  *  to match the various fields of RX packet headers.
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirMasks {
     pub vlan_tci_mask: u16, // < Bit mask for vlan_tci in big endian
@@ -472,7 +472,7 @@ pub struct RteEthFdirMasks {
 /**
  *  Flow Director setting modes: none, signature or perfect.
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirMode {
     RteFdirModeNone = 0,           // Disable FDIR support.
@@ -495,7 +495,7 @@ impl convert::From<i32> for RteFdirMode {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirPballocType {
     RteFdirPballoc64k = 0,  // 64k.
@@ -517,7 +517,7 @@ impl convert::From<i32> for RteFdirPballocType {
 /**
  * Payload type
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub enum RteEthPayloadType {
     RteEthPayloadUnknown = 0,
@@ -531,7 +531,7 @@ pub enum RteEthPayloadType {
 /**
  *  Select report mode of FDIR hash information in RX descriptors.
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub enum RteFdirStatusMode {
     RteFdirNoReportStatus = 0,     // Never report FDIR hash.
@@ -558,7 +558,7 @@ impl convert::From<i32> for RteFdirStatusMode {
 const RTE_ETH_FDIR_MAX_FLEXLEN: usize = 16;
 const RTE_ETH_FLOW_MAX: usize = 22;
 
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFlexPayloadCfg {
     payloadtype: RteEthPayloadType,
@@ -575,7 +575,7 @@ pub struct RteEthFlexPayloadCfg {
  * A structure used to define FDIR masks for flexible payload
  * for each flow type
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFlexMask {
     flow_type: u16,
@@ -586,7 +586,7 @@ pub struct RteEthFdirFlexMask {
  * A structure used to define all flexible payload related setting
  * include flex payload and flex mask
  */
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteEthFdirFlexConf {
     nb_payloads: u16,  // The number of following payload cfg
@@ -597,7 +597,7 @@ pub struct RteEthFdirFlexConf {
     // Flex mask configuration for each flow type
 }
 
-#[derive(Clone, Copy)]
+#[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
 pub struct RteFdirConf {
     pub mode: RteFdirMode,           // Flow Director mode.
@@ -653,6 +653,13 @@ impl RteFdirConf {
                 }; RTE_ETH_FLOW_MAX],
             },
         }
+    }
+}
+
+
+impl fmt::Display for RteFdirConf {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "RteFdirConf(mode = {}, pballoc= {:?})", self.mode as i32, self.pballoc as i32, )
     }
 }
 
