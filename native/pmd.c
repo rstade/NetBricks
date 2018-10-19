@@ -187,7 +187,7 @@ static int log_eth_rxconf(struct rte_eth_rxconf* rxconf) {
 }
 
 
-#define CHECK_INTERVAL 1000  /* 100ms */
+#define CHECK_INTERVAL  100  /* 100ms */
 #define MAX_REPEAT_TIMES 90  /* 9s (90 * 100ms) in total */
 
 static void
@@ -244,7 +244,6 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     //eth_rxconf.rx_thresh.hthresh=RX_HTHRESH;
     //eth_rxconf.rx_thresh.wthresh=RX_WTHRESH;
     //eth_rxconf.rx_free_thresh=RX_FREE_THRESH;
-
 
     eth_txconf           = dev_info.default_txconf;
     tso                  = !(!tso);

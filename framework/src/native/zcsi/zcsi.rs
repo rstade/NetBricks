@@ -631,7 +631,7 @@ impl RteFdirConf {
             mode: RteFdirMode::RteFdirModePerfect,
             pballoc: RteFdirPballocType::RteFdirPballoc64k,
             status: RteFdirStatusMode::RteFdirNoReportStatus,
-            drop_queue: 0,
+            drop_queue: 63,
             mask: RteEthFdirMasks {
                 vlan_tci_mask: 0,
                 ipv4_mask: RteEthIpv4Flow {
