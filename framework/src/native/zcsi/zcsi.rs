@@ -730,6 +730,7 @@ extern "C" {
         fdir_conf_ptr: *const RteFdirConf,
     ) -> i32;
     pub fn free_pmd_port(port: i32) -> i32;
+    pub fn fdir_get_infos(pmdport_id: u16);
     pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
                                                                                      //rte_eth_tx_burst is inline C, we cannot directly use it here:
     pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32;
