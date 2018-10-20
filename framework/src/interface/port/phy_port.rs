@@ -422,7 +422,7 @@ impl PmdPort {
         let actual_txqs = min(max_txqs, txqs);
         debug!("max_rxqs={}, max_txqs={}", max_rxqs, max_txqs);
         if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
-            debug!("calling init_pmd_port");
+            debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
             let ret = unsafe {
                 init_pmd_port(
                     port,
