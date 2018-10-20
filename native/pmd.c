@@ -5,6 +5,7 @@
 #include <rte_eal.h>
 #include <rte_ethdev.h>
 #include "mempool.h"
+#include "fdir.h"
 
 /*
  * RX and TX Prefetch, Host, and Write-back threshold values should be
@@ -252,9 +253,10 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
 
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
-
     rte_eth_dev_info_get(port, &dev_info);
+
     // some logging:
+    fdir_get_infos(port);
     RTE_LOG(DEBUG, PMD, "rte_eth_dev_info:\n");
     log_eth_dev_info(&dev_info);
     RTE_LOG(DEBUG, PMD, "default eth_rxconf:\n");

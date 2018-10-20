@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <rte_eth_ctrl.h>
 #include <rte_ethdev.h>
-
-typedef uint16_t portid_t;
+#include "fdir.h"
 
 static char *
 flowtype_to_str(uint16_t flow_type)
