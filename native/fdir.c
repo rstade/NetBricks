@@ -1,3 +1,10 @@
+/* SPDX-License-Identifier: BSD-3-Clause
+ * Copyright(c) 2010-2016 Intel Corporation.
+ * Copyright 2013-2014 6WIND S.A.
+ */
+
+ /* from dpdk/app/test-pmd/config.c (DPDK 18.02.2) , modified by Rainer Stademann */
+
 #include <stdint.h>
 #include <rte_eth_ctrl.h>
 #include <rte_ethdev.h>
