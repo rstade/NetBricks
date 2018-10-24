@@ -1,12 +1,17 @@
-use super::{NetbricksConfiguration, PortConfiguration};
+use super::{NetbricksConfiguration, PortConfiguration, DriverType};
 use common::*;
-use native::zcsi::{RteEthIpv4Flow, RteEthIpv6Flow, RteFdirConf, RteFdirMode, RteFdirPballocType, RteFdirStatusMode, RteEthFdirMasks, RteEthFdirFlexConf};
+use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType,};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 use toml::{self, Value};
+use std::option::Option::Some;
+use std::clone::Clone;
+use std::result::Result::Err;
+use std::string::String;
+use std::string::ToString;
 
 /// Default configuration values
 pub const DEFAULT_POOL_SIZE: u32 = 2048;
@@ -155,42 +160,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                     ),
                 }
             }
-/*
-            fn read_fdir(fdir_val: &Value) -> Result<RteFdirConf> {
-                let mut fdir_conf = RteFdirConf::new();
-                match *fdir_val {
-                    Value::Table(ref fdir_def) => {
-                        match fdir_def.get("pballoc") {
-                            Some(&Value::Integer(pb)) => fdir_conf.pballoc = RteFdirPballocType::from(pb as i32),
-                            Some(v) => {
-                                return Err(ErrorKind::ConfigurationError(format!(
-                                    "Could not parse fdir pballoc spec: {:?}",
-                                    v
-                                )).into())
-                            },
-                            None => () // X710 does not support pballoc
-                        };
-                        match fdir_def.get("mode") {
-                            Some(&Value::Integer(m)) => fdir_conf.mode = RteFdirMode::from(m as i32),
-                            v => {
-                                return Err(ErrorKind::ConfigurationError(format!(
-                                    "Could not parse fdir mode spec {:?}",
-                                    v
-                                )).into())
-                            }
-                        };
-                        match fdir_def.get("ipv4_mask") {
-                            Some(v) => fdir_conf.mask.ipv4_mask = read_ipv4_mask(v)?,
-                            None => (),
-                        };
-                        fdir_conf.mask.src_port_mask = u16::to_be(read_hex_u16(fdir_def, "src_port_mask".to_string()));
-                        fdir_conf.mask.dst_port_mask = u16::to_be(read_hex_u16(fdir_def, "dst_port_mask".to_string()));
-                        Ok(fdir_conf)
-                    }
-                    _ => Err(ErrorKind::ConfigurationError(String::from("Cannot understand fdir spec")).into()),
-                }
-            }
-*/
+
             fn read_fdir(fdir_val: &Value) -> Result<RteFdirConf> {
                 let mut fdir_conf = RteFdirConf::new();
                 match *fdir_val {
@@ -242,6 +212,11 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             let fdir_conf = match port_def.get("fdir") {
                 Some(v) => Some(read_fdir(v)?),
                 None => None,
+            };
+
+            let driver = match port_def.get("driver") {
+                Some(v) =>  v.clone().try_into::<DriverType>()?,
+                None => DriverType::Unknown,
             };
 
             /*
@@ -312,6 +287,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                 tso: tso,
                 k_cores: k_cores,
                 fdir_conf,
+                driver,
             })
         }
         _ => Err(ErrorKind::ConfigurationError(String::from("Could not understand port spec")).into()),

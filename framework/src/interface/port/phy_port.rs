@@ -2,7 +2,7 @@ use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
 use common::*;
-use config::{PortConfiguration, NUM_RXD, NUM_TXD};
+use config::{PortConfiguration, NUM_RXD, NUM_TXD, DriverType};
 use eui48::MacAddress;
 use native::zcsi::*;
 use regex::Regex;
@@ -52,6 +52,7 @@ pub struct PmdPort {
     linux_if: Option<String>,    // used for kni interfaces
     rxqs: i32,
     txqs: i32,
+    driver: DriverType,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
     fdir_conf: Option<RteFdirConf>,
@@ -323,6 +324,11 @@ impl PmdPort {
     }
 
     pub fn add_fdir_filter(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> Result<i32> {
+        if self.driver == DriverType::I40e { self.add_fdir_filter_i40e(rxq, dst_ip, dst_port)}
+        else { self.add_fdir_filter_ixgbe(rxq, dst_ip, dst_port) }
+    }
+
+    fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> Result<i32> {
         // assumes that flows in Fdir are fully masked, except for the destination ip and port
 
         let action = RteEthFdirAction {
@@ -378,6 +384,100 @@ impl PmdPort {
         }
     }
 
+    fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> Result<i32> {
+        let mut filter_info= RteEthFdirFilterInfo {
+            info_type: RteEthFdirFilterInfoType::RteEthFdirFilterInputSetSelect,
+            input_set_conf: RteEthInputSetConf {
+                flow_type: 3u16, // RTE_ETH_FLOW_FRAG_IPV4
+                inset_size: 1u16,
+                field: [RteEthInputSetField::Unknown; RTE_ETH_INSET_SIZE_MAX],
+                op: RteFilterInputSetOp::Select,
+            }
+        };
+        filter_info.input_set_conf.field[0]=RteEthInputSetField::L3DstIp4;
+        let fdir_filter_info: *mut RteEthFdirFilterInfo = &mut filter_info;
+
+        unsafe {
+            let result:Result<i32>= check_os_error(rte_eth_dev_filter_ctrl(
+                self.port_id() as u16,
+                RteFilterType::RteEthFilterFdir,
+                RteFilterOp::RteEthFilterSet,
+                fdir_filter_info as *mut c_void,
+            )).map_err(|e| e.into());
+            result?;
+        }
+
+        let action = RteEthFdirAction {
+            rx_queue: rxq,
+            behavior: RteEthFdirBehavior::RteEthFdirAccept,
+            report_status: RteEthFdirStatus::RteEthFdirNoReportStatus,
+            flex_off: 0,
+        };
+
+        let ip = RteEthIpv4Flow {
+            src_ip: 0,
+            dst_ip: u32::to_be(dst_ip),
+            tos: 0,
+            ttl: 0,
+            proto: 6,
+        };
+
+        pub struct PaddedIpv4Flow {
+            ip: RteEthIpv4Flow,
+            _padding: [u8; 32],
+        }
+
+        let flow = PaddedIpv4Flow {
+            ip,
+            _padding: [0u8;32]
+        };
+
+        let flow_ext = RteEthFdirFlowExt {
+            vlan_tci: 0u16,
+            flexbytes: [0u8; 16],
+            is_vf: 0u8,   // 1 for VF, 0 for port dev
+            dst_id: 0u16, // VF ID, available when is_vf is 1
+        };
+
+        pub struct RteEthFdirInputIpv4 {
+            pub flow_type: u16, // e.g. RTE_ETH_FLOW_NONFRAG_IPV4_TCP
+            pub flow: PaddedIpv4Flow,
+            // < Flow fields to match, dependent on flow_type */
+            pub flow_ext: RteEthFdirFlowExt,
+            // < Additional fields to match */
+        }
+
+        let input = RteEthFdirInputIpv4 {
+            flow_type: 3, // i.e. RTE_ETH_FLOW_FRAG_IPV4
+            flow,
+            flow_ext,
+        };
+
+        pub struct RteEthFdirFilter {
+            pub soft_id: u32,
+            /**< ID, an unique value is required when deal with FDIR entry */
+            pub input: RteEthFdirInputIpv4, // < Input set
+            pub action: RteEthFdirAction, // < Action taken when match
+        }
+
+        let mut fdir_filter = RteEthFdirFilter {
+            soft_id: 0,
+            input,
+            action,
+        };
+
+        let fdir_filter_ptr: *mut RteEthFdirFilter = &mut fdir_filter;
+
+        unsafe {
+            check_os_error(rte_eth_dev_filter_ctrl(
+                self.port_id() as u16,
+                RteFilterType::RteEthFilterFdir,
+                RteFilterOp::RteEthFilterAdd,
+                fdir_filter_ptr as *mut c_void,
+            )).map_err(|e| e.into())
+        }
+    }
+
     pub fn print_soft_statistics(&self) {
         println!(
             "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}",
@@ -411,6 +511,7 @@ impl PmdPort {
         loopback: bool,
         tso: bool,
         csumoffload: bool,
+        driver: DriverType,
         fdir_conf: Option<&RteFdirConf>,
     ) -> Result<Arc<PmdPort>> {
         let loopbackv = i32_from_bool(loopback);
@@ -452,6 +553,7 @@ impl PmdPort {
                     rxqs: actual_rxqs,
                     txqs: actual_txqs,
                     should_close: true,
+                    driver,
                     stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
                     fdir_conf: if fdir_conf.is_some() {
@@ -487,6 +589,7 @@ impl PmdPort {
                 rxqs: 1,
                 txqs: 1,
                 should_close: false,
+                driver: DriverType::Unknown,
                 stats_rx: vec![Arc::new(PortStats::new())],
                 stats_tx: vec![Arc::new(PortStats::new())],
                 fdir_conf: None,
@@ -511,6 +614,7 @@ impl PmdPort {
                         rxqs: 1,
                         txqs: 1,
                         should_close: false,
+                        driver: DriverType::Unknown,
                         stats_rx: vec![Arc::new(PortStats::new())],
                         stats_tx: vec![Arc::new(PortStats::new())],
                         fdir_conf: None,
@@ -539,6 +643,7 @@ impl PmdPort {
                     rxqs: 1,
                     txqs: 1,
                     should_close: true, // sta, not clear what this is used for, and if to set true or false
+                    driver: DriverType::Unknown,
                     stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
                     fdir_conf: None,
@@ -560,6 +665,7 @@ impl PmdPort {
         loopback: bool,
         tso: bool,
         csumoffload: bool,
+        driver: DriverType,
         fdir_conf: Option<&RteFdirConf>,
     ) -> Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
@@ -578,6 +684,7 @@ impl PmdPort {
                 loopback,
                 tso,
                 csumoffload,
+                driver,
                 fdir_conf,
             ).chain_err(|| ErrorKind::BadDev(String::from(spec)))
         } else {
@@ -595,6 +702,7 @@ impl PmdPort {
             rxqs: 0,
             txqs: 0,
             should_close: false,
+            driver: DriverType::Unknown,
             stats_rx: vec![Arc::new(PortStats::new())],
             stats_tx: vec![Arc::new(PortStats::new())],
             fdir_conf: None,
@@ -621,6 +729,7 @@ impl PmdPort {
         let loopback = port_config.loopback;
         let tso = port_config.tso;
         let csumoffload = port_config.csum;
+        let driver = port_config.driver;
         let fdir_conf = port_config.fdir_conf.as_ref();
 
         let parts: Vec<_> = name.splitn(2, ':').collect();
@@ -638,6 +747,7 @@ impl PmdPort {
                 loopback,
                 tso,
                 csumoffload,
+                driver,
                 fdir_conf,
             ),
             "kni" => {
@@ -664,6 +774,7 @@ impl PmdPort {
                 loopback,
                 tso,
                 csumoffload,
+                driver,
                 fdir_conf,
             ),
         }
@@ -687,6 +798,7 @@ impl PmdPort {
             csum: false,
             k_cores: vec![],
             fdir_conf: None,
+            driver: DriverType::Unknown,
         };
         PmdPort::new_port_from_configuration(&config)
     }

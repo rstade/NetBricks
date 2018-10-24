@@ -256,7 +256,6 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     rte_eth_dev_info_get(port, &dev_info);
 
     // some logging:
-    fdir_get_infos(port);
     RTE_LOG(DEBUG, PMD, "rte_eth_dev_info:\n");
     log_eth_dev_info(&dev_info);
     RTE_LOG(DEBUG, PMD, "default eth_rxconf:\n");
@@ -297,7 +296,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     }
 
     assert_link_status(port);
-
+    fdir_get_infos(port);
     RTE_LOG(INFO, PMD, "pmd port %d configured successfully\n", port);
 
     return 0;

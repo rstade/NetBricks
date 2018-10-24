@@ -459,6 +459,111 @@ pub struct RteEthFdirFilter {
     pub action: RteEthFdirAction, // < Action taken when match
 }
 
+pub const RTE_ETH_INSET_SIZE_MAX:usize=   128; /**< Max length of input set. */
+
+/**
+ * Input set fields for Flow Director and Hash filters
+ */
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub enum RteEthInputSetField {
+    Unknown = 0,
+
+    /* L2 */
+    L2SrcMac = 1,
+    L2DstMac,
+    L2OuterVlan,
+    L2InnerVlan,
+    L2EtherType,
+
+    /* L3 */
+    L3SrcIp4 = 129,
+    L3DstIp4,
+    L3SrcIp6,
+    L3DstIp6,
+    L3Ip4Tos,
+    L3Ip4Proto,
+    L3Ip6Tc,
+    L3Ip6NextHeader,
+    L3Ip4Ttl,
+    L3Ip6HopLimits,
+
+    /* L4 */
+    L4UdpSrcPort = 257,
+    L4UdpDstPort,
+    L4TcpSrcPort,
+    L4TcpDstPort,
+    L4SctpSrcPort,
+    L4SctpDstPort,
+    L4SctpVerificationTag,
+
+    /* Tunnel */
+    TunnelL2InnerDstMac = 385,
+    TunnelL2InnerSrcMac,
+    TunnelL2InnerVlan,
+    TunnelL4UdpKey,
+    TunnelGreKey,
+
+    /* Flexible Payload */
+    FlexPayload1stWord= 641,
+    FlexPayload2ndWord,
+    FlexPayload3rdWord,
+    FlexPayload4thWord,
+    FlexPayload5thWord,
+    FlexPayload6thWord,
+    FlexPayload7thWord,
+    FlexPayload8thWord,
+
+    DEFAULT = 65533,
+    NONE = 65534,
+    MAX = 65535,
+}
+
+
+/**
+ * Filters input set operations
+ */
+pub enum RteFilterInputSetOp {
+    OpUnknown,
+    Select, /**< select input set */
+    Add,    /**< add input set entry */
+    OpMax,
+}
+
+/**
+ * A structure used to define the input set configuration for
+ * flow director and hash filters
+ */
+pub struct RteEthInputSetConf {
+    pub flow_type: u16,
+    pub inset_size: u16,
+    pub field: [RteEthInputSetField;RTE_ETH_INSET_SIZE_MAX],
+    pub op: RteFilterInputSetOp,
+}
+
+
+/**
+ * Flow Director filter information types.
+ */
+pub enum RteEthFdirFilterInfoType {
+    RteEthFdirFilterInfoTypeUnknown=0,
+    /** Flow Director filter input set configuration */
+    RteEthFdirFilterInputSetSelect=1,
+    RteEthFdirFilterInfoTypeMax=2,
+}
+
+/**
+ * A structure used to set FDIR filter information, to support filter type
+ * of 'RTE_ETH_FILTER_FDIR' RTE_ETH_FDIR_FILTER_INPUT_SET_SELECT operation.
+ */
+pub struct RteEthFdirFilterInfo {
+    pub info_type:  RteEthFdirFilterInfoType, /**< Information type */
+    /** Details of fdir filter information */
+    /** Flow Director input set configuration per port */
+    pub input_set_conf: RteEthInputSetConf,
+}
+
+
 /**
  *  A structure used to configure FDIR masks that are used by the device
  *  to match the various fields of RX packet headers.

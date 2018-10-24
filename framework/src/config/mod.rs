@@ -89,6 +89,13 @@ impl fmt::Display for NetbricksConfiguration {
     }
 }
 
+#[derive(Deserialize, Clone, Copy, PartialEq)]
+pub enum DriverType {
+    Unknown=0,
+    Ixgbe=1,
+    I40e=2,
+}
+
 /// Configuration for each port (network device) in `NetBricks`.
 pub struct PortConfiguration {
     /// Name. The exact semantics vary by backend. For DPDK, we allow things of the form:
@@ -112,6 +119,7 @@ pub struct PortConfiguration {
     /// cores on which kni kernel threads should run (in case of multi-threading kni kernel module)
     pub k_cores: Vec<i32>,
     pub fdir_conf: Option<RteFdirConf>,
+    pub driver: DriverType,
 }
 
 impl Default for PortConfiguration {
@@ -127,6 +135,7 @@ impl Default for PortConfiguration {
             csum: false,
             k_cores: vec![],
             fdir_conf: None,
+            driver: DriverType::Unknown,
         }
     }
 }
