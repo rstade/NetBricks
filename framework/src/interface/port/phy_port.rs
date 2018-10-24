@@ -422,6 +422,7 @@ impl PmdPort {
             proto: 6,
         };
 
+        #[repr(C)]
         pub struct PaddedIpv4Flow {
             ip: RteEthIpv4Flow,
             _padding: [u8; 32],
@@ -439,6 +440,7 @@ impl PmdPort {
             dst_id: 0u16, // VF ID, available when is_vf is 1
         };
 
+        #[repr(C)]
         pub struct RteEthFdirInputIpv4 {
             pub flow_type: u16, // e.g. RTE_ETH_FLOW_NONFRAG_IPV4_TCP
             pub flow: PaddedIpv4Flow,
@@ -453,6 +455,7 @@ impl PmdPort {
             flow_ext,
         };
 
+        #[repr(C)]
         pub struct RteEthFdirFilter {
             pub soft_id: u32,
             /**< ID, an unique value is required when deal with FDIR entry */

@@ -523,6 +523,7 @@ pub enum RteEthInputSetField {
 /**
  * Filters input set operations
  */
+#[repr(C)]
 pub enum RteFilterInputSetOp {
     OpUnknown,
     Select, /**< select input set */
@@ -534,6 +535,7 @@ pub enum RteFilterInputSetOp {
  * A structure used to define the input set configuration for
  * flow director and hash filters
  */
+#[repr(C)]
 pub struct RteEthInputSetConf {
     pub flow_type: u16,
     pub inset_size: u16,
@@ -545,6 +547,7 @@ pub struct RteEthInputSetConf {
 /**
  * Flow Director filter information types.
  */
+#[repr(C)]
 pub enum RteEthFdirFilterInfoType {
     RteEthFdirFilterInfoTypeUnknown=0,
     /** Flow Director filter input set configuration */
@@ -556,6 +559,7 @@ pub enum RteEthFdirFilterInfoType {
  * A structure used to set FDIR filter information, to support filter type
  * of 'RTE_ETH_FILTER_FDIR' RTE_ETH_FDIR_FILTER_INPUT_SET_SELECT operation.
  */
+#[repr(C)]
 pub struct RteEthFdirFilterInfo {
     pub info_type:  RteEthFdirFilterInfoType, /**< Information type */
     /** Details of fdir filter information */
