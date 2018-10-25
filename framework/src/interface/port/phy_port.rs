@@ -387,6 +387,14 @@ impl PmdPort {
     }
 
     fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> errors::Result<i32> {
+
+        unsafe {
+            let result:errors::Result<i32>=
+                check_os_error(rte_eth_dev_filter_supported(self.port as u16, RteFilterType::RteEthFilterFdir))
+                    .map_err(|e| e.into());
+            result?;
+        }
+
         let mut filter_info= RteEthFdirFilterInfo {
             info_type: RteEthFdirFilterInfoType::RteEthFdirFilterInputSetSelect,
             input_set_conf: RteEthInputSetConf {
@@ -409,6 +417,7 @@ impl PmdPort {
             result?;
         }
 
+/*
         unsafe {
             let result:errors::Result<i32>= check_os_error(rte_eth_dev_filter_ctrl(
                 self.port_id() as u16,
@@ -418,7 +427,7 @@ impl PmdPort {
             )).map_err(|e| e.into());
             result?;
         }
-
+*/
 
         let action = RteEthFdirAction {
             rx_queue: rxq,
@@ -463,7 +472,7 @@ impl PmdPort {
         }
 
         let input = RteEthFdirInputIpv4 {
-            flow_type: 3, // i.e. RTE_ETH_FLOW_FRAG_IPV4
+            flow_type: RTE_ETH_FLOW_NONFRAG_IPV4_TCP, 
             flow,
             flow_ext,
         };
