@@ -1,7 +1,8 @@
 use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
-use common::*;
+use common::errors;
+use common::errors::*;
 use config::{PortConfiguration, NUM_RXD, NUM_TXD, DriverType};
 use eui48::MacAddress;
 use native::zcsi::*;
@@ -16,6 +17,7 @@ use std::ptr::Unique;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use utils::FiveTupleV4;
+use native::zcsi::RTE_ETH_FLOW_NONFRAG_IPV4_TCP;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -124,7 +126,7 @@ impl fmt::Display for PortQueue {
 /// Represents a single RX/TX queue pair for a port. This is what is needed to send or receive traffic.
 impl PortQueue {
     #[inline]
-    fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: u16) -> Result<u32> {
+    fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
         unsafe {
             let sent = if self.port.is_kni() {
                 rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
@@ -138,7 +140,7 @@ impl PortQueue {
     }
 
     #[inline]
-    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> Result<u32> {
+    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
         unsafe {
             let recv = if self.port.is_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
@@ -169,7 +171,7 @@ impl PacketTx for PortQueue {
     /// Send a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn send(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
+    fn send(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let txq = self.txq;
         let len = pkts.len() as u16;
         self.send_queue(txq, pkts.as_mut_ptr(), len)
@@ -184,7 +186,7 @@ impl PacketRx for PortQueue {
     /// Receive a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len() as u16;
         self.recv_queue(pkts, len)
     }
@@ -254,7 +256,7 @@ impl PmdPort {
         self.kni.unwrap().as_ptr()
     }
 
-    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: i32, txq: i32) -> Result<CacheAligned<PortQueue>> {
+    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: i32, txq: i32) -> errors::Result<CacheAligned<PortQueue>> {
         if rxq > port.rxqs || rxq < 0 {
             Err(ErrorKind::BadRxQueue(port.port, rxq).into())
         } else if txq > port.txqs || txq < 0 {
@@ -323,12 +325,12 @@ impl PmdPort {
         }
     }
 
-    pub fn add_fdir_filter(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> Result<i32> {
+    pub fn add_fdir_filter(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
         if self.driver == DriverType::I40e { self.add_fdir_filter_i40e(rxq, dst_ip, dst_port)}
         else { self.add_fdir_filter_ixgbe(rxq, dst_ip, dst_port) }
     }
 
-    fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> Result<i32> {
+    fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
         // assumes that flows in Fdir are fully masked, except for the destination ip and port
 
         let action = RteEthFdirAction {
@@ -384,11 +386,11 @@ impl PmdPort {
         }
     }
 
-    fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> Result<i32> {
+    fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> errors::Result<i32> {
         let mut filter_info= RteEthFdirFilterInfo {
             info_type: RteEthFdirFilterInfoType::RteEthFdirFilterInputSetSelect,
             input_set_conf: RteEthInputSetConf {
-                flow_type: 3u16, // RTE_ETH_FLOW_FRAG_IPV4
+                flow_type: RTE_ETH_FLOW_NONFRAG_IPV4_TCP, // RTE_ETH_FLOW_FRAG_IPV4
                 inset_size: 1u16,
                 field: [RteEthInputSetField::Unknown; RTE_ETH_INSET_SIZE_MAX],
                 op: RteFilterInputSetOp::Select,
@@ -398,7 +400,7 @@ impl PmdPort {
         let fdir_filter_info: *mut RteEthFdirFilterInfo = &mut filter_info;
 
         unsafe {
-            let result:Result<i32>= check_os_error(rte_eth_dev_filter_ctrl(
+            let result:errors::Result<i32>= check_os_error(rte_eth_dev_filter_ctrl(
                 self.port_id() as u16,
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterSet,
@@ -406,6 +408,17 @@ impl PmdPort {
             )).map_err(|e| e.into());
             result?;
         }
+
+        unsafe {
+            let result:errors::Result<i32>= check_os_error(rte_eth_dev_filter_ctrl(
+                self.port_id() as u16,
+                RteFilterType::RteEthFilterFdir,
+                RteFilterOp::RteEthFilterAdd,
+                fdir_filter_info as *mut c_void,
+            )).map_err(|e| e.into());
+            result?;
+        }
+
 
         let action = RteEthFdirAction {
             rx_queue: rxq,
@@ -516,7 +529,7 @@ impl PmdPort {
         csumoffload: bool,
         driver: DriverType,
         fdir_conf: Option<&RteFdirConf>,
-    ) -> Result<Arc<PmdPort>> {
+    ) -> errors::Result<Arc<PmdPort>> {
         let loopbackv = i32_from_bool(loopback);
         let tsov = i32_from_bool(tso);
         let csumoffloadv = i32_from_bool(csumoffload);
@@ -574,7 +587,7 @@ impl PmdPort {
     }
 
     /// Create a new port that can talk to BESS.
-    fn new_bess_port(name: &str, core: i32) -> Result<Arc<PmdPort>> {
+    fn new_bess_port(name: &str, core: i32) -> errors::Result<Arc<PmdPort>> {
         let ifname = CString::new(name).unwrap();
         // This call returns the port number
         let port = unsafe {
@@ -602,7 +615,7 @@ impl PmdPort {
         }
     }
 
-    fn new_ovs_port(name: &str, core: i32) -> Result<Arc<PmdPort>> {
+    fn new_ovs_port(name: &str, core: i32) -> errors::Result<Arc<PmdPort>> {
         match name.parse() {
             Ok(iface) => {
                 // This call returns the port number
@@ -630,7 +643,7 @@ impl PmdPort {
         }
     }
 
-    fn new_kni_port(kni_port_params: Box<KniPortParams>) -> Result<Arc<PmdPort>> {
+    fn new_kni_port(kni_port_params: Box<KniPortParams>) -> errors::Result<Arc<PmdPort>> {
         // This call returns a pointer to an opaque C struct
         let port_id = kni_port_params.port_id;
         let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
@@ -670,7 +683,7 @@ impl PmdPort {
         csumoffload: bool,
         driver: DriverType,
         fdir_conf: Option<&RteFdirConf>,
-    ) -> Result<Arc<PmdPort>> {
+    ) -> errors::Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         debug!("attach_pmd_device, port = {:?}", cannonical_spec);
         let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
@@ -695,7 +708,7 @@ impl PmdPort {
         }
     }
 
-    fn null_port() -> Result<Arc<PmdPort>> {
+    fn null_port() -> errors::Result<Arc<PmdPort>> {
         Ok(Arc::new(PmdPort {
             port_type: PortType::Null,
             connected: false,
@@ -713,7 +726,7 @@ impl PmdPort {
     }
 
     /// Create a new port from a `PortConfiguration`.
-    pub fn new_port_from_configuration(port_config: &PortConfiguration) -> Result<Arc<PmdPort>> {
+    pub fn new_port_from_configuration(port_config: &PortConfiguration) -> errors::Result<Arc<PmdPort>> {
         /// Create a new port.
         ///
         /// Description
@@ -789,7 +802,7 @@ impl PmdPort {
         txqs: i32,
         rx_cores: &[i32],
         tx_cores: &[i32],
-    ) -> Result<Arc<PmdPort>> {
+    ) -> errors::Result<Arc<PmdPort>> {
         let config = PortConfiguration {
             name: name.to_string(),
             rx_queues: rx_cores[0..rxqs as usize].to_vec(),
@@ -806,13 +819,13 @@ impl PmdPort {
         PmdPort::new_port_from_configuration(&config)
     }
 
-    pub fn new_with_cores(name: &str, rx_core: i32, tx_core: i32) -> Result<Arc<PmdPort>> {
+    pub fn new_with_cores(name: &str, rx_core: i32, tx_core: i32) -> errors::Result<Arc<PmdPort>> {
         let rx_vec = vec![rx_core];
         let tx_vec = vec![tx_core];
         PmdPort::new_with_queues(name, 1, 1, &rx_vec[..], &tx_vec[..])
     }
 
-    pub fn new(name: &str, core: i32) -> Result<Arc<PmdPort>> {
+    pub fn new(name: &str, core: i32) -> errors::Result<Arc<PmdPort>> {
         PmdPort::new_with_cores(name, core, core)
     }
 

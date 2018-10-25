@@ -1,4 +1,4 @@
-mod errors;
+pub mod errors;
 pub use self::errors::*;
 
 /// Null metadata associated with packets initially.

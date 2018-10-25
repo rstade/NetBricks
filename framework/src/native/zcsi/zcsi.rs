@@ -48,6 +48,9 @@ pub enum RteFlow {}
 #define RTE_ETH_FLOW_MAX                22
 */
 
+
+pub const RTE_ETH_FLOW_NONFRAG_IPV4_TCP: u16 = 4;
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub enum RteLogLevel {
