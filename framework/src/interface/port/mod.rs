@@ -1,5 +1,7 @@
 pub use self::phy_port::*;
 pub use self::virt_port::*;
+pub use self::fdir::*;
+
 use allocators::*;
 use common::*;
 use interface::{PacketRx, PacketTx};
@@ -7,6 +9,7 @@ use native::zcsi::MBuf;
 use std::sync::atomic::AtomicUsize;
 mod phy_port;
 mod virt_port;
+pub mod fdir;
 
 /// Statistics for PMD port.
 struct PortStats {
