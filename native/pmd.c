@@ -296,7 +296,6 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     }
 
     assert_link_status(port);
-    fdir_get_infos(port);
     RTE_LOG(INFO, PMD, "pmd port %d configured successfully\n", port);
 
     return 0;

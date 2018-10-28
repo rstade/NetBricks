@@ -14,17 +14,16 @@ chashmap = ">= 2.2.0"
 log = "0.3"
 getopts = "*"
 byteorder = "*"
-clippy = { version = "*", optional = true }
 fnv = "*"
 twox-hash = "*"
 regex = "*"
 lazy_static = "*"
 net2 = "*"
 # NIX restricts us to just unix for now, we can fix this if someone cares at a later point.
-nix = "*"
+nix = ">=0.10.0"
 # Figure out if we want this permanently or just for now.
 rust-sctp = { git="https://github.com/netsys/rust-sctp", optional = true}
-toml = "0.4"
+toml = ">=0.4"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
 error-chain = ">=0.12"
@@ -38,7 +37,6 @@ serde = "1.0"
 [features]
 default = []
 performance = []
-dev = ["clippy"]
 packet_offset = []
 sctp = ["rust-sctp"]
 

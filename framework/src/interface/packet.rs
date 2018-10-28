@@ -261,7 +261,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     pub unsafe fn copy (&self) -> Packet<T, M> {
         // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
         // This sets refcnt = 1
-        let mut mbuf = mbuf_alloc();
+        let mbuf = mbuf_alloc();
         self.copy_use_mbuf(mbuf)
     }
 
@@ -374,7 +374,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn write_metadata<M2: Sized + Send>(&mut self, metadata: &M2) -> Result<()> {
+    pub fn write_metadata<M2: Sized + Send>(&mut self, metadata: &M2) -> errors::Result<()> {
         if size_of::<M2>() >= FREEFORM_METADATA_SIZE {
             Err(ErrorKind::MetadataTooLarge.into())
         } else {
@@ -424,7 +424,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
     /// Remove data at the top of the payload, useful when removing headers.
     #[inline]
-    pub fn remove_from_payload_head(&mut self, size: usize) -> Result<()> {
+    pub fn remove_from_payload_head(&mut self, size: usize) -> errors::Result<()> {
         unsafe {
             let src = self.data_base();
             let dst = src.offset(size as isize);
@@ -436,7 +436,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
     /// Add data to the head of the payload.
     #[inline]
-    pub fn add_to_payload_head(&mut self, size: usize) -> Result<()> {
+    pub fn add_to_payload_head(&mut self, size: usize) -> errors::Result<()> {
         unsafe {
             let added = (*self.mbuf).add_data_end(size);
             if added >= size {
@@ -451,7 +451,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn remove_from_payload_tail(&mut self, size: usize) -> Result<()> {
+    pub fn remove_from_payload_tail(&mut self, size: usize) -> errors::Result<()> {
         unsafe {
             (*self.mbuf).remove_data_end(size);
             Ok(())
@@ -459,7 +459,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn add_to_payload_tail(&mut self, size: usize) -> Result<()> {
+    pub fn add_to_payload_tail(&mut self, size: usize) -> errors::Result<()> {
         unsafe {
             let added = (*self.mbuf).add_data_end(size);
             if added >= size {
@@ -471,7 +471,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn write_header<T2: EndOffset + Sized>(&mut self, header: &T2, offset: usize) -> Result<()> {
+    pub fn write_header<T2: EndOffset + Sized>(&mut self, header: &T2, offset: usize) -> errors::Result<()> {
         if offset > self.payload_size() {
             Err(ErrorKind::BadOffset(offset).into())
         } else {

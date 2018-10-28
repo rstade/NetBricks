@@ -84,7 +84,7 @@ where
             consumers.insert(i, consumer);
         }
         let name = String::from("GroupByProducer");
-        let task = sched.add_runnable(
+        let _task = sched.add_runnable(
             Runnable::from_task(
                 uuid,
                 name,
@@ -109,7 +109,7 @@ where
 
     pub fn get_group(&mut self, group: usize) -> Option<RestoreHeader<T, V::Metadata, ReceiveBatch<MpscConsumer>>> {
         match self.consumers.remove(&group) {
-            Some(mut p) => {
+            Some(p) => {
                 {
                     // p.get_packet_batch().add_parent_task(self.task)
                 };

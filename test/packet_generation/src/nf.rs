@@ -2,7 +2,6 @@ use e2d2::common::*;
 use e2d2::headers::*;
 use e2d2::interface::*;
 use e2d2::queues::*;
-use e2d2::scheduler::*;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
 use eui48::{MacAddress};
