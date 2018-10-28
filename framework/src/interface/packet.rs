@@ -1,4 +1,6 @@
-use common::*;
+use common::EmptyMetadata;
+use common::errors;
+use common::errors::ErrorKind;
 use headers::{EndOffset, NullHeader, TcpHeader};
 use native::zcsi::*;
 use std::fmt;
@@ -6,7 +8,11 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ptr;
 use std::slice;
+use std::option::Option;
 use utils::ipv4_checksum;
+//use std::option::Option::{None, Some};
+use std::marker::Sized;
+use std::prelude::v1::*;
 
 /// A packet is a safe wrapper around mbufs, that can be allocated and manipulated.
 /// We associate a header type with a packet to allow safe insertion of headers.
@@ -41,7 +47,7 @@ unsafe fn create_packet<T: EndOffset, M: Sized + Send>(mbuf: *mut MBuf, hdr: *mu
     let pkt = Packet::<T, M> {
         mbuf: mbuf,
         _phantom_m: PhantomData,
-        offset: offset,
+        offset,
         pre_pre_header: None,
         pre_header: None,
         header: hdr,
@@ -58,7 +64,7 @@ unsafe fn create_follow_packet<T: EndOffset, M: Sized + Send>(
     let pkt = Packet::<T, M> {
         mbuf: p.get_mbuf_ref(),
         _phantom_m: PhantomData,
-        offset: offset,
+        offset,
         header: hdr,
         pre_pre_header: p.pre_header,
         pre_header: Some(p.header),

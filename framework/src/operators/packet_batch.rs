@@ -1,7 +1,8 @@
 use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
 use super::Batch;
-use common::*;
+use common::{errors, EmptyMetadata};
+use common::errors::ErrorKind;
 use headers::NullHeader;
 use interface::*;
 use native::zcsi::*;
@@ -28,7 +29,7 @@ impl PacketBatch {
             array: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
 //            parent_tasks: vec![],
-            b_keep_mbuf: b_keep_mbuf,
+            b_keep_mbuf,
         }
     }
     //
@@ -45,7 +46,7 @@ impl PacketBatch {
     /// Allocate as many mbufs as batch can hold. `len` here merely sets the extent of the mbuf considered when sending
     /// a packet. We always allocate mbuf's of the same size.
     #[inline]
-    pub fn allocate_batch_with_size(&mut self) -> Result<&mut Self> {
+    pub fn allocate_batch_with_size(&mut self) -> errors::Result<&mut Self> {
         let capacity = self.array.capacity() as i32;
         self.alloc_packet_batch(capacity).and_then(|_| Ok(self))
     }
@@ -53,7 +54,7 @@ impl PacketBatch {
     /// Allocate `cnt` mbufs. `len` sets the metadata field indicating how much of the mbuf should be considred when
     /// sending the packet, all `mbufs` are of the same size.
     #[inline]
-    pub fn allocate_partial_batch_with_size(&mut self, cnt: i32) -> Result<&mut Self> {
+    pub fn allocate_partial_batch_with_size(&mut self, cnt: i32) -> errors::Result<&mut Self> {
         match self.alloc_packet_batch(cnt) {
             Ok(_) => Ok(self),
             Err(_) => Err(ErrorKind::FailedAllocation.into()),
@@ -62,7 +63,7 @@ impl PacketBatch {
 
     /// Free all mbuf's held in this batch.
     #[inline]
-    pub fn deallocate_batch(&mut self) -> Result<&mut Self> {
+    pub fn deallocate_batch(&mut self) -> errors::Result<&mut Self> {
         match self.free_packet_batch() {
             Ok(_) => Ok(self),
             Err(_) => Err(ErrorKind::FailedDeallocation.into()),
@@ -77,7 +78,7 @@ impl PacketBatch {
 
     /// Receive packets from a PMD port queue.
     #[inline]
-    pub fn recv<Rx: PacketRx>(&mut self, port: &Rx) -> Result<u32> {
+    pub fn recv<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<u32> {
         unsafe {
             match self.deallocate_batch() {
                 Err(err) => Err(err),
@@ -88,7 +89,7 @@ impl PacketBatch {
 
     // Assumes we have already deallocated batch.
     #[inline]
-    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> Result<u32> {
+    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<u32> {
         let capacity = self.array.capacity();
         self.add_to_batch(capacity);
         match port.recv(self.packet_ptr()) {
@@ -185,7 +186,7 @@ impl PacketBatch {
     }
 
     #[inline]
-    fn alloc_packet_batch(&mut self, cnt: i32) -> Result<()> {
+    fn alloc_packet_batch(&mut self, cnt: i32) -> errors::Result<()> {
         unsafe {
             if self.array.capacity() < (cnt as usize) {
                 Err(ErrorKind::FailedAllocation.into())
@@ -253,7 +254,7 @@ impl Act for PacketBatch {
     fn done(&mut self) {}
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         let mut total_sent = 0;
         // TODO: Make it optionally possible to wait for all packets to be sent.
         unsafe {

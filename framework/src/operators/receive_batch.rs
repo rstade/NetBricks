@@ -15,8 +15,8 @@ pub struct ReceiveBatch<T: PacketRx> {
 impl<T: PacketRx> ReceiveBatch<T> {
     pub fn new_with_parent(parent: PacketBatch, packet_rx: T) -> ReceiveBatch<T> {
         ReceiveBatch {
-            parent: parent,
-            packet_rx: packet_rx,
+            parent,
+            packet_rx,
             received: 0,
         }
     }
@@ -24,7 +24,7 @@ impl<T: PacketRx> ReceiveBatch<T> {
     pub fn new(packet_rx: T) -> ReceiveBatch<T> {
         ReceiveBatch {
             parent: PacketBatch::new(32, false),
-            packet_rx: packet_rx,
+            packet_rx,
             received: 0,
         }
     }
@@ -32,7 +32,7 @@ impl<T: PacketRx> ReceiveBatch<T> {
     pub fn new_keep_mbuf(packet_rx: T) -> ReceiveBatch<T> {
         ReceiveBatch {
             parent: PacketBatch::new(32, true),
-            packet_rx: packet_rx,
+            packet_rx,
             received: 0,
         }
     }
@@ -86,7 +86,7 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

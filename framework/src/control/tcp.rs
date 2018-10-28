@@ -56,11 +56,11 @@ impl<T: TcpControlAgent> TcpControlServer<T> {
         handle.new_io_port(&listener, listener_token);
         handle.schedule_read(&listener, listener_token);
         TcpControlServer {
-            listener: listener,
-            scheduler: scheduler,
-            handle: handle,
+            listener,
+            scheduler,
+            handle,
             next_token: listener_token + 1,
-            listener_token: listener_token,
+            listener_token,
             phantom_t: PhantomData,
             connections: HashMap::with_capacity_and_hasher(32, Default::default()),
         }

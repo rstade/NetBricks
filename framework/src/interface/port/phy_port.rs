@@ -2,7 +2,7 @@ use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
 use common::errors;
-use common::errors::*;
+use common::errors::{ErrorKind, ResultExt};
 use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
 use native::zcsi::*;
@@ -268,8 +268,8 @@ impl PmdPort {
             Ok(CacheAligned::allocate(PortQueue {
                 port: port.clone(),
                 port_id: port.port,
-                txq: txq,
-                rxq: rxq,
+                txq,
+                rxq,
                 stats_rx: port.stats_rx[rxq as usize].clone(),
                 stats_tx: port.stats_tx[txq as usize].clone(),
             }))
@@ -397,7 +397,7 @@ impl PmdPort {
                 Ok(Arc::new(PmdPort {
                     port_type: PortType::Dpdk,
                     connected: true,
-                    port: port,
+                    port,
                     kni: None,
                     linux_if: None,
                     rxqs: actual_rxqs,
@@ -458,7 +458,7 @@ impl PmdPort {
                     Ok(Arc::new(PmdPort {
                         port_type: PortType::Ovs,
                         connected: true,
-                        port: port,
+                        port,
                         kni: None,
                         linux_if: None,
                         rxqs: 1,

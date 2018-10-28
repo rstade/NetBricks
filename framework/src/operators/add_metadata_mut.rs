@@ -27,8 +27,8 @@ where
 {
     pub fn new(parent: V, generator: MutableMetadataFn<V::Header, V::Metadata, M>) -> MutableAddMetadataBatch<M, V> {
         MutableAddMetadataBatch {
-            parent: parent,
-            generator: generator,
+            parent,
+            generator,
             applied: false,
             _phantom_m: PhantomData,
         }
@@ -93,7 +93,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

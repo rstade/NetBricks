@@ -29,9 +29,9 @@ where
     pub fn new(parent: V, filter: FilterFn<T, V::Metadata>) -> FilterBatch<T, V> {
         let capacity = parent.capacity() as usize;
         FilterBatch {
-            parent: parent,
-            filter: filter,
-            capacity: capacity,
+            parent,
+            filter,
+            capacity,
             remove: Vec::with_capacity(capacity),
         }
     }
@@ -71,7 +71,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

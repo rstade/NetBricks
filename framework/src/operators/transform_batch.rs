@@ -28,8 +28,8 @@ where
 {
     pub fn new(parent: V, transformer: TransformFn<T, V::Metadata>) -> TransformBatch<T, V> {
         TransformBatch {
-            parent: parent,
-            transformer: transformer,
+            parent,
+            transformer,
             applied: false,
             phantom_t: PhantomData,
         }
@@ -90,7 +90,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

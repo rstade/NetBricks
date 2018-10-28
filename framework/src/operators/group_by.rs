@@ -89,17 +89,17 @@ where
                 uuid,
                 name,
                 GroupByProducer {
-                    parent: parent,
-                    group_fn: group_fn,
-                    producers: producers,
+                    parent,
+                    group_fn,
+                    producers,
                 },
             ).unready(),
         );
         GroupBy {
             _phantom_v: PhantomData,
-            groups: groups,
+            groups,
             _phantom_t: PhantomData,
-            consumers: consumers,
+            consumers,
         }
     }
 

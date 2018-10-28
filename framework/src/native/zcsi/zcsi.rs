@@ -190,9 +190,9 @@ pub struct KniPortParams {
 impl KniPortParams {
     pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
         let mut params = KniPortParams {
-            port_id: port_id,                 // Port ID
-            lcore_rx: lcore_rx,               // lcore ID for RX
-            lcore_tx: lcore_tx,               // lcore ID for TX
+            port_id,                 // Port ID
+            lcore_rx,               // lcore ID for RX
+            lcore_tx,               // lcore ID for TX
             nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
             nb_kni: 1,
             lcore_k: [0u32; KNI_MAX_KTHREAD],        // lcore ID list for kthreads

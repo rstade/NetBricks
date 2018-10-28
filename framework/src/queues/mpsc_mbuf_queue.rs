@@ -239,7 +239,7 @@ pub struct MpscConsumer {
 
 impl PacketRx for MpscConsumer {
     #[inline]
-    fn recv(&self, mbufs: &mut [*mut MBuf]) -> Result<u32> {
+    fn recv(&self, mbufs: &mut [*mut MBuf]) -> errors::Result<u32> {
         Ok(self.mpsc_queue.dequeue(mbufs) as u32)
     }
 }

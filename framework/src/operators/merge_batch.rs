@@ -18,7 +18,7 @@ impl<T: Batch> MergeBatch<T> {
     pub fn new(parents: Vec<T>) -> MergeBatch<T> {
         let selector:Vec<usize>= (0..parents.len()).collect();
         MergeBatch {
-            parents: parents,
+            parents,
             which: selector[0],
             slot: 0,
             selector,
@@ -26,7 +26,7 @@ impl<T: Batch> MergeBatch<T> {
     }
     pub fn new_with_selector(parents: Vec<T>, selector: Vec<usize>) -> MergeBatch<T> {
         MergeBatch {
-            parents: parents,
+            parents,
             which: selector[0],
             slot: 0,
             selector,
@@ -71,7 +71,7 @@ impl<T: Batch> Act for MergeBatch<T> {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         self.parents[self.which].send_q(port)
     }
 

@@ -26,7 +26,7 @@ impl fmt::Display for VirtualQueue {
 
 impl PacketTx for VirtualQueue {
     #[inline]
-    fn send(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
+    fn send(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len() as i32;
         let update = self.stats_tx.stats.load(Ordering::Relaxed) + len as usize;
         self.stats_tx.stats.store(update, Ordering::Relaxed);
@@ -41,7 +41,7 @@ impl PacketRx for VirtualQueue {
     /// Send a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> Result<u32> {
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len() as i32;
         let status = unsafe { mbuf_alloc_bulk(pkts.as_mut_ptr(), len as u32) };
         let alloced = if status == 0 { len } else { 0 };
@@ -52,14 +52,14 @@ impl PacketRx for VirtualQueue {
 }
 
 impl VirtualPort {
-    pub fn new() -> Result<Arc<VirtualPort>> {
+    pub fn new() -> errors::Result<Arc<VirtualPort>> {
         Ok(Arc::new(VirtualPort {
             stats_rx: Arc::new(PortStats::new()),
             stats_tx: Arc::new(PortStats::new()),
         }))
     }
 
-    pub fn new_virtual_queue(&self) -> Result<CacheAligned<VirtualQueue>> {
+    pub fn new_virtual_queue(&self) -> errors::Result<CacheAligned<VirtualQueue>> {
         Ok(CacheAligned::allocate(VirtualQueue {
             stats_rx: self.stats_rx.clone(),
             stats_tx: self.stats_tx.clone(),
