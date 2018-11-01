@@ -1,6 +1,8 @@
 use super::{Executable, Scheduler};
 use std::collections::HashMap;
-use std::sync::mpsc::{ Receiver, RecvError, Sender, SyncSender};
+use std::sync::mpsc::{ Receiver, RecvError, Sender, SyncSender };
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use utils;
 use uuid::Uuid;
@@ -14,7 +16,7 @@ pub struct Runnable {
     pub cycles: u64,    // cycles used while doing some work (i.e. increasing 'count' metric)
     pub count: u64,     // packets processed (or some comparable metric for the work done)
     pub last_run: u64,
-    pub is_ready: bool,
+    pub is_ready: Arc<AtomicBool>,
 }
 
 impl Runnable {
@@ -26,7 +28,7 @@ impl Runnable {
             cycles: 0,
             count: 0,
             last_run: utils::rdtsc_unsafe(),
-            is_ready: false,
+            is_ready: Arc::new(AtomicBool::new(false)),
         }
     }
     pub fn from_boxed_task(uuid: Uuid, name: String, task: Box<Executable>) -> Runnable {
@@ -37,18 +39,42 @@ impl Runnable {
             cycles: 0,
             count: 0,
             last_run: utils::rdtsc_unsafe(),
-            is_ready: false,
+            is_ready: Arc::new(AtomicBool::new(false)),
         }
     }
 
-    pub fn ready(mut self) -> Self {
-        self.is_ready = true;
+    #[inline]
+    pub fn ready(&self) -> &Self {
+        self.is_ready.store( true, Ordering::SeqCst);
         self
     }
 
-    pub fn unready(mut self) -> Self {
-        self.is_ready = false;
+    #[inline]
+    pub fn unready(&self) -> &Self {
+        self.is_ready.store( false, Ordering::SeqCst);
         self
+    }
+
+    #[inline]
+    pub fn move_ready(self) -> Self {
+        self.is_ready.store( true, Ordering::SeqCst);
+        self
+    }
+
+    #[inline]
+    pub fn move_unready(self) -> Self {
+        self.is_ready.store( false, Ordering::SeqCst);
+        self
+    }
+
+    #[inline]
+    pub fn is_ready(&self) -> bool {
+        self.is_ready.load(Ordering::SeqCst)
+    }
+
+    #[inline]
+    fn get_ready_atomic(&self) -> Arc<AtomicBool> {
+        self.is_ready.clone()
     }
 }
 
@@ -139,9 +165,17 @@ impl StandaloneScheduler {
     pub fn set_task_state(&mut self, uuid: &Uuid, ready: bool) -> Option<bool> {
         match self.uuid2index.get(uuid) {
             Some(index) => {
-                let previous= self.run_q[*index].is_ready;
-                self.run_q[*index].is_ready = ready;
+                let previous=self.run_q[*index].is_ready.swap(ready, Ordering::SeqCst);
                 Some(previous)
+            }
+            None => { None }
+        }
+    }
+
+    pub fn get_ready_flag(&self, uuid: &Uuid) -> Option<Arc<AtomicBool>> {
+        match self.uuid2index.get(uuid) {
+            Some(index) => {
+                Some(self.run_q[*index].get_ready_atomic())
             }
             None => { None }
         }
@@ -164,7 +198,7 @@ impl StandaloneScheduler {
             }
             SchedulerCommand::SetTaskStateAll(state) => {
                 for r in &mut self.run_q {
-                    r.is_ready=state;
+                    r.ready();
                 }
                 debug!("core {}: set task state all {:?} at {:>20}", self.core, state, utils::rdtsc_unsafe().separated_string());
             }
@@ -204,7 +238,7 @@ impl StandaloneScheduler {
     fn execute_internal(&mut self, begin: u64) -> u64 {
         let time = {
             let task = &mut (&mut self.run_q[self.next_task]);
-            if task.is_ready {
+            if task.is_ready() {
                 let count = task.task.execute();
                 let end = utils::rdtsc_unsafe();
                 if count > 0 {
