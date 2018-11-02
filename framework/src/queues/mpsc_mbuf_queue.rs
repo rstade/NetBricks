@@ -113,6 +113,13 @@ impl MpscQueue {
     }
 
     #[inline]
+    fn free_slots(&self) -> usize {
+        let producer_head = self.producer.head.load(Ordering::Acquire);
+        let consumer_tail = self.consumer.tail.load(Ordering::Acquire);
+        self.mask.wrapping_add(consumer_tail).wrapping_sub(producer_head)
+    }
+
+    #[inline]
     fn enqueue_mp(&self, mbufs: &[*mut MBuf]) -> usize {
         let len = mbufs.len();
         let mut insert;
@@ -230,6 +237,11 @@ impl MpscProducer {
     #[inline]
     pub fn enqueue_one<T: EndOffset, M: Sized + Send>(&self, packet: Packet<T, M>) -> bool {
         unsafe { self.mpsc_queue.enqueue_one(packet.get_mbuf()) }
+    }
+
+    #[inline]
+    pub fn free_slots(&self) -> usize {
+        self.mpsc_queue.free_slots()
     }
 }
 

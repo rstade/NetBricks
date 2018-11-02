@@ -181,6 +181,15 @@ impl StandaloneScheduler {
         }
     }
 
+    pub fn task_is_ready(&self, uuid: &Uuid) -> Option<bool> {
+        match self.uuid2index.get(uuid) {
+            Some(index) => {
+                Some(self.run_q[*index].is_ready())
+            }
+            None => { None }
+        }
+    }
+
     fn handle_request(&mut self, request: SchedulerCommand) {
         match request {
             SchedulerCommand::Add((uuid, name, ex)) => {
