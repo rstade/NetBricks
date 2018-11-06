@@ -643,6 +643,28 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
+    pub fn copy_payload_from_u8_slice(&mut self, payload: &[u8]) -> usize {
+        let copy_len = payload.len();
+        if copy_len > 0 {
+            let dst = self.payload();
+            let src = payload.as_ptr();
+            let payload_size = self.payload_size();
+            let should_copy = if payload_size < copy_len {
+                let increment = copy_len - payload_size;
+                payload_size + self.increase_payload_size(increment)
+            } else {
+                copy_len
+            };
+            unsafe {
+                ptr::copy_nonoverlapping(src, dst, should_copy);
+                should_copy
+            }
+        } else {
+            0usize
+        }
+    }
+
+    #[inline]
     pub fn add_padding(&mut self, nbytes: usize) -> usize {
         self.increase_payload_size(nbytes)
     }
