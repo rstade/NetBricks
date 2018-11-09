@@ -1,6 +1,6 @@
 [package]
 name = "e2d2"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "rainer <rainer@spacebandit.de>"]
 build = "build.rs"
 
