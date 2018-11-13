@@ -30,7 +30,7 @@ macro_rules! batch_no_new {
 macro_rules! act {
     () => {
         #[inline]
-        fn act(&mut self) -> u32 {
+        fn act(&mut self) -> (u32, i32) {
             self.parent.act()
         }
 

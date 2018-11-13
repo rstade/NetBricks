@@ -322,6 +322,10 @@ uint32_t eth_tx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
 	return rte_eth_tx_burst((uint16_t) port, (uint16_t)qid, (struct rte_mbuf**)pkts, len);
 }
 
+uint32_t eth_rx_queue_count(uint16_t port_id, uint16_t queue_id) {
+    return rte_eth_rx_queue_count(port_id, queue_id);
+}
+
 int find_port_with_pci_address(const char* pci) {
     struct rte_pci_addr addr;
     struct rte_eth_dev_info info;

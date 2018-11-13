@@ -139,19 +139,20 @@ impl PortQueue {
     }
 
     #[inline]
-    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
+    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
         unsafe {
-            let recv = if self.port.is_kni() {
+            let (recv, q_count) = if self.port.is_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
-                rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32)
+                (rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32), 0)
             } else {
                 //debug!("calling eth_rx_burst for {}.{}", self.port, self.rxq);
-                eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
+                (eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv),
+                eth_rx_queue_count(self.port_id as u16, self.rxq as u16))
             };
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
-            Ok(recv as u32)
+            Ok((recv, q_count))
         }
     }
 
@@ -185,7 +186,7 @@ impl PacketRx for PortQueue {
     /// Receive a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         let len = pkts.len() as u16;
         self.recv_queue(pkts, len)
     }

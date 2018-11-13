@@ -39,9 +39,9 @@ where
     let uuid = Uuid::new_v4();
     let name = String::from("pipeline");
     if pipelines.len() > 1 {
-        sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).ready());
+        sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).move_ready());
     } else {
-        sched.add_runnable(Runnable::from_task(uuid, name, pipelines.pop().unwrap()).ready());
+        sched.add_runnable(Runnable::from_task(uuid, name, pipelines.pop().unwrap()).move_ready());
     };
 }
 

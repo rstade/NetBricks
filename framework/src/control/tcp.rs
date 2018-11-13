@@ -29,9 +29,9 @@ pub struct TcpControlServer<T: TcpControlAgent> {
 }
 
 impl<T: TcpControlAgent> Executable for TcpControlServer<T> {
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         self.schedule();
-        1u32
+        (1u32, 0)
     }
 
     //    #[inline]

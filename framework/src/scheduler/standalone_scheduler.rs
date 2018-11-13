@@ -4,6 +4,8 @@ use std::sync::mpsc::{ Receiver, RecvError, Sender, SyncSender };
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
+use std::cmp;
+
 use utils;
 use uuid::Uuid;
 use separator::Separatable;
@@ -15,6 +17,7 @@ pub struct Runnable {
     pub name: String,
     pub cycles: u64,    // cycles used while doing some work (i.e. increasing 'count' metric)
     pub count: u64,     // packets processed (or some comparable metric for the work done)
+    pub queue_len: u32, // max queue length observed by this task
     pub last_run: u64,
     pub is_ready: Arc<AtomicBool>,
 }
@@ -27,6 +30,7 @@ impl Runnable {
             name,
             cycles: 0,
             count: 0,
+            queue_len: 0,
             last_run: utils::rdtsc_unsafe(),
             is_ready: Arc::new(AtomicBool::new(false)),
         }
@@ -38,6 +42,7 @@ impl Runnable {
             name,
             cycles: 0,
             count: 0,
+            queue_len: 0,
             last_run: utils::rdtsc_unsafe(),
             is_ready: Arc::new(AtomicBool::new(false)),
         }
@@ -111,7 +116,7 @@ pub enum SchedulerCommand {
 }
 
 pub enum SchedulerReply {
-    PerformanceData(i32, HashMap<Uuid, (String, u64, u64)>), //core id, uuid of task, task name, consumed cycles, count
+    PerformanceData(i32, HashMap<Uuid, (String, u64, u64, u32)>), //core id, uuid of task, task name, consumed cycles, count, queue_len
 }
 
 const DEFAULT_Q_SIZE: usize = 256;
@@ -212,9 +217,9 @@ impl StandaloneScheduler {
                 debug!("core {}: set task state all {:?} at {:>20}", self.core, state, utils::rdtsc_unsafe().separated_string());
             }
             SchedulerCommand::GetPerformance => {
-                let mut data:  HashMap<Uuid, (String, u64, u64)> = HashMap::with_capacity(DEFAULT_Q_SIZE);
+                let mut data:  HashMap<Uuid, (String, u64, u64, u32)> = HashMap::with_capacity(DEFAULT_Q_SIZE);
                 for r in &self.run_q {
-                    data.insert(r.uuid, (r.name.clone(), r.cycles, r.count));
+                    data.insert(r.uuid, (r.name.clone(), r.cycles, r.count, r.queue_len));
                 }
                 self.sender.send(SchedulerReply::PerformanceData(self.core, data)).unwrap();
             }
@@ -248,13 +253,16 @@ impl StandaloneScheduler {
         let time = {
             let task = &mut (&mut self.run_q[self.next_task]);
             if task.is_ready() {
-                let count = task.task.execute();
+                let (count, q_len) = task.task.execute();
                 let end = utils::rdtsc_unsafe();
                 if count > 0 {
                     task.count += count as u64;
                     task.cycles += end - begin;
                 }
                 task.last_run = end;
+                if q_len > 0 {
+                    task.queue_len=cmp::max(task.queue_len, q_len as u32);
+                }
                 end
             } else {
                 utils::rdtsc_unsafe()

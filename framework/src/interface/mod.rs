@@ -8,7 +8,7 @@ use common::errors;
 
 /// Generic trait for objects that can receive packets.
 pub trait PacketRx: Send {
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32>;
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)>; // (packets received, queue length (if >=0))
     fn port_id(&self) -> i32 {
         -1
     }

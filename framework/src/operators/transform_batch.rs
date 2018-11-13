@@ -67,10 +67,11 @@ where
     V: Batch + BatchIterator<Header = T> + Act,
 {
     #[inline]
-    fn act(&mut self) -> u32 {
+    fn act(&mut self) -> (u32, i32) {
         let mut count = 0;
+        let mut q_len = 0;
         if !self.applied {
-            self.parent.act();
+            q_len = self.parent.act().1;
             {
                 let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
                 while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
@@ -80,7 +81,7 @@ where
             }
             self.applied = true;
         }
-        count
+        (count, q_len)
     }
 
     #[inline]

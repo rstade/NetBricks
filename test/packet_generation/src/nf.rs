@@ -48,10 +48,10 @@ impl PacketCreator {
 }
 
 impl Executable for PacketCreator {
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         for _ in 0..16 {
             self.producer.enqueue_one(self.create_packet());
         };
-        16
+        (16, 0)
     }
 }

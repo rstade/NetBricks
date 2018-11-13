@@ -40,9 +40,9 @@ where
     V: Batch + BatchIterator<Header = T> + Act + 'static,
 {
     #[inline]
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         let mut count = 0;
-        self.parent.act(); // Let the parent get some packets.
+        let pre= self.parent.act(); // Let the parent get some packets.
         {
             let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
             while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
@@ -54,7 +54,7 @@ where
         }
         self.parent.get_packet_batch().clear_packets();
         self.parent.done();
-        count
+        (count, pre.1)
     }
 
     //    #[inline]

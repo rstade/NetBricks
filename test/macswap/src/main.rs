@@ -40,7 +40,7 @@ fn test<T, S>(ports: HashSet<T>, sched: &mut S)
     for pipeline in pipelines {
         let uuid = Uuid::new_v4();
         let name = String::from("pipeline");
-        sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
+        sched.add_runnable(Runnable::from_task(uuid, name, pipeline).move_ready());
     }
 }
 

@@ -48,7 +48,7 @@ impl Act for CompositionBatch {
 
 impl Executable for CompositionBatch {
     #[inline]
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         let count= self.act();
         self.done();
         count

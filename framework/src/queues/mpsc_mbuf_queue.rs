@@ -120,6 +120,11 @@ impl MpscQueue {
     }
 
     #[inline]
+    fn used_slots(&self) -> usize {
+        self.slots-self.free_slots()
+    }
+
+    #[inline]
     fn enqueue_mp(&self, mbufs: &[*mut MBuf]) -> usize {
         let len = mbufs.len();
         let mut insert;
@@ -243,6 +248,11 @@ impl MpscProducer {
     pub fn free_slots(&self) -> usize {
         self.mpsc_queue.free_slots()
     }
+
+    #[inline]
+    pub fn used_slots(&self) -> usize {
+        self.mpsc_queue.used_slots()
+    }
 }
 
 pub struct MpscConsumer {
@@ -251,8 +261,8 @@ pub struct MpscConsumer {
 
 impl PacketRx for MpscConsumer {
     #[inline]
-    fn recv(&self, mbufs: &mut [*mut MBuf]) -> errors::Result<u32> {
-        Ok(self.mpsc_queue.dequeue(mbufs) as u32)
+    fn recv(&self, mbufs: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
+        Ok((self.mpsc_queue.dequeue(mbufs) as u32, self.mpsc_queue.used_slots() as i32))
     }
 }
 

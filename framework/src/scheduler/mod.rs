@@ -10,21 +10,17 @@ mod standalone_scheduler;
 mod context;
 
 pub trait Executable {
-    fn execute(&mut self) -> u32;  // returns #packets processed, or a comparable metric
-    //    fn dependencies(&mut self) -> Vec<usize>;
+    fn execute(&mut self) -> (u32, i32);  // returns #packets processed, or a comparable metric
 }
 
 impl<F> Executable for F
 where
-    F: FnMut() -> u32,
+    F: FnMut() -> (u32, i32),
 {
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         (*self)()
     }
 
-    //   fn dependencies(&mut self) -> Vec<usize> {
-    //       vec![]
-    //   }
 }
 
 pub trait Scheduler {

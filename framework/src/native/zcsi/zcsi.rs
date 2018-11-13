@@ -844,7 +844,8 @@ extern "C" {
     pub fn free_pmd_port(port: i32) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
     pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
-                                                                                     //rte_eth_tx_burst is inline C, we cannot directly use it here:
+    pub fn eth_rx_queue_count(port_id: u16, queue_id: u16) -> i32;
+    // rte_eth_tx_burst is inline C, we cannot directly use it here:
     pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32;
     pub fn num_pmd_ports() -> i32;
     pub fn rte_eth_macaddr_get(port: i32, address: *mut MacAddress);

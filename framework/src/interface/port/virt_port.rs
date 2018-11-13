@@ -41,13 +41,13 @@ impl PacketRx for VirtualQueue {
     /// Send a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         let len = pkts.len() as i32;
         let status = unsafe { mbuf_alloc_bulk(pkts.as_mut_ptr(), len as u32) };
         let alloced = if status == 0 { len } else { 0 };
         let update = self.stats_rx.stats.load(Ordering::Relaxed) + alloced as usize;
         self.stats_rx.stats.store(update, Ordering::Relaxed);
-        Ok(alloced as u32)
+        Ok((alloced as u32, 0))
     }
 }
 

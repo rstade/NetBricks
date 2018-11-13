@@ -78,7 +78,7 @@ impl PacketBatch {
 
     /// Receive packets from a PMD port queue.
     #[inline]
-    pub fn recv<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<u32> {
+    pub fn recv<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> {
         unsafe {
             match self.deallocate_batch() {
                 Err(err) => Err(err),
@@ -89,14 +89,14 @@ impl PacketBatch {
 
     // Assumes we have already deallocated batch.
     #[inline]
-    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<u32> {
+    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> {
         let capacity = self.array.capacity();
         self.add_to_batch(capacity);
         match port.recv(self.packet_ptr()) {
             e @ Err(_) => e,
-            Ok(recv) => {
+            Ok((recv, q_count)) => {
                 self.add_to_batch(recv as usize);
-                Ok(recv)
+                Ok((recv, q_count))
             }
         }
     }
@@ -248,7 +248,7 @@ impl BatchIterator for PacketBatch {
 /// Internal interface for packets.
 impl Act for PacketBatch {
     #[inline]
-    fn act(&mut self) -> u32 { 0 }
+    fn act(&mut self) -> (u32, i32) { (0, 0) }
 
     #[inline]
     fn done(&mut self) {}

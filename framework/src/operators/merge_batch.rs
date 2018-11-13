@@ -54,7 +54,7 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
 /// Internal interface for packets.
 impl<T: Batch> Act for MergeBatch<T> {
     #[inline]
-    fn act(&mut self)-> u32 {
+    fn act(&mut self)-> (u32, i32) {
         self.parents[self.which].act()
     }
 
@@ -111,7 +111,7 @@ impl<T: Batch> Act for MergeBatch<T> {
 
 impl<T: Batch> Executable for MergeBatch<T> {
     #[inline]
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         let count = self.act();
         self.done();
         count

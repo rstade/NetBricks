@@ -43,10 +43,10 @@ fn test<T, S>(ports: HashSet<T>, sched: &mut S)
     let creator = PacketCreator::new(producer);
     let uuid = Uuid::new_v4();
     let name = String::from("creator");
-    sched.add_runnable(Runnable::from_task(uuid, name, creator).ready());
+    sched.add_runnable(Runnable::from_task(uuid, name, creator).move_ready());
     let uuid = Uuid::new_v4();
     let name = String::from("pipeline");
-    sched.add_runnable(Runnable::from_task(uuid, name, pipeline).ready());
+    sched.add_runnable(Runnable::from_task(uuid, name, pipeline).move_ready());
 }
 
 fn main() {

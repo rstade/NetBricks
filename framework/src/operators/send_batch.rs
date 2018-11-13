@@ -63,11 +63,11 @@ where
     V: Batch + BatchIterator + Act,
 {
     #[inline]
-    fn act(&mut self) -> u32 {
+    fn act(&mut self) -> (u32, i32) {
         // debug!("SendBatch.act with port {}", self.port.port_id());
         // First everything is applied
         let mut count:u32 =0;
-        self.parent.act();
+        let pre=self.parent.act();
         self.parent
             .get_packet_batch()
             .send_q(&self.port)
@@ -77,7 +77,7 @@ where
                 Ok(x)
             }).expect("Send failed");
         self.parent.done();
-        count
+        (count, pre.1)
     }
 
     fn done(&mut self) {}
@@ -117,7 +117,7 @@ where
     V: Batch + BatchIterator + Act,
 {
     #[inline]
-    fn execute(&mut self) -> u32 {
+    fn execute(&mut self) -> (u32, i32) {
         self.act()
     }
 

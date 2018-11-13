@@ -57,26 +57,24 @@ impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
 /// Internal interface for packets.
 impl<T: PacketRx> Act for ReceiveBatch<T> {
     #[inline]
-    fn act(&mut self) -> u32 {
-        let mut count = 0;
+    fn act(&mut self) -> (u32, i32) {
         self.parent.act();
         self.parent
             .recv(&self.packet_rx)
             .and_then(|x| {
                 /*
-                if x > 0 && self.packet_rx.port_id().is_some() {
+                if x.0 > 0 && self.packet_rx.port_id().is_some() {
                     trace!(
-                        "received batch with {} packets on port {}. ",
-                        x,
-                        self.packet_rx.port_id().unwrap()
+                        "received batch with {} packets on port {}, Queue lenght= {}. ",
+                        x.0,
+                        self.packet_rx.port_id().unwrap(),
+                        x.1
                     );
                 }
 */
-                self.received += x as u64;
-                count = x;
+                self.received += x.0 as u64;
                 Ok(x)
-            }).expect("Receive failure");
-        count
+            }).expect("Receive failure")
     }
 
     #[inline]

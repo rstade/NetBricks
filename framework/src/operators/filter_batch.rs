@@ -45,9 +45,9 @@ where
     V: Batch + BatchIterator<Header = T> + Act,
 {
     #[inline]
-    fn act(&mut self) -> u32 {
+    fn act(&mut self) -> (u32, i32) {
         let mut count = 0;
-        self.parent.act();
+        let pre=self.parent.act();
         // Filter during the act
         let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
         while let Some(ParsedDescriptor { mut packet, index: idx }) = iter.next(&mut self.parent) {
@@ -62,7 +62,7 @@ where
                 .expect("Filtering was performed incorrectly");
         }
         self.remove.clear();
-        count
+        (count, pre.1)
     }
 
     #[inline]

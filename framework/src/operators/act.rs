@@ -5,7 +5,7 @@ use interface::PacketTx;
 pub trait Act {
     /// Actually perform whatever needs to be done by this processing node.
     #[inline]
-    fn act(&mut self) -> u32;
+    fn act(&mut self) -> (u32, i32); // returns (processed packets, queue length (if >= 0)
 
     /// Notification indicating we are done processing the current batch of packets
     #[inline]

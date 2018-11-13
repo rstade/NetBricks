@@ -38,7 +38,7 @@ where
     println!("Running {} pipelines", pipelines.len());
     let uuid = Uuid::new_v4();
     let name = String::from("pipeline");
-    sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).ready());
+    sched.add_runnable(Runnable::from_task(uuid, name, merge(pipelines)).move_ready());
 }
 
 fn main() {

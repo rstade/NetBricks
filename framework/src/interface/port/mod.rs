@@ -26,7 +26,7 @@ impl PortStats {
 
 impl<T: PacketRx> PacketRx for CacheAligned<T> {
     #[inline]
-    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
+    fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         T::recv(&*self, pkts)
     }
 
