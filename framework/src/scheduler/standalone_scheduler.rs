@@ -212,7 +212,7 @@ impl StandaloneScheduler {
             }
             SchedulerCommand::SetTaskStateAll(state) => {
                 for r in &mut self.run_q {
-                    r.ready();
+                    if state { r.ready(); } else { r.unready(); }
                 }
                 debug!("core {}: set task state all {:?} at {:>20}", self.core, state, utils::rdtsc_unsafe().separated_string());
             }
