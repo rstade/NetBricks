@@ -264,6 +264,11 @@ impl PacketRx for MpscConsumer {
     fn recv(&self, mbufs: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         Ok((self.mpsc_queue.dequeue(mbufs) as u32, self.mpsc_queue.used_slots() as i32))
     }
+
+    #[inline]
+    fn queued(&self) -> usize {
+        self.mpsc_queue.used_slots()
+    }
 }
 
 pub fn new_mpsc_queue_pair_with_size(size: usize) -> (MpscProducer, ReceiveBatch<MpscConsumer>) {

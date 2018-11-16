@@ -32,7 +32,9 @@ where
     V: Batch + BatchIterator + Act,
     M: Sized + Send,
     T: EndOffset + 'static,
-{}
+{
+    fn queued(&self) -> usize { self.parent.queued() }
+}
 
 impl<T, M, V> RestoreHeader<T, M, V>
 where

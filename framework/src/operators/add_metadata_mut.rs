@@ -40,6 +40,7 @@ where
     M: Send + Sized,
     V: Batch + BatchIterator + Act,
 {
+    fn queued(&self) -> usize { self.parent.queued() }
 }
 
 impl<M, V> BatchIterator for MutableAddMetadataBatch<M, V>

@@ -14,6 +14,7 @@ use self::iterator::BatchIterator;
 pub use self::map_batch::MapBatch;
 use self::map_batch::MapFn;
 pub use self::merge_batch::MergeBatch;
+pub use self::merge_batch_auto::MergeBatchAuto;
 pub use self::parsed_batch::ParsedBatch;
 pub use self::receive_batch::ReceiveBatch;
 
@@ -40,6 +41,7 @@ mod group_by;
 mod iterator;
 mod map_batch;
 mod merge_batch;
+mod merge_batch_auto;
 mod packet_batch;
 mod parsed_batch;
 mod receive_batch;
@@ -50,6 +52,8 @@ mod transform_batch;
 
 /// Merge a vector of batches into one batch. Currently this just round-robins between merged batches, but in the future
 /// the precise batch being processed will be determined by the scheduling policy used.
+
+
 #[inline]
 pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
     MergeBatch::new(batches)
@@ -60,10 +64,17 @@ pub fn merge_with_selector<T: Batch>(batches: Vec<T>, selector:Vec<usize>) -> Me
     MergeBatch::new_with_selector(batches, selector)
 }
 
+#[inline]
+pub fn merge_auto<T: Batch>(batches: Vec<T>) -> MergeBatchAuto<T> {
+    MergeBatchAuto::new(batches)
+}
+
 /// Public trait implemented by every packet batch type. This trait should be used as a constraint for any functions or
 /// places where a Batch type is required. We declare batches as sendable, they cannot be copied but we allow it to be
 /// sent to another thread.
 pub trait Batch: BatchIterator + Act + Send {
+    fn queued(&self) -> usize;
+
     /// Parse the payload as header of type.
     fn parse<T: EndOffset<PreviousHeader = Self::Header>>(self) -> ParsedBatch<T, Self>
     where

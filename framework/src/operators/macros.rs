@@ -20,6 +20,7 @@ macro_rules! batch_no_new {
         impl<T, V> Batch for $name<T, V>
             where T: EndOffset,
             V:Batch + BatchIterator<Header=T> + Act {
+                fn queued(&self) -> usize { self.parent.queued() }
         }
     };
     ($name: ident, [ $($parts: ident : $pty: ty),* ]) => {

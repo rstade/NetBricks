@@ -41,6 +41,7 @@ where
     T: EndOffset,
     V: Batch + BatchIterator<Header = T> + Act,
 {
+    fn queued(&self) -> usize { self.parent.queued() }
 }
 
 impl<T, V> Act for MapBatch<T, V>

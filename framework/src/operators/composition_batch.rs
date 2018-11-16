@@ -24,7 +24,9 @@ impl CompositionBatch {
     }
 }
 
-impl Batch for CompositionBatch {}
+impl Batch for CompositionBatch {
+    fn queued(&self) -> usize { self.parent.queued() }
+}
 
 impl BatchIterator for CompositionBatch {
     type Header = NullHeader;

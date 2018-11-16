@@ -12,6 +12,7 @@ pub trait PacketRx: Send {
     fn port_id(&self) -> i32 {
         -1
     }
+    fn queued(&self) -> usize { 1 }
 }
 
 /// Generic trait for objects that can send packets.

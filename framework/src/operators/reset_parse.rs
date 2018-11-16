@@ -50,4 +50,7 @@ where
     act!{}
 }
 
-impl<V> Batch for ResetParsingBatch<V> where V: Batch + BatchIterator + Act {}
+impl<V> Batch for ResetParsingBatch<V> where V: Batch + BatchIterator + Act
+{
+    fn queued(&self) -> usize { self.parent.queued() }
+}

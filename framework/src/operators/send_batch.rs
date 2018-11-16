@@ -36,6 +36,7 @@ where
     Port: PacketTx,
     V: Batch + BatchIterator + Act,
 {
+    fn queued(&self) -> usize { self.parent.queued() }
 }
 
 impl<Port, V> BatchIterator for SendBatch<Port, V>

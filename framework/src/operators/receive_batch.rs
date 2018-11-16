@@ -38,7 +38,10 @@ impl<T: PacketRx> ReceiveBatch<T> {
     }
 }
 
-impl<T: PacketRx> Batch for ReceiveBatch<T> {}
+impl<T: PacketRx> Batch for ReceiveBatch<T>
+{
+    fn queued(&self) -> usize { self.packet_rx.queued() }
+}
 
 impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
     type Header = NullHeader;

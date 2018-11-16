@@ -309,7 +309,9 @@ impl Act for PacketBatch {
     //    }
 }
 
-impl Batch for PacketBatch {}
+impl Batch for PacketBatch {
+    fn queued(&self) -> usize { self.available() }
+}
 
 impl Drop for PacketBatch {
     fn drop(&mut self) {

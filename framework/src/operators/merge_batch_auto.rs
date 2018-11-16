@@ -7,45 +7,56 @@ use interface::PacketTx;
 use scheduler::Executable;
 use std::cmp;
 
-pub struct MergeBatch<T: Batch> {
+pub struct MergeBatchAuto<T: Batch> {
     parents: Vec<T>,
+    state: Vec<usize>,
     which: usize,
-    slot: usize,   // index into selector
-    selector: Vec<usize>,
 }
 
-impl<T: Batch> MergeBatch<T> {
-    pub fn new(parents: Vec<T>) -> MergeBatch<T> {
-        let selector:Vec<usize>= (0..parents.len()).collect();
-        MergeBatch {
+impl<T: Batch> MergeBatchAuto<T> {
+    pub fn new(parents: Vec<T>) -> MergeBatchAuto<T> {
+        let len=parents.len();
+        MergeBatchAuto {
             parents,
-            which: selector[0],
-            slot: 0,
-            selector,
+            state: vec![1; len],
+            which: 0,
         }
     }
-    pub fn new_with_selector(parents: Vec<T>, selector: Vec<usize>) -> MergeBatch<T> {
-        MergeBatch {
-            parents,
-            which: selector[0],
-            slot: 0,
-            selector,
+
+    #[inline]
+    fn update_state(&mut self) {
+        let state=&mut self.state;
+        self.parents.iter().enumerate().for_each( |(i,batch)| { state[i]=batch.queued() })
+    }
+
+    // selects next ready parent and returns queue length if a ready parent found
+    #[inline]
+    fn find_next(&mut self) -> usize {
+        let mut queue = 0;
+        for _i in 0..self.state.len() {
+            self.which=(self.which+1) % self.state.len();
+            queue=self.state[self.which];
+            if queue>0 { break }
         }
+        queue
     }
 }
 
-impl<T: Batch> Batch for MergeBatch<T> {
+impl<T: Batch> Batch for MergeBatchAuto<T> {
+    #[inline]
     fn queued(&self) -> usize {
         let mut result = 0;
-        for parent in &self.parents {
-            result=parent.queued();
-            if result  >0 { break; }
+        for b in &self.state {
+            if *b>0 {
+                result = *b;
+                break;
+            }
         }
         result
     }
 }
 
-impl<T: Batch> BatchIterator for MergeBatch<T> {
+impl<T: Batch> BatchIterator for MergeBatchAuto<T> {
     type Header = T::Header;
     type Metadata = T::Metadata;
 
@@ -61,22 +72,18 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
 }
 
 /// Internal interface for packets.
-impl<T: Batch> Act for MergeBatch<T> {
+impl<T: Batch> Act for MergeBatchAuto<T> {
     #[inline]
     fn act(&mut self)-> (u32, i32) {
-        self.parents[self.which].act()
+        self.update_state();
+        if self.find_next() > 0 {
+            self.parents[self.which].act()
+        } else { (0, 0) }
     }
 
     #[inline]
     fn done(&mut self) {
         self.parents[self.which].done();
-        let next = self.slot + 1;
-        if next == self.selector.len() {
-            self.slot = 0
-        } else {
-            self.slot = next
-        }
-        self.which=self.selector[self.slot]
     }
 
     #[inline]
@@ -118,7 +125,7 @@ impl<T: Batch> Act for MergeBatch<T> {
     //    }
 }
 
-impl<T: Batch> Executable for MergeBatch<T> {
+impl<T: Batch> Executable for MergeBatchAuto<T> {
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
         let count = self.act();
