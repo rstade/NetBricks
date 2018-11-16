@@ -2,36 +2,62 @@ use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
 use super::packet_batch::PacketBatch;
 use super::Batch;
+use super::SchedulingPolicy;
+
 use common::*;
 use interface::PacketTx;
 use scheduler::Executable;
 use std::cmp;
 
 pub struct MergeBatchAuto<T: Batch> {
+    //queues
     parents: Vec<T>,
+    //queue sizes
     state: Vec<usize>,
+    //actually selected queue
     which: usize,
+    //longest queue
+    queue_max: usize,
+    //size of longest queue
+    queue_size: usize,
+    //scheduler function pointer
+    select_queue: fn(&mut MergeBatchAuto<T>) -> usize,
 }
 
 impl<T: Batch> MergeBatchAuto<T> {
-    pub fn new(parents: Vec<T>) -> MergeBatchAuto<T> {
+    pub fn new(parents: Vec<T>, policy: SchedulingPolicy) -> MergeBatchAuto<T> {
+        let select_queue;
+        match policy {
+            SchedulingPolicy::LongestQueue => select_queue= MergeBatchAuto::longest_queue as fn(&mut MergeBatchAuto<T>) -> usize,
+            SchedulingPolicy::RoundRobin => select_queue= MergeBatchAuto::round_robin as fn(&mut MergeBatchAuto<T>) -> usize,
+        }
         let len=parents.len();
         MergeBatchAuto {
             parents,
             state: vec![1; len],
             which: 0,
+            queue_size: 0,
+            queue_max:0,
+            select_queue
         }
     }
 
     #[inline]
     fn update_state(&mut self) {
         let state=&mut self.state;
-        self.parents.iter().enumerate().for_each( |(i,batch)| { state[i]=batch.queued() })
+        let mut max_queue:(usize, usize) = (0, 0);
+        self.parents.iter().enumerate().for_each( |(i,batch)| {
+            let q=batch.queued();
+            state[i]=q;
+            if q > max_queue.0 { max_queue=(q, i); }
+        });
+        self.queue_max=max_queue.1;
+        self.queue_size=max_queue.0;
     }
 
     // selects next ready parent and returns queue length if a ready parent found
     #[inline]
-    fn find_next(&mut self) -> usize {
+    fn round_robin(&mut self) -> usize {
         let mut queue = 0;
         for _i in 0..self.state.len() {
             self.which=(self.which+1) % self.state.len();
@@ -39,6 +65,12 @@ impl<T: Batch> MergeBatchAuto<T> {
             if queue>0 { break }
         }
         queue
+    }
+
+    #[inline]
+    fn longest_queue(&mut self) -> usize {
+        self.which=self.queue_max;
+        self.queue_size
     }
 }
 
@@ -76,7 +108,7 @@ impl<T: Batch> Act for MergeBatchAuto<T> {
     #[inline]
     fn act(&mut self)-> (u32, i32) {
         self.update_state();
-        if self.find_next() > 0 {
+        if (self.select_queue)(self) > 0 {
             self.parents[self.which].act()
         } else { (0, 0) }
     }
@@ -111,18 +143,6 @@ impl<T: Batch> Act for MergeBatchAuto<T> {
         self.parents[self.which].get_packet_batch()
     }
 
-    //    #[inline]
-    ////    fn get_task_dependencies(&self) -> Vec<usize> {
-    //        let mut deps = Vec::with_capacity(self.parents.len()); // Might actually need to be larger, will get resized
-    //        for parent in &self.parents {
-    //            deps.extend(parent.get_task_dependencies().iter())
-    //        }
-    //        // We need to eliminate duplicate tasks. Fortunately this is not called on the critical path so it is fine to do
-    //        // it this way.
-    //        deps.sort();
-    //        deps.dedup();
-    //        deps
-    //    }
 }
 
 impl<T: Batch> Executable for MergeBatchAuto<T> {
@@ -132,9 +152,4 @@ impl<T: Batch> Executable for MergeBatchAuto<T> {
         self.done();
         count
     }
-
-    //    #[inline]
-    //    fn dependencies(&mut self) -> Vec<usize> {
-    //        self.get_task_dependencies()
-    //    }
 }

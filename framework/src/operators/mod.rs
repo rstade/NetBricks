@@ -53,6 +53,11 @@ mod transform_batch;
 /// Merge a vector of batches into one batch. Currently this just round-robins between merged batches, but in the future
 /// the precise batch being processed will be determined by the scheduling policy used.
 
+pub enum SchedulingPolicy {
+    RoundRobin,
+    LongestQueue
+}
+
 
 #[inline]
 pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
@@ -65,8 +70,8 @@ pub fn merge_with_selector<T: Batch>(batches: Vec<T>, selector:Vec<usize>) -> Me
 }
 
 #[inline]
-pub fn merge_auto<T: Batch>(batches: Vec<T>) -> MergeBatchAuto<T> {
-    MergeBatchAuto::new(batches)
+pub fn merge_auto<T: Batch>(batches: Vec<T>, policy: SchedulingPolicy) -> MergeBatchAuto<T> {
+    MergeBatchAuto::new(batches, policy)
 }
 
 /// Public trait implemented by every packet batch type. This trait should be used as a constraint for any functions or
