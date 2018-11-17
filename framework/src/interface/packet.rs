@@ -491,8 +491,11 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
     #[inline]
     pub fn parse_header<T2: EndOffset<PreviousHeader = T>>(self) -> Packet<T2, M> {
+        let p_sz=self.payload_size();
+        let t2_sz = T2::size();
+        assert!{p_sz >= t2_sz}
         unsafe {
-            assert!{self.payload_size() >= T2::size()}
+            //if p_sz < t2_sz { error!("payload sz= {}, T2::size= {}, {} {} {}", p_sz, t2_sz, self.data_len(), self.offset(), self.payload_offset()) }
             let hdr = self.payload() as *mut T2;
             let offset = self.offset() + self.payload_offset();
             create_follow_packet(self, hdr, offset)
