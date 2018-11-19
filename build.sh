@@ -146,7 +146,7 @@ clean () {
     ${CARGO} clean || true
     popd
 
-    pushd $BASE_DIR/test/framework-test
+    pushd $BASE_DIR/test/framework
     ${CARGO} clean || true
     popd
 

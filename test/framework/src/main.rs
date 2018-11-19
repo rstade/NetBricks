@@ -108,9 +108,9 @@ fn main() {
     let vdev_list = vec![];
     let lcore_mask: u64 = 1u64 << master_core;
     if primary {
-        init_system_wl(&name, lcore_mask, master_core, &[], &vdev_list);
+        init_system_wl(&name, lcore_mask, master_core as i32, &[], &vdev_list);
     } else {
-        init_system_secondary(&name, lcore_mask, master_core);
+        init_system_secondary(&name, lcore_mask, master_core as i32);
     }
 
     let ports_to_activate: Vec<_> = cores_for_port.keys().collect();

@@ -1,6 +1,6 @@
 [workspace]
 members=["framework",
-        "test/framework-test",
+        "test/framework",
         "test/delay-test",
         "test/macswap",
         "test/shutdown-test",
