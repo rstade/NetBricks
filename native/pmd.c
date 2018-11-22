@@ -253,6 +253,7 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
 
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
+
     rte_eth_dev_info_get(port, &dev_info);
 
     // some logging:

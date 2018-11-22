@@ -81,7 +81,7 @@ fn main() {
     }
 
     let cores_str = matches.opt_strs("c");
-    let master_core = matches
+    let master_core:i32 = matches
         .opt_str("m")
         .unwrap_or_else(|| String::from("0"))
         .parse()
