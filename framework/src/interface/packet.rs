@@ -13,9 +13,12 @@ use utils::ipv4_checksum;
 //use std::option::Option::{None, Some};
 use std::marker::Sized;
 use std::prelude::v1::*;
+use std::mem;
 
 /// A packet is a safe wrapper around mbufs, that can be allocated and manipulated.
 /// We associate a header type with a packet to allow safe insertion of headers.
+
+unsafe impl<T:EndOffset, M: Sized + Send>  Send for Packet<T, M> { }
 
 pub struct Packet<T: EndOffset, M: Sized + Send> {
     mbuf: *mut MBuf,
@@ -302,6 +305,10 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         }
     }
 
+    pub unsafe fn replace(&mut self, other: Packet<T,M>) -> Packet<T, M> {
+        mem::replace(self, other)
+    }
+
     #[inline]
     pub fn data_len(&self) -> usize {
         unsafe { (*self.mbuf).data_len() }
@@ -576,6 +583,14 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
+    pub fn get_payload_with_len(&self, len: usize) -> &[u8] {
+        unsafe {
+            slice::from_raw_parts(self.payload(), len)
+        }
+    }
+
+
+    #[inline]
     pub fn get_tailroom(&self) -> usize {
         unsafe { (*self.mbuf).pkt_tailroom() }
     }
@@ -612,15 +627,10 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn copy_payload_to_bytearray(&mut self, bytearray: &mut Box<Vec<u8>>, size: u16) {
-        let src = self.payload();
-        if size >= 1u16 {
-            let dst = bytearray.as_mut_ptr();
-            unsafe {
-                ptr::copy_nonoverlapping(src, dst, size as usize);
-                bytearray.set_len(size as usize);
-            }
-        }
+    pub fn copy_payload_to_bytearray(&mut self, bytearray: &mut Vec<u8>, size: usize) {
+        let src = self.get_payload_with_len(size);
+        unsafe { bytearray.set_len(size); }
+        bytearray.as_mut_slice().copy_from_slice(src);
     }
 
     #[inline]
@@ -677,8 +687,13 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         unsafe { (*self.mbuf).refcnt() }
     }
 
-    pub fn reference_mbuf(&self) -> u16 {
+    pub fn reference_mbuf(&mut self) -> u16 {
         reference_mbuf(self.mbuf);
+        self.refcnt()
+    }
+
+    pub fn dereference_mbuf(&mut self) -> u16 {
+        unsafe { (*self.mbuf).dereference(); }
         self.refcnt()
     }
 
@@ -706,8 +721,8 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 }
 
 #[inline]
-pub fn update_tcp_checksum<M: Sized + Send>(
-    p: &mut Packet<TcpHeader, M>,
+pub fn update_tcp_checksum(
+    p: &mut Packet<TcpHeader, EmptyMetadata>,
     ip_payload_size: usize,
     ip_src: u32,
     ip_dst: u32,

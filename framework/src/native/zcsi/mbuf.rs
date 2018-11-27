@@ -152,6 +152,11 @@ impl MBuf {
     }
 
     #[inline]
+    pub fn dereference(&mut self) {
+        self.refcnt -= 1;
+    }
+
+    #[inline]
     pub fn set_refcnt(&mut self, new_value: u16) {
         self.refcnt = new_value;
     }
