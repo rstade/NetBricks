@@ -18,7 +18,7 @@ use std::mem;
 /// A packet is a safe wrapper around mbufs, that can be allocated and manipulated.
 /// We associate a header type with a packet to allow safe insertion of headers.
 
-unsafe impl<T:EndOffset, M: Sized + Send>  Send for Packet<T, M> { }
+unsafe impl<T: EndOffset, M: Sized + Send> Send for Packet<T, M> {}
 
 pub struct Packet<T: EndOffset, M: Sized + Send> {
     mbuf: *mut MBuf,
@@ -266,8 +266,8 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         }
     }
 
-        /// copy gets us a new mbuf
-    pub unsafe fn copy (&self) -> Packet<T, M> {
+    /// copy gets us a new mbuf
+    pub unsafe fn copy(&self) -> Packet<T, M> {
         // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
         // This sets refcnt = 1
         let mbuf = mbuf_alloc();
@@ -305,7 +305,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         }
     }
 
-    pub unsafe fn replace(&mut self, other: Packet<T,M>) -> Packet<T, M> {
+    pub unsafe fn replace(&mut self, other: Packet<T, M>) -> Packet<T, M> {
         mem::replace(self, other)
     }
 
@@ -408,7 +408,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
     /// When constructing a packet, take a packet as input and add a header.
     #[inline]
-    pub fn push_header<T2: EndOffset<PreviousHeader = T>>(self, header: &T2) -> Option<Packet<T2, M>> {
+    pub fn push_header<T2: EndOffset<PreviousHeader=T>>(self, header: &T2) -> Option<Packet<T2, M>> {
         unsafe {
             let len = self.data_len();
             let size = header.offset();
@@ -497,10 +497,10 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn parse_header<T2: EndOffset<PreviousHeader = T>>(self) -> Packet<T2, M> {
-        let p_sz=self.payload_size();
+    pub fn parse_header<T2: EndOffset<PreviousHeader=T>>(self) -> Packet<T2, M> {
+        let p_sz = self.payload_size();
         let t2_sz = T2::size();
-        assert!{p_sz >= t2_sz}
+        assert! {p_sz >= t2_sz}
         unsafe {
             //if p_sz < t2_sz { error!("payload sz= {}, T2::size= {}, {} {} {}", p_sz, t2_sz, self.data_len(), self.offset(), self.payload_offset()) }
             let hdr = self.payload() as *mut T2;
@@ -510,9 +510,9 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn parse_header_and_record<T2: EndOffset<PreviousHeader = T>>(mut self) -> Packet<T2, M> {
+    pub fn parse_header_and_record<T2: EndOffset<PreviousHeader=T>>(mut self) -> Packet<T2, M> {
         unsafe {
-            assert!{self.payload_size() >= T2::size()}
+            assert! {self.payload_size() >= T2::size()}
             let hdr = self.payload() as *mut T2;
             let payload_offset = self.payload_offset();
             let offset = self.offset() + payload_offset;
@@ -721,8 +721,8 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 }
 
 #[inline]
-pub fn update_tcp_checksum(
-    p: &mut Packet<TcpHeader, EmptyMetadata>,
+pub fn update_tcp_checksum<M: Sized + Send>(
+    p: &mut Packet<TcpHeader, M>,
     ip_payload_size: usize,
     ip_src: u32,
     ip_dst: u32,
@@ -733,7 +733,6 @@ pub fn update_tcp_checksum(
     }
     p.get_mut_header().set_checksum(chk);
 }
-
 
 
 #[cfg(test)]
@@ -748,7 +747,7 @@ mod tests {
 
     #[test]
     fn packet_copy() {
-        let name=String::from("packet_copy_test");
+        let name = String::from("packet_copy_test");
 
 
         init_system_wl_with_mempool(
@@ -762,7 +761,7 @@ mod tests {
         );
 
         let mut mac = MacHeader::new();
-        mac.src = MacAddress::new([1;6]);
+        mac.src = MacAddress::new([1; 6]);
         mac.set_etype(0x0800);
         let mut ip = IpHeader::new();
         ip.set_src(511);
@@ -798,8 +797,8 @@ mod tests {
             assert_eq!(packet.header.as_ref().unwrap().src_port(), copy.header.as_ref().unwrap().src_port());
             assert_eq!(packet.pre_header.unwrap().as_ref().unwrap().src(), 511);
             assert_eq!(511, copy.pre_header.unwrap().as_ref().unwrap().src());
-            assert_eq!(packet.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src );
-            assert_eq!(copy.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src );
+            assert_eq!(packet.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
+            assert_eq!(copy.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
         }
     }
 }
