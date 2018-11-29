@@ -24,3 +24,5 @@ rpath = true
 debug = true
 debug-assertions = false
 
+[patch.crates-io]
+eui48 = { version= "0.3", git="https://github.com/rstade/eui48" }

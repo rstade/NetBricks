@@ -1,6 +1,6 @@
 [package]
 name = "e2d2"
-version = "0.3.5"
+version = "0.3.6"
 authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "rainer <rainer@spacebandit.de>"]
 build = "build.rs"
 
@@ -30,7 +30,7 @@ uuid= { version = ">=0.7", features=["v4"] }
 error-chain = ">=0.12"
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
-eui48 = "0.3"
+eui48 = { version= ">=0.3" }
 separator =  ">= 0.3"
 serde_derive = "1.0"
 serde = "1.0"
@@ -40,4 +40,3 @@ default = []
 performance = []
 packet_offset = []
 sctp = ["rust-sctp"]
-
