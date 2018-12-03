@@ -167,6 +167,12 @@ impl PortQueue {
     pub fn rxq(&self) -> u16 {
         self.rxq as u16
     }
+
+    #[inline]
+    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> { self.stats_rx.clone() }
+
+    #[inline]
+    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> { self.stats_tx.clone() }
 }
 
 impl PacketTx for PortQueue {
@@ -336,8 +342,8 @@ impl PmdPort {
 
      pub fn print_soft_statistics(&self) {
         println!(
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}",
-            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20}",
+            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "queue_len"
         );
         let (mut sin_p, mut sout_p) = (0usize, 0usize);
         for q in 0..self.rxqs() {

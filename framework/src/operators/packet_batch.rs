@@ -265,6 +265,7 @@ impl Act for PacketBatch {
                     Ok(sent)
                 })?;
             }
+            break;
         }
 
         Ok(total_sent)

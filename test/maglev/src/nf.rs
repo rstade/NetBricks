@@ -111,6 +111,7 @@ pub fn maglev<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
                 *out
             },
             s,
+            "GroupBy".to_string(),
             uuid,
         );
     let pipeline = merge((0..ct).map(|i| groups.get_group(i).unwrap()).collect());

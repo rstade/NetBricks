@@ -13,7 +13,7 @@ mod virt_port;
 pub mod fdir;
 
 /// Statistics for PMD port.
-struct PortStats {
+pub struct PortStats {
     pub stats: AtomicUsize,
     pub q_len: AtomicUsize,
     pub max_q_len: AtomicUsize,

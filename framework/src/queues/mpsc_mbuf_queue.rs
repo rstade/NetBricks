@@ -121,7 +121,7 @@ impl MpscQueue {
 
     #[inline]
     fn used_slots(&self) -> usize {
-        self.slots-self.free_slots()
+        self.slots-self.free_slots()-1
     }
 
     #[inline]

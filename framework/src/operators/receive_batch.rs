@@ -10,6 +10,7 @@ pub struct ReceiveBatch<T: PacketRx> {
     parent: PacketBatch,
     packet_rx: T,
     pub received: u64,
+    urgent: bool,
 }
 
 impl<T: PacketRx> ReceiveBatch<T> {
@@ -18,6 +19,7 @@ impl<T: PacketRx> ReceiveBatch<T> {
             parent,
             packet_rx,
             received: 0,
+            urgent: false,
         }
     }
 
@@ -26,6 +28,7 @@ impl<T: PacketRx> ReceiveBatch<T> {
             parent: PacketBatch::new(32, false),
             packet_rx,
             received: 0,
+            urgent: false,
         }
     }
 
@@ -34,13 +37,26 @@ impl<T: PacketRx> ReceiveBatch<T> {
             parent: PacketBatch::new(32, true),
             packet_rx,
             received: 0,
+            urgent: false,
         }
+    }
+
+    pub fn set_urgent(mut self) -> ReceiveBatch<T> {
+        self.urgent=true;
+        self
     }
 }
 
 impl<T: PacketRx> Batch for ReceiveBatch<T>
 {
-    fn queued(&self) -> usize { self.packet_rx.queued() }
+    fn queued(&self) -> usize {
+        if self.urgent {
+            // we implement priority by faking the queue length
+            if self.packet_rx.queued() > 0 { 10000 } else { 0 }
+        } else {
+            self.packet_rx.queued()
+        }
+    }
 }
 
 impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {

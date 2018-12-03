@@ -75,7 +75,7 @@ fn main() {
                     let mut tx = 0;
                     for port in context.ports.values() {
                         for q in 0..port.rxqs() {
-                            let (rp, tp) = port.stats(q);
+                            let (rp, tp, _q_len) = port.stats(q);
                             rx += rp;
                             tx += tp;
                         }
