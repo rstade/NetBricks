@@ -113,11 +113,12 @@ impl fmt::Display for PortQueue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "port: {} ({}) rxq: {} txq: {}",
+            "port: {} ({}) rxq: {} txq: {}, max_rxq_len: {}",
             self.port.mac_address(),
             self.port_id,
             self.rxq,
-            self.txq
+            self.txq,
+            self.stats_rx.get_max_q_len(),
         )
     }
 }
@@ -152,6 +153,7 @@ impl PortQueue {
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
+            self.stats_rx.set_q_len(q_count as usize);
             Ok((recv, q_count))
         }
     }
@@ -194,6 +196,8 @@ impl PacketRx for PortQueue {
     fn port_id(&self) -> i32 {
         self.port.port_id()
     }
+
+    fn queued(&self) -> usize { self.stats_rx.get_q_len() }
 }
 
 // Utility function to go from Rust bools to C ints. Allowing match bools since this looks nicer to me.
@@ -283,11 +287,12 @@ impl PmdPort {
     //        self.port
     //    }
     /// Get stats for an RX/TX queue pair.
-    pub fn stats(&self, queue: i32) -> (usize, usize) {
+    pub fn stats(&self, queue: i32) -> (usize, usize, usize) {
         let idx = queue as usize;
         (
             self.stats_rx[idx].stats.load(Ordering::Relaxed),
             self.stats_tx[idx].stats.load(Ordering::Relaxed),
+            self.stats_rx[idx].get_max_q_len(),
         )
     }
 
@@ -336,12 +341,12 @@ impl PmdPort {
         );
         let (mut sin_p, mut sout_p) = (0usize, 0usize);
         for q in 0..self.rxqs() {
-            let (in_p, out_p) = self.stats(q);
+            let (in_p, out_p, rx_max_q_len) = self.stats(q);
             sin_p += in_p;
             sout_p += out_p;
             println!(
-                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
-                q, in_p, out_p, 0, 0, 0,
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20}",
+                q, in_p, out_p, 0, 0, 0, 0, rx_max_q_len
             );
         }
         println!(

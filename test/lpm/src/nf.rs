@@ -223,6 +223,7 @@ pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S:
                 lpm_table.lookup_entry(hdr.src()) as usize
             },
             s,
+            "lpm_groups".to_string(),
             uuid,
         );
     let pipeline = merge(vec![

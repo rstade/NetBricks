@@ -6,7 +6,8 @@ use allocators::*;
 use common::*;
 use interface::{PacketRx, PacketTx};
 use native::zcsi::MBuf;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 mod phy_port;
 mod virt_port;
 pub mod fdir;
@@ -14,14 +15,28 @@ pub mod fdir;
 /// Statistics for PMD port.
 struct PortStats {
     pub stats: AtomicUsize,
+    pub q_len: AtomicUsize,
+    pub max_q_len: AtomicUsize,
 }
 
 impl PortStats {
     pub fn new() -> CacheAligned<PortStats> {
         CacheAligned::allocate(PortStats {
             stats: AtomicUsize::new(0),
+            q_len: AtomicUsize::new(0),
+            max_q_len: AtomicUsize::new(0),
         })
     }
+
+    pub fn get_q_len(&self) -> usize { self.q_len.load(Ordering::Relaxed) }
+    pub fn get_max_q_len(&self) -> usize { self.max_q_len.load(Ordering::Relaxed) }
+
+    pub fn set_q_len(&self, len: usize) -> usize {
+        let q_max= self.get_max_q_len();
+        if len > q_max { self.max_q_len.store(len, Ordering::Relaxed);}
+        self.q_len.swap(len, Ordering::Relaxed)
+    }
+
 }
 
 impl<T: PacketRx> PacketRx for CacheAligned<T> {

@@ -176,11 +176,12 @@ pub trait Batch: BatchIterator + Act + Send {
         groups: usize,
         group_f: GroupFn<Self::Header, Self::Metadata>,
         sched: &mut S,
+        name: String,
         uuid: Uuid,
     ) -> GroupBy<Self::Header, Self>
     where
         Self: Sized,
     {
-        GroupBy::<Self::Header, Self>::new(self, groups, group_f, sched, uuid)
+        GroupBy::<Self::Header, Self>::new(self, groups, group_f, sched, name, uuid)
     }
 }

@@ -256,28 +256,15 @@ impl Act for PacketBatch {
     #[inline]
     fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         let mut total_sent = 0;
-        // TODO: Make it optionally possible to wait for all packets to be sent.
-        unsafe {
-            /*
-            for p in &self.array {
-                trace!(
-                    "sending on port {}: &mbuf= {:p}, {}",
-                    port.port_id().unwrap(),
-                    *p,
-                    **p
-                );
+        // TODO: revisit if to make loop optional
+        while self.available() > 0 {
+            unsafe {
+                port.send(self.packet_ptr()).and_then(|sent| {
+                    self.consume_batch_partial(sent as usize);
+                    total_sent += sent;
+                    Ok(sent)
+                })?;
             }
-*/
-            port.send(self.packet_ptr()).and_then(|sent| {
-                /*
-                for p in &self.array {
-                    trace!("&mbuf= {:p}, {}", *p, **p);
-                }
-				*/
-                self.consume_batch_partial(sent as usize);
-                total_sent += sent;
-                Ok(sent)
-            })?;
         }
 
         Ok(total_sent)

@@ -48,7 +48,9 @@ where
             while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
                 let group = (self.group_fn)(&mut packet);
                 packet.save_header_and_offset();
-                self.producers[group].enqueue_one(packet);
+                if !self.producers[group].enqueue_one(packet) {
+                    warn!("queue overflow in GroupByProducer for group {}", group);
+                }
                 count += 1;
             }
         }
@@ -74,6 +76,7 @@ where
         groups: usize,
         group_fn: GroupFn<T, V::Metadata>,
         sched: &mut S,
+        name: String,
         uuid: Uuid, // task id
     ) -> GroupBy<T, V> {
         let mut producers = Vec::with_capacity(groups);
@@ -83,7 +86,6 @@ where
             producers.push(prod);
             consumers.insert(i, consumer);
         }
-        let name = String::from("GroupByProducer");
         let _task = sched.add_runnable(
             Runnable::from_task(
                 uuid,
