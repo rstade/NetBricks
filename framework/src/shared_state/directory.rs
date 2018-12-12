@@ -9,7 +9,7 @@ const DIRECTORY_PAGES: usize = 2; // Dedicate 2 pages to the directory.
 const BYTE_SIZE: usize = DIRECTORY_PAGES * PAGE_SIZE;
 
 /// Directory header for shared data.
-#[repr(packed, C)]
+//#[repr(packed, C)], sta: rustc 1.32.0-nightly gives an error E0588 here
 pub struct DirectoryHeader {
     entries: AtomicUsize,
     // Used to signal that snapshotting is in progress.

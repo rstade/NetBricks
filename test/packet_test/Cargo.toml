@@ -9,7 +9,7 @@ time = ">=0.1.0"
 getopts = "*"
 rand = "0.3"
 fnv = "*"
-eui48 = "0.3"
+eui48 = ">=0.3"
 uuid = { version = ">=0.7", features = ["v4"] }
 
 [features]

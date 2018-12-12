@@ -165,7 +165,7 @@ impl fmt::Display for PortConfiguration {
         let tx_queue_str = tx_queues_str_vec.join(" ");
         write!(
             f,
-            "Port {} RXQ_Count: {} RX_Queues: [ {} ] TXQ_Count: {} TX_Queues: [ {} ] RXD: {} TXD: {} Loopback {}",
+            "Port {}, RXQ_Count: {}, RX_Queues: [ {} ], TXQ_Count: {}, TX_Queues: [ {} ], RXD: {}, TXD: {}, Loopback: {}, ChecksumOffload: {}",
             self.name,
             self.rx_queues.len(),
             rx_queue_str,
@@ -173,7 +173,8 @@ impl fmt::Display for PortConfiguration {
             tx_queue_str,
             self.rxd,
             self.txd,
-            self.loopback
+            self.loopback,
+            self.csum,
         )
     }
 }

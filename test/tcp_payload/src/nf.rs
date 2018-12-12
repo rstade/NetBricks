@@ -41,6 +41,7 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
             2,
             box move |p| if p.get_header().protocol() == 6 { 0 } else { 1 },
             sched,
+            "GroupByProtocol".to_string(),
             uuid,
         );
     let pipe = groups

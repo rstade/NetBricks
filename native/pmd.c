@@ -60,7 +60,8 @@ static const struct rte_eth_conf default_eth_conf = {
     /* is later on re-written taking the info from rte_eth_dev_get_info */
     .rx_adv_conf.rss_conf =
         {
-            .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP, .rss_key = NULL,
+            .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
+            .rss_key = NULL,
         },
     /* we need the flow director feature*/
     .fdir_conf =
@@ -163,26 +164,94 @@ void enumerate_pmd_ports() {
     }
 }
 
+/*
+#define DEV_TX_OFFLOAD_VLAN_INSERT 0x00000001
+#define DEV_TX_OFFLOAD_IPV4_CKSUM  0x00000002
+#define DEV_TX_OFFLOAD_UDP_CKSUM   0x00000004
+#define DEV_TX_OFFLOAD_TCP_CKSUM   0x00000008
+#define DEV_TX_OFFLOAD_SCTP_CKSUM  0x00000010
+#define DEV_TX_OFFLOAD_TCP_TSO     0x00000020
+#define DEV_TX_OFFLOAD_UDP_TSO     0x00000040
+#define DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM 0x00000080
+#define DEV_TX_OFFLOAD_QINQ_INSERT 0x00000100
+#define DEV_TX_OFFLOAD_VXLAN_TNL_TSO    0x00000200
+#define DEV_TX_OFFLOAD_GRE_TNL_TSO      0x00000400
+#define DEV_TX_OFFLOAD_IPIP_TNL_TSO     0x00000800
+#define DEV_TX_OFFLOAD_GENEVE_TNL_TSO   0x00001000
+#define DEV_TX_OFFLOAD_MACSEC_INSERT    0x00002000
+#define DEV_TX_OFFLOAD_MT_LOCKFREE      0x00004000
+#define DEV_TX_OFFLOAD_MULTI_SEGS       0x00008000
+#define DEV_TX_OFFLOAD_MBUF_FAST_FREE   0x00010000
+#define DEV_TX_OFFLOAD_SECURITY         0x00020000
+
+#define DEV_RX_OFFLOAD_VLAN_STRIP  0x00000001
+#define DEV_RX_OFFLOAD_IPV4_CKSUM  0x00000002
+#define DEV_RX_OFFLOAD_UDP_CKSUM   0x00000004
+#define DEV_RX_OFFLOAD_TCP_CKSUM   0x00000008
+#define DEV_RX_OFFLOAD_TCP_LRO     0x00000010
+#define DEV_RX_OFFLOAD_QINQ_STRIP  0x00000020
+#define DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM 0x00000040
+#define DEV_RX_OFFLOAD_MACSEC_STRIP     0x00000080
+#define DEV_RX_OFFLOAD_HEADER_SPLIT     0x00000100
+#define DEV_RX_OFFLOAD_VLAN_FILTER      0x00000200
+#define DEV_RX_OFFLOAD_VLAN_EXTEND      0x00000400
+#define DEV_RX_OFFLOAD_JUMBO_FRAME      0x00000800
+#define DEV_RX_OFFLOAD_CRC_STRIP        0x00001000
+#define DEV_RX_OFFLOAD_SCATTER          0x00002000
+#define DEV_RX_OFFLOAD_TIMESTAMP        0x00004000
+#define DEV_RX_OFFLOAD_SECURITY         0x00008000
+#define DEV_RX_OFFLOAD_CHECKSUM (DEV_RX_OFFLOAD_IPV4_CKSUM | \
+                                 DEV_RX_OFFLOAD_UDP_CKSUM | \
+                                 DEV_RX_OFFLOAD_TCP_CKSUM)
+#define DEV_RX_OFFLOAD_VLAN (DEV_RX_OFFLOAD_VLAN_STRIP | \
+                             DEV_RX_OFFLOAD_VLAN_FILTER | \
+                             DEV_RX_OFFLOAD_VLAN_EXTEND)
+*/
+
 static int log_eth_dev_info(struct rte_eth_dev_info* dev_info) {
 //    uint8_t i;
 	if (!dev_info) return -1;
-	RTE_LOG(DEBUG, PMD, "driver_name: %s (if_index: %d)\n", dev_info->driver_name, dev_info->if_index);
-	RTE_LOG(DEBUG, PMD, "nb_rx_queues: %d\n", dev_info->nb_rx_queues);
-	RTE_LOG(DEBUG, PMD, "nb_tx_queues: %d\n", dev_info->nb_tx_queues);
-	RTE_LOG(DEBUG, PMD, "rx_offload_capa: %lx\n", dev_info->rx_offload_capa);
-	RTE_LOG(DEBUG, PMD, "flow_type_rss_offloads: %lx\n", dev_info->flow_type_rss_offloads);
+	RTE_LOG(INFO, PMD, "driver_name: %s (if_index: %d)\n", dev_info->driver_name, dev_info->if_index);
+	RTE_LOG(INFO, PMD, "nb_rx_queues: %d\n", dev_info->nb_rx_queues);
+	RTE_LOG(INFO, PMD, "nb_tx_queues: %d\n", dev_info->nb_tx_queues);
+	RTE_LOG(INFO, PMD, "rx_offload_capa: %lx\n", dev_info->rx_offload_capa);
+    RTE_LOG(INFO, PMD, "rx_queue_offload_capa: %lx\n", dev_info->rx_queue_offload_capa);
+    RTE_LOG(INFO, PMD, "tx_offload_capa: %lx\n", dev_info->tx_offload_capa);
+    RTE_LOG(INFO, PMD, "tx_queue_offload_capa: %lx\n", dev_info->tx_queue_offload_capa);
+	RTE_LOG(INFO, PMD, "flow_type_rss_offloads: %lx\n", dev_info->flow_type_rss_offloads);
 //    for (i = 0; i < params->nb_kni; i++)
 //    	RTE_LOG(DEBUG, PMD, "lcore_k[%d]: %d\n", i, dev_info->lcore_k[i]);
     return 0;
 }
 
+static int log_eth_conf(struct rte_eth_conf* eth_conf) {
+    if (!eth_conf) return -1;
+    RTE_LOG(INFO, PMD, "tx_offload: %lx\n", eth_conf->txmode.offloads);
+    RTE_LOG(INFO, PMD, "rx_offload: %lx\n", eth_conf->rxmode.offloads);
+    return 0;
+}
+
 static int log_eth_rxconf(struct rte_eth_rxconf* rxconf) {
 	if (!rxconf) return -1;
-	RTE_LOG(DEBUG, PMD, "rx_thresh (p,h,w): (%d, %d, %d)\n", rxconf->rx_thresh.pthresh,
+	RTE_LOG(INFO, PMD, "rx_thresh (p,h,w): (%d, %d, %d)\n", rxconf->rx_thresh.pthresh,
 			rxconf->rx_thresh.hthresh, rxconf->rx_thresh.wthresh);
-	RTE_LOG(DEBUG, PMD, "rx_free_thresh: %d\n", rxconf->rx_free_thresh);
-	RTE_LOG(DEBUG, PMD, "rx_drop_en: %d\n", rxconf->rx_drop_en);
-	RTE_LOG(DEBUG, PMD, "rx_deferred_start: %d\n", rxconf->rx_deferred_start);
+	RTE_LOG(INFO, PMD, "rx_free_thresh: %d\n", rxconf->rx_free_thresh);
+	RTE_LOG(INFO, PMD, "rx_drop_en: %d\n", rxconf->rx_drop_en);
+	RTE_LOG(INFO, PMD, "rx_deferred_start: %d\n", rxconf->rx_deferred_start);
+
+    return 0;
+}
+
+
+static int log_eth_txconf(struct rte_eth_txconf* txconf) {
+    if (!txconf) return -1;
+    RTE_LOG(INFO, PMD, "tx_thresh (p,h,w): (%d, %d, %d)\n", txconf->tx_thresh.pthresh,
+            txconf->tx_thresh.hthresh, txconf->tx_thresh.wthresh);
+    RTE_LOG(INFO, PMD, "tx_free_thresh: %d\n", txconf->tx_free_thresh);
+    RTE_LOG(INFO, PMD, "tx_rs_thresh: %d\n", txconf->tx_rs_thresh);
+    RTE_LOG(INFO, PMD, "tx_deferred_start: %d\n", txconf->tx_deferred_start);
+    RTE_LOG(INFO, PMD, "txq_flags: 0x%x\n", txconf->txq_flags);
+    RTE_LOG(INFO, PMD, "tx_offloads: 0x%lx\n", txconf->offloads);
 
     return 0;
 }
@@ -233,10 +302,11 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
-
     eth_conf.rx_adv_conf.rss_conf.rss_hf = dev_info.flow_type_rss_offloads;
-
-
+    if (csumoffload) {
+        eth_conf.txmode.offloads = DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM;
+        eth_conf.rxmode.offloads = DEV_RX_OFFLOAD_IPV4_CKSUM | DEV_RX_OFFLOAD_UDP_CKSUM | DEV_RX_OFFLOAD_TCP_CKSUM;
+    }
     eth_rxconf = dev_info.default_rxconf;
     /* Drop packets when no descriptors are available */
     //eth_rxconf.rx_drop_en = 0; // changed that to 0, because 82574L seems not supporting this
@@ -257,12 +327,16 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     rte_eth_dev_info_get(port, &dev_info);
 
     // some logging:
-    RTE_LOG(DEBUG, PMD, "rte_eth_dev_info:\n");
+    RTE_LOG(DEBUG, PMD, "--- rte_eth_dev_info:\n");
     log_eth_dev_info(&dev_info);
-    RTE_LOG(DEBUG, PMD, "default eth_rxconf:\n");
+    RTE_LOG(DEBUG, PMD, "--- rte_eth_conf:\n");
+    log_eth_conf(&eth_conf);
+    RTE_LOG(DEBUG, PMD, "--- default eth_rxconf:\n");
     log_eth_rxconf(&dev_info.default_rxconf);
-    RTE_LOG(DEBUG, PMD, "using eth_rxconf:\n");
+    RTE_LOG(DEBUG, PMD, "--- using eth_rxconf:\n");
     log_eth_rxconf(&eth_rxconf);
+    RTE_LOG(DEBUG, PMD, "--- using eth_txconf:\n");
+    log_eth_txconf(&eth_txconf);
 
     if (ret != 0) {
         RTE_LOG(CRIT, PMD, "Failed to configure port \n");
@@ -319,8 +393,12 @@ uint32_t eth_rx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
     return ret;
 }
 
-uint32_t eth_tx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
-	return rte_eth_tx_burst((uint16_t) port, (uint16_t)qid, (struct rte_mbuf**)pkts, len);
+uint16_t eth_tx_burst(uint16_t port, uint16_t qid, mbuf_array_t pkts, uint16_t len) {
+	return rte_eth_tx_burst(port, qid, (struct rte_mbuf**)pkts, len);
+}
+
+uint16_t eth_tx_prepare(uint16_t port, uint16_t qid, mbuf_array_t pkts, uint16_t len) {
+    return rte_eth_tx_prepare( port, qid, (struct rte_mbuf**)pkts, len);
 }
 
 uint32_t eth_rx_queue_count(uint16_t port_id, uint16_t queue_id) {

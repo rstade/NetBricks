@@ -8,8 +8,8 @@ build = "build.rs"
 doctest = false
 
 [dependencies]
-# we had to fallback to libc 0.2.43, 0.2.44 runs into compile error (core::ffi::c_void not foundcd )
-libc = "= 0.2.43"
+# we had to fallback to libc 0.2.43, 0.2.44 runs into compile error (core::ffi::c_void not found )
+libc = ">= 0.2.43"
 time = ">=0.1.0"
 chashmap = ">= 2.2.0"
 log = "0.3"

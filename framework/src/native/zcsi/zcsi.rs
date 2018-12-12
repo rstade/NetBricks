@@ -1,4 +1,5 @@
 use super::MBuf;
+use super::super::super::headers::IpHeader;
 use eui48::MacAddress;
 use std::convert;
 use std::ffi::CStr;
@@ -846,7 +847,8 @@ extern "C" {
     pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
     pub fn eth_rx_queue_count(port_id: u16, queue_id: u16) -> i32;
     // rte_eth_tx_burst is inline C, we cannot directly use it here:
-    pub fn eth_tx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32;
+    pub fn eth_tx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
+    pub fn eth_tx_prepare(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
     pub fn num_pmd_ports() -> i32;
     pub fn rte_eth_macaddr_get(port: i32, address: *mut MacAddress);
     pub fn init_bess_eth_ring(ifname: *const c_char, core: i32) -> i32;
@@ -862,6 +864,8 @@ extern "C" {
     pub fn mbuf_free_bulk(array: *mut *mut MBuf, cnt: i32) -> i32;
     pub fn crc_hash_native(to_hash: *const u8, size: u32, iv: u32) -> u32;
     pub fn ipv4_cksum(payload: *const u8) -> u16;
+    pub fn ipv4_phdr_chksum(ipv4_hdr: *const IpHeader, ol_flags: u64) -> u16;
+    pub fn validate_tx_offload(m: *const MBuf) -> i32;
 
     //usually called already by rte_eal_init when e.g. --vdev netkni0:
     pub fn rte_kni_init(max_kni_ifaces: u32);

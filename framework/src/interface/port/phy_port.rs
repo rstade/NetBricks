@@ -46,6 +46,7 @@ pub struct PmdPort {
     port_type: PortType,
     connected: bool,
     should_close: bool,
+    csumoffload: bool,
     port: i32,
     kni: Option<Unique<RteKni>>,
     //must use Unique because raw ptr does not implement Send
@@ -131,7 +132,12 @@ impl PortQueue {
             let sent = if self.port.is_kni() {
                 rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
             } else {
-                eth_tx_burst(self.port_id, queue, pkts, to_send)
+                if self.csum_offload() {
+                    let nb_prep= eth_tx_prepare(self.port_id as u16, queue as u16, pkts, to_send);
+                    debug!("nb_prep= {}, to_send= {}", nb_prep, to_send);
+                    assert_eq!(nb_prep, to_send);
+                }
+                eth_tx_burst(self.port_id as u16, queue as u16, pkts, to_send) as u32
             };
             let update = self.stats_tx.stats.load(Ordering::Relaxed) + sent as usize;
             self.stats_tx.stats.store(update, Ordering::Relaxed);
@@ -173,6 +179,9 @@ impl PortQueue {
 
     #[inline]
     pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> { self.stats_tx.clone() }
+
+    #[inline]
+    pub fn csum_offload(&self) -> bool { self.port.csumoffload }
 }
 
 impl PacketTx for PortQueue {
@@ -253,6 +262,8 @@ impl PmdPort {
     pub fn driver(&self) -> DriverType {
        self.driver
     }
+
+    pub fn csum_offload(&self) -> bool { self.csumoffload }
 
     pub fn get_tcp_dst_port_mask(&self) -> u16 {
         if self.fdir_conf.is_some() {
@@ -415,6 +426,7 @@ impl PmdPort {
                     rxqs: actual_rxqs,
                     txqs: actual_txqs,
                     should_close: true,
+                    csumoffload,
                     driver,
                     stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
@@ -451,6 +463,7 @@ impl PmdPort {
                 rxqs: 1,
                 txqs: 1,
                 should_close: false,
+                csumoffload: false,
                 driver: DriverType::Unknown,
                 stats_rx: vec![Arc::new(PortStats::new())],
                 stats_tx: vec![Arc::new(PortStats::new())],
@@ -476,6 +489,7 @@ impl PmdPort {
                         rxqs: 1,
                         txqs: 1,
                         should_close: false,
+                        csumoffload: false,
                         driver: DriverType::Unknown,
                         stats_rx: vec![Arc::new(PortStats::new())],
                         stats_tx: vec![Arc::new(PortStats::new())],
@@ -505,6 +519,7 @@ impl PmdPort {
                     rxqs: 1,
                     txqs: 1,
                     should_close: true, // sta, not clear what this is used for, and if to set true or false
+                    csumoffload: false,
                     driver: DriverType::Unknown,
                     stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
                     stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
@@ -564,6 +579,7 @@ impl PmdPort {
             rxqs: 0,
             txqs: 0,
             should_close: false,
+            csumoffload: false,
             driver: DriverType::Unknown,
             stats_rx: vec![Arc::new(PortStats::new())],
             stats_tx: vec![Arc::new(PortStats::new())],

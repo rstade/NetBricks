@@ -718,6 +718,57 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         self.mbuf = ptr::null_mut();
         mbuf
     }
+    #[inline]
+    pub fn set_tcp_ipv4_checksum_tx_offload(&mut self) {
+        unsafe { (*self.mbuf).set_tcp_ipv4_checksum_tx_offload(); }
+    }
+
+    #[inline]
+    pub fn ipv4_checksum_tx_offload(&mut self) -> bool {
+        unsafe { (*self.mbuf).ipv4_checksum_tx_offload() }
+    }
+
+    #[inline]
+    pub fn tcp_checksum_tx_offload(&self) -> bool {
+        unsafe { (*self.mbuf).tcp_checksum_tx_offload() }
+    }
+    /// functions for tx offload
+    #[inline]
+    pub fn l2_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l2_len() }
+    }
+    #[inline]
+    pub fn set_l2_len(&mut self, val: u64) {
+        unsafe { (*self.mbuf).set_l2_len(val); }
+    }
+
+    #[inline]
+    pub fn l3_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l3_len() }
+    }
+    #[inline]
+    pub fn set_l3_len(&mut self, val: u64) {
+        unsafe { (*self.mbuf).set_l3_len(val); }
+    }
+
+    #[inline]
+    pub fn l4_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l4_len() }
+    }
+    #[inline]
+    pub fn set_l4_len(&mut self, val: u64) {
+        unsafe { (*self.mbuf).set_l4_len(val); }
+    }
+    #[inline]
+    pub fn ol_flags(&self) -> u64 {
+        unsafe { (*self.mbuf).ol_flags }
+    }
+
+    /// returns 0 if no problem found
+    #[inline]
+    pub fn validate_tx_offload(&self) -> i32 {
+        unsafe { validate_tx_offload(self.mbuf) }
+    }
 }
 
 #[inline]
@@ -735,70 +786,71 @@ pub fn update_tcp_checksum<M: Sized + Send>(
 }
 
 
+/* must run as root
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use headers::IpHeader;
-    use headers::TcpHeader;
-    use headers::MacHeader;
-    use eui48::MacAddress;
-    use native::zcsi;
-    use interface::dpdk::init_system_wl_with_mempool;
+use super::*;
+use headers::IpHeader;
+use headers::TcpHeader;
+use headers::MacHeader;
+use eui48::MacAddress;
+use interface::dpdk::init_system_wl_with_mempool;
 
-    #[test]
-    fn packet_copy() {
-        let name = String::from("packet_copy_test");
+#[test]
+fn packet_copy() {
+    let name = String::from("packet_copy_test");
 
 
-        init_system_wl_with_mempool(
-            &name[..],
-            1u64,
-            0,
-            &[],
-            2048,
-            32,
-            &vec![],
-        );
+    init_system_wl_with_mempool(
+        &name[..],
+        1u64,
+        0,
+        &[],
+        2048,
+        32,
+        &vec![],
+    );
 
-        let mut mac = MacHeader::new();
-        mac.src = MacAddress::new([1; 6]);
-        mac.set_etype(0x0800);
-        let mut ip = IpHeader::new();
-        ip.set_src(511);
-        ip.set_ttl(128);
-        ip.set_version(4);
-        ip.set_protocol(6); //tcp
-        ip.set_ihl(5);
-        ip.set_length(40);
-        ip.set_flags(0x2); // DF=1, MF=0 flag: don't fragment
-        let mut tcp = TcpHeader::new();
-        tcp.set_syn_flag();
-        tcp.set_src_port(80);
-        tcp.set_data_offset(5);
+    let mut mac = MacHeader::new();
+    mac.src = MacAddress::new([1; 6]);
+    mac.set_etype(0x0800);
+    let mut ip = IpHeader::new();
+    ip.set_src(511);
+    ip.set_ttl(128);
+    ip.set_version(4);
+    ip.set_protocol(6); //tcp
+    ip.set_ihl(5);
+    ip.set_length(40);
+    ip.set_flags(0x2); // DF=1, MF=0 flag: don't fragment
+    let mut tcp = TcpHeader::new();
+    tcp.set_syn_flag();
+    tcp.set_src_port(80);
+    tcp.set_data_offset(5);
 
-        let packet =
-            new_packet()
-                .unwrap()
-                .push_header(&mac)
-                .unwrap()
-                .push_header(&ip)
-                .unwrap()
-                .push_header(&tcp)
-                .unwrap();
+    let packet =
+        new_packet()
+            .unwrap()
+            .push_header(&mac)
+            .unwrap()
+            .push_header(&ip)
+            .unwrap()
+            .push_header(&tcp)
+            .unwrap();
 
-        let copy;
-        unsafe {
-            copy = packet.copy();
-        }
+    let copy;
+    unsafe {
+        copy = packet.copy();
+    }
 
-        //println!("original: {}", packet );
-        //println!("copy: {}", copy );
-        unsafe {
-            assert_eq!(packet.header.as_ref().unwrap().src_port(), copy.header.as_ref().unwrap().src_port());
-            assert_eq!(packet.pre_header.unwrap().as_ref().unwrap().src(), 511);
-            assert_eq!(511, copy.pre_header.unwrap().as_ref().unwrap().src());
-            assert_eq!(packet.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
-            assert_eq!(copy.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
-        }
+    //println!("original: {}", packet );
+    //println!("copy: {}", copy );
+    unsafe {
+        assert_eq!(packet.header.as_ref().unwrap().src_port(), copy.header.as_ref().unwrap().src_port());
+        assert_eq!(packet.pre_header.unwrap().as_ref().unwrap().src(), 511);
+        assert_eq!(511, copy.pre_header.unwrap().as_ref().unwrap().src());
+        assert_eq!(packet.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
+        assert_eq!(copy.pre_pre_header.unwrap().as_ref().unwrap().src, mac.src);
     }
 }
+}
+*/
