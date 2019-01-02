@@ -253,7 +253,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
     /// clone has same mbuf as the original
     pub fn clone(&mut self) -> Packet<T, M> {
-        // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
         reference_mbuf(self.mbuf);
 
         Packet::<T, M> {
@@ -265,6 +264,19 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
             header: self.header,
         }
     }
+
+    /// same as clone, but without increment of mbuf ref count
+    pub fn clone_without_ref_counting(&mut self) -> Packet<T, M> {
+        Packet::<T, M> {
+            mbuf: self.mbuf,
+            _phantom_m: PhantomData,
+            offset: self.offset,
+            pre_pre_header: self.pre_pre_header,
+            pre_header: self.pre_header,
+            header: self.header,
+        }
+    }
+
 
     /// copy gets us a new mbuf
     pub unsafe fn copy(&self) -> Packet<T, M> {

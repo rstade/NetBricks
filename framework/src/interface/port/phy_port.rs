@@ -15,7 +15,7 @@ use std::ptr;
 use std::ptr::Unique;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use utils::FiveTupleV4;
+use utils::{FiveTupleV4, rdtsc_unsafe};
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -114,12 +114,13 @@ impl fmt::Display for PortQueue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "port: {} ({}) rxq: {} txq: {}, max_rxq_len: {}",
+            "port: {} ({}) rxq: {} txq: {}, max_rxq_len: {}, recv_cycles: {}",
             self.port.mac_address(),
             self.port_id,
             self.rxq,
             self.txq,
             self.stats_rx.get_max_q_len(),
+            self.stats_rx.cycles(),
         )
     }
 }
@@ -147,6 +148,7 @@ impl PortQueue {
 
     #[inline]
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
+        let start= rdtsc_unsafe();
         unsafe {
             let (recv, q_count) = if self.port.is_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
@@ -160,6 +162,10 @@ impl PortQueue {
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
             self.stats_rx.set_q_len(q_count as usize);
+            if recv > 0 ||q_count > 0 {
+                let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (rdtsc_unsafe() - start);
+                self.stats_rx.cycles.store(update, Ordering::Relaxed);
+            }
             Ok((recv, q_count))
         }
     }
@@ -298,11 +304,6 @@ impl PmdPort {
         }
     }
 
-    /// Current port ID.
-    //    #[inline]
-    //    pub fn name(&self) -> i32 {
-    //        self.port
-    //    }
     /// Get stats for an RX/TX queue pair.
     pub fn stats(&self, queue: i32) -> (usize, usize, usize) {
         let idx = queue as usize;
@@ -312,6 +313,18 @@ impl PmdPort {
             self.stats_rx[idx].get_max_q_len(),
         )
     }
+
+    /// Get stats for an RX/TX queue pair.
+    fn stats_4(&self, queue: i32) -> (usize, usize, usize, u64) {
+        let idx = queue as usize;
+        (
+            self.stats_rx[idx].stats.load(Ordering::Relaxed),
+            self.stats_tx[idx].stats.load(Ordering::Relaxed),
+            self.stats_rx[idx].get_max_q_len(),
+            self.stats_rx[idx].cycles(),
+        )
+    }
+
 
     pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4) -> Option<&RteFlow> {
         unsafe {
@@ -353,17 +366,17 @@ impl PmdPort {
 
      pub fn print_soft_statistics(&self) {
         println!(
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20}",
-            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "queue_len"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20} | {8: >20}",
+            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "queue_len", "rx_cycles"
         );
         let (mut sin_p, mut sout_p) = (0usize, 0usize);
         for q in 0..self.rxqs() {
-            let (in_p, out_p, rx_max_q_len) = self.stats(q);
+            let (in_p, out_p, rx_max_q_len, cycles) = self.stats_4(q);
             sin_p += in_p;
             sout_p += out_p;
             println!(
-                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20}",
-                q, in_p, out_p, 0, 0, 0, 0, rx_max_q_len
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20} | {8: >20}",
+                q, in_p, out_p, 0, 0, 0, 0, rx_max_q_len, cycles
             );
         }
         println!(

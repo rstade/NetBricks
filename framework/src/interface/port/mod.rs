@@ -6,7 +6,7 @@ use allocators::*;
 use common::*;
 use interface::{PacketRx, PacketTx};
 use native::zcsi::MBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, AtomicU64, Ordering};
 
 mod phy_port;
 mod virt_port;
@@ -17,6 +17,7 @@ pub struct PortStats {
     pub stats: AtomicUsize,
     pub q_len: AtomicUsize,
     pub max_q_len: AtomicUsize,
+    pub cycles: AtomicU64,
 }
 
 impl PortStats {
@@ -25,11 +26,13 @@ impl PortStats {
             stats: AtomicUsize::new(0),
             q_len: AtomicUsize::new(0),
             max_q_len: AtomicUsize::new(0),
+            cycles: AtomicU64::new(0),
         })
     }
 
     pub fn get_q_len(&self) -> usize { self.q_len.load(Ordering::Relaxed) }
     pub fn get_max_q_len(&self) -> usize { self.max_q_len.load(Ordering::Relaxed) }
+    pub fn cycles(&self) -> u64 { self.cycles.load(Ordering::Relaxed) }
 
     pub fn set_q_len(&self, len: usize) -> usize {
         let q_max= self.get_max_q_len();

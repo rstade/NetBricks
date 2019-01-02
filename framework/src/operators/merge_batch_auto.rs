@@ -77,15 +77,6 @@ impl<T: Batch> MergeBatchAuto<T> {
 impl<T: Batch> Batch for MergeBatchAuto<T> {
     #[inline]
     fn queued(&self) -> usize {
-        /* let mut result = 0;
-        for b in &self.state {
-            if *b>0 {
-                result = *b;
-                break;
-            }
-        }
-        result
-        */
         self.queue_size
     }
 }
