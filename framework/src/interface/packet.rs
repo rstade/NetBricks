@@ -252,6 +252,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     /// clone has same mbuf as the original
+    #[inline]
     pub fn clone(&mut self) -> Packet<T, M> {
         reference_mbuf(self.mbuf);
 
@@ -266,6 +267,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     /// same as clone, but without increment of mbuf ref count
+    #[inline]
     pub fn clone_without_ref_counting(&mut self) -> Packet<T, M> {
         Packet::<T, M> {
             mbuf: self.mbuf,
@@ -279,6 +281,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
 
 
     /// copy gets us a new mbuf
+    #[inline]
     pub unsafe fn copy(&self) -> Packet<T, M> {
         // unsafe { packet_from_mbuf(self.mbuf, self.offset) };
         // This sets refcnt = 1
@@ -514,7 +517,6 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
         let t2_sz = T2::size();
         if p_sz < t2_sz { error!("payload sz= {}, T2::size= {}, {} {} {}", p_sz, t2_sz, self.data_len(), self.offset(), self.payload_offset()); assert! {p_sz >= t2_sz} }
         unsafe {
-
             let hdr = self.payload() as *mut T2;
             let offset = self.offset() + self.payload_offset();
             create_follow_packet(self, hdr, offset)
