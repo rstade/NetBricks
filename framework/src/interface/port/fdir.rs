@@ -7,6 +7,7 @@ use config::{DriverType};
 use super::PmdPort;
 use native::zcsi::*;
 
+#[derive(Clone, Copy)]
 pub struct L4Flow {
     pub ip: u32,
     pub port:u16,

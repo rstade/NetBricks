@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
-pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize + Send>;
+pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize>;
 
 pub struct GroupBy<T, V>
 where

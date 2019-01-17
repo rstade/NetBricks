@@ -135,7 +135,6 @@ impl PortQueue {
             } else {
                 if self.csum_offload() {
                     let nb_prep= eth_tx_prepare(self.port_id as u16, queue as u16, pkts, to_send);
-                    debug!("nb_prep= {}, to_send= {}", nb_prep, to_send);
                     assert_eq!(nb_prep, to_send);
                 }
                 eth_tx_burst(self.port_id as u16, queue as u16, pkts, to_send) as u32
