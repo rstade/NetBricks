@@ -245,6 +245,11 @@ impl MpscProducer {
     }
 
     #[inline]
+    pub fn enqueue_one_boxed<T: EndOffset, M: Sized + Send>(&self, packet: Box<Packet<T, M>>) -> bool {
+        unsafe { self.mpsc_queue.enqueue_one(packet.get_mbuf()) }
+    }
+
+    #[inline]
     pub fn free_slots(&self) -> usize {
         self.mpsc_queue.free_slots()
     }
