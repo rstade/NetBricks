@@ -738,7 +738,7 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     }
 
     #[inline]
-    pub fn ipv4_checksum_tx_offload(&mut self) -> bool {
+    pub fn ipv4_checksum_tx_offload(&self) -> bool {
         unsafe { (*self.mbuf).ipv4_checksum_tx_offload() }
     }
 
