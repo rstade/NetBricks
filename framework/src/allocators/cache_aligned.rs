@@ -12,6 +12,7 @@ unsafe fn allocate_cache_line(size: usize) -> *mut u8 {
         .as_ptr() as *mut u8
 }
 
+#[derive(Debug)]
 pub struct CacheAligned<T: Sized> {
     ptr: Unique<T>,
 }
