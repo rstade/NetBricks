@@ -7,6 +7,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ptr;
+use std::cmp;
 use std::slice;
 use std::option::Option;
 use utils::ipv4_checksum;
@@ -617,6 +618,17 @@ impl<T: EndOffset, M: Sized + Send> Packet<T, M> {
     #[inline]
     pub fn trim_payload_size(&mut self, trim_by: usize) -> usize {
         unsafe { (*self.mbuf).remove_data_end(trim_by) }
+    }
+
+    #[inline]
+    pub fn write_from_tail_down(&mut self, len: usize, byte: u8) -> usize {
+        let payload_size=self.payload_size();
+        if payload_size > 0 {
+            let count= cmp::min(payload_size, len);
+            let dst = unsafe { self.payload().offset(payload_size as isize - count as isize) };
+            unsafe { ptr::write_bytes(dst, byte, count); }
+            count
+        } else { 0 }
     }
 
     #[inline]
