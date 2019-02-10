@@ -15,6 +15,7 @@ int init_mempool_core(int core);
 int init_mempool(int master_core, unsigned int mempool_size, unsigned int mcache_size, unsigned short slots);
 int init_secondary_mempool(const char* mempool_name);
 int find_secondary_mempool();
+unsigned int mbuf_avail_count();
 struct rte_mbuf* mbuf_alloc();
 void mbuf_free(struct rte_mbuf* buf);
 int mbuf_alloc_bulk(struct rte_mbuf **array, unsigned int cnt);

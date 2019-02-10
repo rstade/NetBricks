@@ -29,6 +29,8 @@ pub struct NetbricksConfiguration {
     pub pool_size: u32,
     /// Size of the per-core mempool cache.
     pub cache_size: u32,
+    /// number of mbufs in the mbuf pool, should be (2**N - 1) for some positive integral N, default 65535
+    pub mbuf_cnt: u32,
 }
 
 /// Create an empty `NetbricksConfiguration`, useful when initializing through arguments.
@@ -44,6 +46,7 @@ impl Default for NetbricksConfiguration {
             secondary: false,
             ports: vec![],
             vdevs: vec![],
+            mbuf_cnt: DEFAULT_MBUF_CNT,
         }
     }
 }
@@ -70,8 +73,8 @@ impl fmt::Display for NetbricksConfiguration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "name: {}\nmempool size: {}\ncore cache: {}\nprimary core: {}\n",
-            self.name, self.pool_size, self.cache_size, self.primary_core
+            "name: {}\nmempool size: {}\ncore cache: {}\n mbuf count: {}\nprimary core: {}\n",
+            self.name, self.pool_size, self.cache_size, self.mbuf_cnt, self.primary_core
         )?;
         write!(f, "Virtual Devices:\n")?;
         for dev in &self.vdevs {

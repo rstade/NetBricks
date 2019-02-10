@@ -14,6 +14,7 @@ use std::string::String;
 use std::string::ToString;
 
 /// Default configuration values
+pub const DEFAULT_MBUF_CNT: u32 = 65535;
 pub const DEFAULT_POOL_SIZE: u32 = 2048;
 pub const DEFAULT_CACHE_SIZE: u32 = 32;
 pub const DEFAULT_SECONDARY: bool = false;
@@ -366,6 +367,16 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
         }
     };
 
+    // Get mbuf count for the mbuf pool
+    let mbuf_cnt = match toml.get("mbuf_cnt") {
+        Some(&Value::Integer(cnt)) => cnt as u32,
+        None => DEFAULT_MBUF_CNT,
+        _ => {
+            error!("Could parse mbuf count");
+            return Err(ErrorKind::ConfigurationError(String::from("Could not parse mbuf count")).into());
+        }
+    };
+
     // Is process a secondary process
     let secondary = match toml.get("secondary") {
         Some(&Value::Boolean(secondary)) => secondary,
@@ -440,15 +451,16 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
     };
 
     Ok(NetbricksConfiguration {
-        name: name,
+        name,
         primary_core: master_lcore,
-        cores: cores,
-        strict: strict,
-        secondary: secondary,
-        pool_size: pool_size,
-        cache_size: cache_size,
-        ports: ports,
-        vdevs: vdevs,
+        cores,
+        strict,
+        secondary,
+        pool_size,
+        cache_size,
+        ports,
+        vdevs,
+        mbuf_cnt,
     })
 }
 

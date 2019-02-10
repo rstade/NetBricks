@@ -12,8 +12,6 @@
 #include <rte_timer.h>
 
 #include "mempool.h"
-// TODO: make pframe pool configurable
-#define NUM_PFRAMES (1024*64 - 1)  // Number of pframes in the mempool,
 #define MEMPOOL_SIZE 1024       // Default mempool size
 #define CACHE_SIZE 32           // Size of per-core mempool cache
 
@@ -185,7 +183,7 @@ int init_secondary(const char* name, int nlen, unsigned long long lcore_mask, in
 }
 
 int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore_mask, int core, char* whitelist[], int wlcount,
-                            unsigned int mempool_size, unsigned int mcache_size, int slots, char* vdevs[], int vdevcount ) {
+                            unsigned int mempool_size, unsigned int mcache_size, unsigned int mbuf_cnt, int slots, char* vdevs[], int vdevcount ) {
     int ret = 0;
     if (name == NULL || nlen >= MAX_NAME_LEN) {
         return -EINVAL;
@@ -199,7 +197,7 @@ int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore
         return ret;
     }
 
-    return init_mempool(core, NUM_PFRAMES, mcache_size, slots); // we request here #mbufs, not MB as in rte_eal_init !
+    return init_mempool(core, mbuf_cnt, mcache_size, slots); // we request here #mbufs, not MB as in rte_eal_init !
 }
 
 /* Call this from the main thread on ZCSI to initialize things. This initializes

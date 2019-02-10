@@ -1,5 +1,5 @@
 use super::METADATA_SLOTS;
-use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_POOL_SIZE};
+use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_POOL_SIZE, DEFAULT_MBUF_CNT};
 use native::libnuma;
 use native::zcsi;
 use std::cell::Cell;
@@ -13,6 +13,7 @@ pub fn init_system_wl_with_mempool(
     pci: &[String],
     pool_size: u32,
     cache_size: u32,
+    mbuf_cnt: u32,
     vdevs: &Vec<String>,
 ) {
     let name_cstr = CString::new(name).unwrap();
@@ -30,6 +31,7 @@ pub fn init_system_wl_with_mempool(
             pci.len() as i32,
             pool_size,
             cache_size,
+            mbuf_cnt,
             METADATA_SLOTS,
             vdevs_ptr.as_mut_ptr(),
             vdevs.len() as i32,
@@ -49,6 +51,7 @@ pub fn init_system_wl(name: &str, lcore_mask: u64, core: i32, pci: &[String], vd
         pci,
         DEFAULT_POOL_SIZE,
         DEFAULT_CACHE_SIZE,
+        DEFAULT_MBUF_CNT,
         vdevs,
     );
     set_numa_domain();
@@ -91,6 +94,7 @@ pub fn init_system(config: &NetbricksConfiguration) {
             &[],
             config.pool_size,
             config.cache_size,
+            config.mbuf_cnt,
             &config.vdevs,
         );
     }

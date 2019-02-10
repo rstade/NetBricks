@@ -816,6 +816,7 @@ extern "C" {
         wlcount: i32,
         pool_size: u32,
         cache_size: u32,
+        mbuf_cnt: u32,
         slots: u16,
         vdevs: *mut *const c_char,
         vdev_count: i32,
@@ -862,6 +863,7 @@ extern "C" {
     pub fn mbuf_free(buf: *mut MBuf);
     pub fn mbuf_alloc_bulk(array: *mut *mut MBuf, cnt: u32) -> i32;
     pub fn mbuf_free_bulk(array: *mut *mut MBuf, cnt: i32) -> i32;
+    pub fn mbuf_avail_count() -> u32;
     pub fn crc_hash_native(to_hash: *const u8, size: u32, iv: u32) -> u32;
     pub fn ipv4_cksum(payload: *const u8) -> u16;
     pub fn ipv4_phdr_chksum(ipv4_hdr: *const IpHeader, ol_flags: u64) -> u16;

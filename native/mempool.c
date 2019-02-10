@@ -102,6 +102,10 @@ static int init_mempool_socket(int sid, unsigned int n_mbufs, unsigned int mcach
     return pframe_pool[sid] != NULL;
 }
 
+unsigned int mbuf_avail_count() {
+    return rte_mempool_avail_count(current_pframe_pool());
+}
+
 int init_mempool(int master_core, unsigned int n_mbufs, unsigned int mcache_size, unsigned short metadata_slots) {
 #if (!PER_CORE)
     int initialized[RTE_MAX_NUMA_NODES];
