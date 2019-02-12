@@ -124,14 +124,12 @@ pub fn new_packet() -> Option<Packet<NullHeader, EmptyMetadata>> {
 }
 
 /// Allocate an array of packets.
-pub fn new_packet_array(pkts: &mut [*mut MBuf]) -> Vec<Packet<NullHeader, EmptyMetadata>> {
-    //let mut array = Vec::with_capacity(count);
+pub fn new_packet_array(pkts: &mut [*mut MBuf]) -> Option<Vec<Packet<NullHeader, EmptyMetadata>>> {
     unsafe {
         let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
         if alloc_ret == 0 {
-            //            array.set_len(count);
-        }
-        pkts.iter().map(|m| packet_from_mbuf_no_increment(*m, 0)).collect()
+            Some(pkts.iter().map(|m| packet_from_mbuf_no_increment(*m, 0)).collect())
+        } else { None }
     }
 }
 

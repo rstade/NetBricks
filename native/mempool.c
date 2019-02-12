@@ -136,7 +136,7 @@ fail:
     return -ENOMEM;
 #else
 
-    core_mempool_size       = mempool_size;
+    core_mempool_size       = n_mbufs;
     core_mempool_cache_size = mcache_size;
     core_metadata_slots     = metadata_slots;
     memset(mempool_initialized, 0, sizeof(int) * RTE_MAX_LCORE);
