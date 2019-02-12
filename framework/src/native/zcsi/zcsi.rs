@@ -842,6 +842,7 @@ extern "C" {
         tso: i32,
         csumoffload: i32,
         fdir_conf_ptr: *const RteFdirConf,
+        max_tx_packet_burst: u16,
     ) -> i32;
     pub fn free_pmd_port(port: i32) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);

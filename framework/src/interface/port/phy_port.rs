@@ -127,6 +127,7 @@ impl fmt::Display for PortQueue {
 
 /// Represents a single RX/TX queue pair for a port. This is what is needed to send or receive traffic.
 impl PortQueue {
+
     #[inline]
     fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
         unsafe {
@@ -426,6 +427,7 @@ impl PmdPort {
                     } else {
                         ptr::null()
                     },
+                    32,
                 )
             };
             if ret == 0 {

@@ -253,10 +253,11 @@ impl Act for PacketBatch {
     #[inline]
     fn done(&mut self) {}
 
+    /*
+    the old unbuffered tx:
     #[inline]
     fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
         let mut total_sent = 0;
-        // TODO: revisit if to make loop optional
         while self.available() > 0 {
             unsafe {
                 port.send(self.packet_ptr()).and_then(|sent| {
@@ -269,6 +270,16 @@ impl Act for PacketBatch {
         }
 
         Ok(total_sent)
+    }
+*/
+    #[inline]
+    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
+        if self.available() > 0 {
+            let sent = unsafe { port.send(self.packet_ptr())? };
+            assert_eq!(sent as usize, self.array.len());
+            unsafe { self.consume_batch(); }
+            Ok(sent)
+        } else { Ok(0) }
     }
 
     #[inline]
