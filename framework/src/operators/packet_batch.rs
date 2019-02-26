@@ -16,7 +16,6 @@ pub struct PacketBatch {
     scratch: Vec<*mut MBuf>,
     /// if false the mbuf array will be de-allocated, each time new packets are received
     b_keep_mbuf: bool,
-    n_freed_slow_path: u32,
 }
 
 // *mut MBuf is not send by default.
@@ -29,7 +28,6 @@ impl PacketBatch {
             array: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             b_keep_mbuf,
-            n_freed_slow_path: 0,
         }
     }
 
@@ -207,10 +205,6 @@ impl PacketBatch {
                 // If free fails, I am not sure we can do much to recover this batch.
                 self.array.set_len(0);
                 if ret >= 0 {
-                    if ret > 0 {
-                        self.n_freed_slow_path += 1;
-                        if self.n_freed_slow_path % 100 == 0 { info!("freed over slow path = {}", self.n_freed_slow_path); }
-                    }
                     Ok(ret)
                 } else {
                     Err(())

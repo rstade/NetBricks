@@ -56,8 +56,4 @@ impl Executable for CompositionBatch {
         count
     }
 
-    //    #[inline]
-    //    fn dependencies(&mut self) -> Vec<usize> {
-    //        self.get_task_dependencies()
-    //    }
 }

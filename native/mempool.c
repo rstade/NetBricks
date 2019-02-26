@@ -243,6 +243,9 @@ void mbuf_free(struct rte_mbuf *buf) {
  *    (Do not use RTE_MBUF_(IN)DIRECT, since there is a difference
  *     between DPDK 1.8 and 2.0) */
 int mbuf_free_bulk(mbuf_array_t array, int cnt) {
+
+    int i;
+
     struct rte_mempool *_pool = array[0]->pool;
     uint16_t priv_size        = rte_pktmbuf_priv_size(_pool);
 
@@ -253,8 +256,6 @@ int mbuf_free_bulk(mbuf_array_t array, int cnt) {
     // consts for comparison
     __m128i info_simple = _mm_set1_epi64x(0x0001000100000000UL);
     __m128i pool        = _mm_set1_epi64x((uint64_t)_pool);
-
-    int i;
 
     for (i = 0; i < (cnt & ~1); i += 2) {
         struct rte_mbuf *mbuf0 = array[i];
@@ -274,7 +275,7 @@ int mbuf_free_bulk(mbuf_array_t array, int cnt) {
         // Checking if buffers are not indirect.
         buf_addrs_derived = _mm_add_epi64(mbuf_ptrs, offset);
 
-        /* refcnt and nb_segs must be 1 */
+        // refcnt and nb_segs must be 1
         info = gather_m128i(&mbuf0->buf_len, &mbuf1->buf_len);
         info = _mm_and_si128(info, info_mask);
 
@@ -301,8 +302,8 @@ int mbuf_free_bulk(mbuf_array_t array, int cnt) {
         }
     }
 
-    /* NOTE: it seems that zeroing the refcnt of mbufs is not necessary.
-     * (allocators will reset them) */
+    // NOTE: it seems that zeroing the refcnt of mbufs is not necessary.
+    // (allocators will reset them)
     rte_mempool_put_bulk(_pool, (void **)array, cnt);
     return 0;
 
