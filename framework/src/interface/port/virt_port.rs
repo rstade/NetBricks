@@ -26,7 +26,7 @@ impl fmt::Display for VirtualQueue {
 
 impl PacketTx for VirtualQueue {
     #[inline]
-    fn send(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
+    fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len() as i32;
         let update = self.stats_tx.stats.load(Ordering::Relaxed) + len as usize;
         self.stats_tx.stats.store(update, Ordering::Relaxed);

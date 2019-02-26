@@ -8,9 +8,17 @@ error_chain! {
             description("Failed to deallocate memory")
             display("Failed to deallocate memory")
         }
-        FailedToInitializePort(port: i32) {
+        FailedToInitializePort(port_id: u16) {
             description("Failed to initialize port")
-            display("Failed to initialize port: {}", port)
+            display("Failed to initialize port: {}", port_id)
+        }
+        FailedToInitializeOvsPort(ret_code: i32) {
+            description("Failed to initialize ovs port")
+            display("Failed to initialize ovs port, error code: {}", ret_code)
+        }
+        FailedToInitializeBessPort(ret_code: i32) {
+            description("Failed to initialize bess port")
+            display("Failed to initialize bess port, error code: {}", ret_code)
         }
         FailedToInitializeKni(port_id: u16) {
             description("Failed to initialize kni i/f")
@@ -32,13 +40,13 @@ error_chain! {
             description("Bad vdev specification")
             display("Bad vdev specification: {}", vdev)
         }
-        BadTxQueue(port: i32, queue: i32) {
+        BadTxQueue(port_id: u16, queue: u16) {
             description("Bad TX queue")
-            display("Bad TX queue {} for port {}", queue, port)
+            display("Bad TX queue {} for port {}", queue, port_id)
         }
-        BadRxQueue(port: i32, queue: i32) {
+        BadRxQueue(port_id: u16, queue: u16) {
             description("Bad RX queue")
-            display("Bad RX queue {} for port {}", queue, port)
+            display("Bad RX queue {} for port {}", queue, port_id)
         }
         BadOffset(offset: usize) {
             description("Attempt to access bad packet offset")

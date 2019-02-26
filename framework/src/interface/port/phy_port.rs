@@ -47,13 +47,15 @@ pub struct PmdPort {
     connected: bool,
     should_close: bool,
     csumoffload: bool,
-    port: i32,
+    port: u16,
     kni: Option<Unique<RteKni>>,
     //must use Unique because raw ptr does not implement Send
     linux_if: Option<String>,
     // used for kni interfaces
-    rxqs: i32,
-    txqs: i32,
+    rxqs: u16,
+    txqs: u16,
+    n_rx_desc: u16,
+    n_tx_desc: u16,
     driver: DriverType,
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
@@ -74,9 +76,9 @@ pub struct PortQueue {
     pub port: Arc<PmdPort>,
     stats_rx: Arc<CacheAligned<PortStats>>,
     stats_tx: Arc<CacheAligned<PortStats>>,
-    port_id: i32,
-    txq: i32,
-    rxq: i32,
+    port_id: u16,
+    txq: u16,
+    rxq: u16,
 }
 
 impl PartialEq for CacheAligned<PortQueue> {
@@ -129,20 +131,25 @@ impl fmt::Display for PortQueue {
 impl PortQueue {
 
     #[inline]
-    fn send_queue(&self, queue: i32, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
+    fn send_queue(&mut self, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
         unsafe {
             let sent = if self.port.is_kni() {
                 rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
             } else {
                 if self.csum_offload() {
-                    let nb_prep= eth_tx_prepare(self.port_id as u16, queue as u16, pkts, to_send);
+                    let nb_prep= eth_tx_prepare(self.port_id as u16, self.txq as u16, pkts, to_send);
                     assert_eq!(nb_prep, to_send);
                 }
-                eth_tx_burst(self.port_id as u16, queue as u16, pkts, to_send) as u32
+                eth_tx_burst(self.port_id as u16, self.txq as u16, pkts, to_send) as u32
             };
             let update = self.stats_tx.stats.load(Ordering::Relaxed) + sent as usize;
             self.stats_tx.stats.store(update, Ordering::Relaxed);
-            Ok(sent as u32)
+            let lost = to_send as u32 - sent;
+            if lost > 0 {
+                let update =  self.stats_tx.lost.load(Ordering::Relaxed) +lost as usize;
+                self.stats_tx.lost.store(update, Ordering::Relaxed);
+            }
+            Ok(sent)
         }
     }
 
@@ -172,12 +179,27 @@ impl PortQueue {
 
     #[inline]
     pub fn txq(&self) -> u16 {
-        self.txq as u16
+        self.txq
     }
 
     #[inline]
     pub fn rxq(&self) -> u16 {
-        self.rxq as u16
+        self.rxq
+    }
+
+    #[inline]
+    pub fn port_id(&self) -> u16 {
+        self.port_id
+    }
+
+    #[inline]
+    pub fn n_tx_desc(&self) -> u16 {
+        self.port.n_tx_desc as u16
+    }
+
+    #[inline]
+    pub fn n_rx_desc(&self) -> u16 {
+        self.port.n_rx_desc as u16
     }
 
     #[inline]
@@ -194,15 +216,11 @@ impl PacketTx for PortQueue {
     /// Send a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
     /// called).
     #[inline]
-    fn send(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
-        let txq = self.txq;
+    fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len() as u16;
-        self.send_queue(txq, pkts.as_mut_ptr(), len)
+        self.send_queue(pkts.as_mut_ptr(), len)
     }
 
-    fn port_id(&self) -> i32 {
-        self.port.port_id()
-    }
 }
 
 impl PacketRx for PortQueue {
@@ -212,10 +230,6 @@ impl PacketRx for PortQueue {
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         let len = pkts.len() as u16;
         self.recv_queue(pkts, len)
-    }
-
-    fn port_id(&self) -> i32 {
-        self.port.port_id()
     }
 
     fn queued(&self) -> usize { self.stats_rx.get_q_len() }
@@ -243,7 +257,7 @@ impl PmdPort {
         unsafe { find_port_with_pci_address(pcie_cstr.as_ptr()) }
     }
 
-    pub fn port_id(&self) -> i32 {
+    pub fn port_id(&self) -> u16 {
         self.port
     }
 
@@ -256,12 +270,12 @@ impl PmdPort {
     }
 
     /// Number of configured RXQs.
-    pub fn rxqs(&self) -> i32 {
+    pub fn rxqs(&self) -> u16 {
         self.rxqs
     }
 
     /// Number of configured TXQs.
-    pub fn txqs(&self) -> i32 {
+    pub fn txqs(&self) -> u16 {
         self.txqs
     }
 
@@ -287,10 +301,10 @@ impl PmdPort {
         self.kni.unwrap().as_ptr()
     }
 
-    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: i32, txq: i32) -> errors::Result<CacheAligned<PortQueue>> {
-        if rxq > port.rxqs || rxq < 0 {
+    pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: u16, txq: u16) -> errors::Result<CacheAligned<PortQueue>> {
+        if rxq > port.rxqs {
             Err(ErrorKind::BadRxQueue(port.port, rxq).into())
-        } else if txq > port.txqs || txq < 0 {
+        } else if txq > port.txqs {
             Err(ErrorKind::BadTxQueue(port.port, txq).into())
         } else {
             Ok(CacheAligned::allocate(PortQueue {
@@ -305,7 +319,7 @@ impl PmdPort {
     }
 
     /// Get stats for an RX/TX queue pair.
-    pub fn stats(&self, queue: i32) -> (usize, usize, usize) {
+    pub fn stats(&self, queue: u16) -> (usize, usize, usize) {
         let idx = queue as usize;
         (
             self.stats_rx[idx].stats.load(Ordering::Relaxed),
@@ -315,11 +329,12 @@ impl PmdPort {
     }
 
     /// Get stats for an RX/TX queue pair.
-    fn stats_4(&self, queue: i32) -> (usize, usize, usize, u64) {
+    fn stats_5(&self, queue: u16) -> (usize, usize, usize, usize, u64) {
         let idx = queue as usize;
         (
             self.stats_rx[idx].stats.load(Ordering::Relaxed),
             self.stats_tx[idx].stats.load(Ordering::Relaxed),
+            self.stats_tx[idx].lost.load(Ordering::Relaxed),
             self.stats_rx[idx].get_max_q_len(),
             self.stats_rx[idx].cycles(),
         )
@@ -364,36 +379,49 @@ impl PmdPort {
         }
     }
 
-     pub fn print_soft_statistics(&self) {
+    pub fn print_soft_statistics(&self) {
+        /*
         println!(
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20} | {8: >20}",
-            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "queue_len", "rx_cycles"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >10} | {6: >10} | {7: >20} | {8: >20}",
+            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "rx_q_len", "rx_cycles"
         );
-        let (mut sin_p, mut sout_p) = (0usize, 0usize);
+        */
+        println!(
+         "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
+         "q", "rx_packets", "tx_packets", "tx_lost", "rx_q_len", "rx_cycles"
+        );
+        let (mut sin_p, mut sout_p, mut s_tx_lost) = (0usize, 0usize, 0usize);
         for q in 0..self.rxqs() {
-            let (in_p, out_p, rx_max_q_len, cycles) = self.stats_4(q);
+            let (in_p, out_p, tx_lost, rx_max_q_len, cycles) = self.stats_5(q);
             sin_p += in_p;
             sout_p += out_p;
+            s_tx_lost += tx_lost;
+            /*
             println!(
-                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | {7: >20} | {8: >20}",
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >10} | {6: >10} | {7: >20} | {8: >20}",
                 q, in_p, out_p, 0, 0, 0, 0, rx_max_q_len, cycles
+            );
+            */
+            println!(
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} |",
+                q, in_p, out_p, tx_lost, rx_max_q_len, cycles
             );
         }
         println!(
-            "{0: >3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
-            "sum", sin_p, sout_p, 0, 0, 0, 0,
+            "{0: >3} | {1: >20} | {2: >20} | {3: >20} | \n",
+            "sum", sin_p, sout_p, s_tx_lost,
         );
     }
 
     /// Create a PMD port with a given number of RX and TXQs.
     fn init_dpdk_port(
-        port: i32,
-        rxqs: i32,
-        txqs: i32,
+        port: u16,
+        rxqs: u16,
+        txqs: u16,
         rx_cores: &[i32],
         tx_cores: &[i32],
-        nrxd: i32,
-        ntxd: i32,
+        nrxd: u16,
+        ntxd: u16,
         loopback: bool,
         tso: bool,
         csumoffload: bool,
@@ -405,16 +433,16 @@ impl PmdPort {
         let csumoffloadv = i32_from_bool(csumoffload);
         let max_txqs = unsafe { max_txqs(port) };
         let max_rxqs = unsafe { max_rxqs(port) };
-        let actual_rxqs = min(max_rxqs, rxqs);
-        let actual_txqs = min(max_txqs, txqs);
+        let actual_rxqs = min(max_rxqs, rxqs as i32);
+        let actual_txqs = min(max_txqs, txqs as i32);
         debug!("max_rxqs={}, max_txqs={}", max_rxqs, max_txqs);
-        if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) {
+        if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) && (actual_rxqs > 0 && actual_txqs > 0) {
             debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
             let ret = unsafe {
                 init_pmd_port(
                     port,
-                    actual_rxqs,
-                    actual_txqs,
+                    actual_rxqs as u16,
+                    actual_txqs as u16,
                     rx_cores.as_ptr(),
                     tx_cores.as_ptr(),
                     nrxd,
@@ -427,7 +455,6 @@ impl PmdPort {
                     } else {
                         ptr::null()
                     },
-                    32,
                 )
             };
             if ret == 0 {
@@ -437,8 +464,10 @@ impl PmdPort {
                     port,
                     kni: None,
                     linux_if: None,
-                    rxqs: actual_rxqs,
-                    txqs: actual_txqs,
+                    rxqs: actual_rxqs as u16,
+                    txqs: actual_txqs as u16,
+                    n_rx_desc: nrxd,
+                    n_tx_desc: ntxd,
                     should_close: true,
                     csumoffload,
                     driver,
@@ -471,11 +500,13 @@ impl PmdPort {
             Ok(Arc::new(PmdPort {
                 port_type: PortType::Bess,
                 connected: true,
-                port,
+                port: port as u16,
                 kni: None,
                 linux_if: None,
                 rxqs: 1,
                 txqs: 1,
+                n_tx_desc: 1,
+                n_rx_desc: 1,
                 should_close: false,
                 csumoffload: false,
                 driver: DriverType::Unknown,
@@ -484,7 +515,7 @@ impl PmdPort {
                 fdir_conf: None,
             }))
         } else {
-            Err(ErrorKind::FailedToInitializePort(port).into())
+            Err(ErrorKind::FailedToInitializeBessPort(port).into())
         }
     }
 
@@ -497,11 +528,13 @@ impl PmdPort {
                     Ok(Arc::new(PmdPort {
                         port_type: PortType::Ovs,
                         connected: true,
-                        port,
+                        port: port as u16,
                         kni: None,
                         linux_if: None,
                         rxqs: 1,
                         txqs: 1,
+                        n_tx_desc: 1,
+                        n_rx_desc: 1,
                         should_close: false,
                         csumoffload: false,
                         driver: DriverType::Unknown,
@@ -510,7 +543,7 @@ impl PmdPort {
                         fdir_conf: None,
                     }))
                 } else {
-                    Err(ErrorKind::FailedToInitializePort(port).into())
+                    Err(ErrorKind::FailedToInitializeOvsPort(port).into())
                 }
             }
             _ => Err(ErrorKind::BadVdev(String::from(name)).into()),
@@ -527,11 +560,13 @@ impl PmdPort {
                 Ok(Arc::new(PmdPort {
                     port_type: PortType::Kni,
                     connected: true,
-                    port: port_id as i32,
+                    port: port_id,
                     kni: Some(Unique::new(p_kni).unwrap()),
                     linux_if: kni_get_name(p_kni),
                     rxqs: 1,
                     txqs: 1,
+                    n_tx_desc: 1,
+                    n_rx_desc: 1,
                     should_close: true, // sta, not clear what this is used for, and if to set true or false
                     csumoffload: false,
                     driver: DriverType::Unknown,
@@ -547,12 +582,12 @@ impl PmdPort {
 
     fn new_dpdk_port(
         spec: &str,
-        rxqs: i32,
-        txqs: i32,
+        rxqs: u16,
+        txqs: u16,
         rx_cores: &[i32],
         tx_cores: &[i32],
-        nrxd: i32,
-        ntxd: i32,
+        nrxd: u16,
+        ntxd: u16,
         loopback: bool,
         tso: bool,
         csumoffload: bool,
@@ -565,7 +600,7 @@ impl PmdPort {
         if port >= 0 {
             debug!("Going to initialize dpdk port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
-                port,
+                port as u16,
                 rxqs,
                 txqs,
                 rx_cores,
@@ -592,6 +627,8 @@ impl PmdPort {
             linux_if: None,
             rxqs: 0,
             txqs: 0,
+            n_tx_desc: 0,
+            n_rx_desc: 0,
             should_close: false,
             csumoffload: false,
             driver: DriverType::Unknown,
@@ -612,8 +649,8 @@ impl PmdPort {
         /// -   `tx_cores`, `rx_cores`: Core affinity of where the queues will be used.
         /// -   `nrxd`, `ntxd`: RX and TX descriptors.
         let name = &port_config.name[..];
-        let rxqs = port_config.rx_queues.len() as i32;
-        let txqs = port_config.tx_queues.len() as i32;
+        let rxqs = port_config.rx_queues.len() as u16;
+        let txqs = port_config.tx_queues.len() as u16;
         let rx_cores = &port_config.rx_queues[..];
         let tx_cores = &port_config.tx_queues[..];
         let nrxd = port_config.rxd;

@@ -277,14 +277,14 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
             port.rx_queues.truncate(port_instance.rxqs() as usize);
             port.tx_queues.truncate(port_instance.txqs() as usize);
             for (rx_q, core) in port.rx_queues.iter().enumerate() {
-                let rx_q = rx_q as i32;
+                let rx_q = rx_q as u16;
                 match PmdPort::new_queue_pair(port_instance, rx_q, rx_q) {
                     Ok(q) => {
                         if port_instance.is_kni() {
                             ctx.kni_queues.insert(q);
                         } else {
                             ctx.rx_queues
-                                .entry(*core)
+                                .entry(*core as i32)
                                 .or_insert_with(|| HashSet::with_capacity(8))
                                 .insert(q);
                         }

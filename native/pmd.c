@@ -100,9 +100,6 @@ static const struct rte_eth_conf default_eth_conf = {
                 },
 };
 
-#define MAX_QUEUES_PER_PORT 64
-struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS][MAX_QUEUES_PER_PORT];
-
 int num_pmd_ports() {
     return rte_eth_dev_count();
 }
@@ -126,7 +123,7 @@ int get_rte_eth_dev_info(int dev, struct rte_eth_dev_info *info) {
     }
 }
 
-int max_rxqs(int dev) {
+int max_rxqs(uint16_t dev) {
     struct rte_eth_dev_info info;
     if (get_rte_eth_dev_info(dev, &info) != 0) {
         return -ENODEV;
@@ -135,7 +132,7 @@ int max_rxqs(int dev) {
     }
 }
 
-int max_txqs(int dev) {
+int max_txqs(uint16_t dev) {
     struct rte_eth_dev_info info;
     if (get_rte_eth_dev_info(dev, &info) != 0) {
         return -ENODEV;
@@ -282,9 +279,8 @@ assert_link_status(int port_id) {
 }
 
 
-int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], int nrxd, int ntxd,
-                  int loopback, int tso, int csumoffload, struct rte_fdir_conf const *p_fdir_conf,
-                  uint16_t max_tx_packet_burst) {
+int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], int txq_core[], uint16_t nrxd, uint16_t ntxd,
+                  int loopback, int tso, int csumoffload, struct rte_fdir_conf const *p_fdir_conf) {
     struct rte_eth_dev_info dev_info = {};
     struct rte_eth_conf eth_conf;
     struct rte_eth_rxconf eth_rxconf;
@@ -368,25 +364,6 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
             RTE_LOG(CRIT, PMD, "Failed to initialize txq\n");
             return ret; /* Clean things up */
         }
-        if (max_tx_packet_burst > 0) {
-            /* Initialize TX buffers */
-            tx_buffer[port][i] = rte_zmalloc_socket("tx_buffer",
-                                                 RTE_ETH_TX_BUFFER_SIZE(max_tx_packet_burst), 0,
-                                                 rte_eth_dev_socket_id(port));
-            if (tx_buffer[port][i] == NULL)
-                rte_exit(EXIT_FAILURE, "Cannot allocate buffer for tx on port %u, queue %u\n",
-                         port, i);
-            rte_eth_tx_buffer_init(tx_buffer[port][i], max_tx_packet_burst);
-            /*
-            ret = rte_eth_tx_buffer_set_err_callback(tx_buffer[port],
-                                                     rte_eth_tx_buffer_count_callback,
-                                                     &port_statistics[port].dropped);
-            if (ret < 0)
-                rte_exit(EXIT_FAILURE,
-                         "Cannot set error callback for tx buffer on port %u\n",
-                         port);
-            */
-        }
     }
 
     ret = rte_eth_dev_start(port);
@@ -401,13 +378,13 @@ int init_pmd_port(int port, int rxqs, int txqs, int rxq_core[], int txq_core[], 
     return 0;
 }
 
-void free_pmd_port(int port) {
+void free_pmd_port(uint16_t port) {
     rte_eth_dev_stop(port);
     rte_eth_dev_close(port);
 }
 
-uint32_t eth_rx_burst(int port, int qid, mbuf_array_t pkts, uint16_t len) {
-    uint32_t ret = rte_eth_rx_burst((uint16_t) port, (uint16_t) qid, (struct rte_mbuf **) pkts, len);
+uint32_t eth_rx_burst(uint16_t port, uint16_t qid, mbuf_array_t pkts, uint16_t len) {
+    uint32_t ret = rte_eth_rx_burst(port, qid, (struct rte_mbuf **) pkts, len);
 /* Removed prefetching since the benefit in performance for single core was
  * outweighed by the loss in performance with several cores. */
 #if 0
@@ -426,8 +403,16 @@ uint16_t eth_tx_prepare(uint16_t port, uint16_t qid, mbuf_array_t pkts, uint16_t
     return rte_eth_tx_prepare(port, qid, (struct rte_mbuf **) pkts, len);
 }
 
-uint32_t eth_rx_queue_count(uint16_t port_id, uint16_t queue_id) {
+int32_t eth_rx_queue_count(uint16_t port_id, uint16_t queue_id) {
     return rte_eth_rx_queue_count(port_id, queue_id);
+}
+
+int32_t eth_tx_descriptor_status(uint16_t port_id, uint16_t queue_id, uint16_t offset) {
+    return rte_eth_tx_descriptor_status(port_id, queue_id, offset);
+}
+
+int32_t eth_rx_descriptor_status(uint16_t port_id, uint16_t queue_id, uint16_t offset) {
+    return rte_eth_rx_descriptor_status(port_id, queue_id, offset);
 }
 
 int find_port_with_pci_address(const char *pci) {
@@ -435,7 +420,8 @@ int find_port_with_pci_address(const char *pci) {
     struct rte_eth_dev_info info;
     char devargs[1024];
     int ret;
-    uint16_t port_id;
+    uint16_t
+            port_id;
 
     // Cannot parse address
     if (eal_parse_pci_DomBDF(pci, &addr) != 0 && eal_parse_pci_BDF(pci, &addr) != 0) {
@@ -483,7 +469,8 @@ int find_port_with_pci_address(const char *pci) {
    port number of the
    device or an error if not found. */
 int attach_pmd_device(const char *devname) {
-    uint16_t port = 0;
+    uint16_t
+            port = 0;
     int error = rte_eth_dev_attach(devname, &port);
 
     if (error != 0) {

@@ -20,11 +20,11 @@ pub const DEFAULT_CACHE_SIZE: u32 = 32;
 pub const DEFAULT_SECONDARY: bool = false;
 pub const DEFAULT_PRIMARY_CORE: i32 = 0;
 pub const DEFAULT_NAME: &'static str = "zcsi";
-pub const NUM_RXD: i32 = 128;
-pub const NUM_TXD: i32 = 128;
+pub const NUM_RXD: u16 = 128;
+pub const NUM_TXD: u16 = 128;
 
 /// Read a TOML stub and figure out the port.
-fn read_port(value: &Value) -> Result<PortConfiguration> {
+fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
     match *value {
         Value::Table(ref port_def) => {
             let name = match port_def.get("name") {
@@ -33,7 +33,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             };
 
             let rxd = match port_def.get("rxd") {
-                Some(&Value::Integer(rxd)) => rxd as i32,
+                Some(&Value::Integer(rxd)) => rxd as u16,
                 None => NUM_RXD,
                 v => {
                     return Err(ErrorKind::ConfigurationError(format!(
@@ -44,7 +44,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
             };
 
             let txd = match port_def.get("txd") {
-                Some(&Value::Integer(txd)) => txd as i32,
+                Some(&Value::Integer(txd)) => txd as u16,
                 None => NUM_TXD,
                 v => {
                     return Err(ErrorKind::ConfigurationError(format!(
@@ -82,7 +82,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                 )).into());
             }
 
-            fn read_queue(queue: &Value) -> Result<Vec<i32>> {
+            fn read_queue(queue: &Value) -> errors::Result<Vec<i32>> {
                 match *queue {
                     Value::Array(ref queues) => {
                         let mut qs = Vec::with_capacity(queues.len());
@@ -103,7 +103,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                 }
             }
 
-            fn read_ipv4(mask_def: &BTreeMap<String, Value>, key: String) -> Result<u32> {
+            fn read_ipv4(mask_def: &BTreeMap<String, Value>, key: String) -> errors::Result<u32> {
                 match mask_def.get(&key) {
                     Some(&Value::String(ref ipv4_string)) => Ipv4Addr::from_str(ipv4_string)
                         .map_err(|e| e.into())
@@ -133,7 +133,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                 }
             }
 
-            fn read_ipv4_mask(mask_val: &Value) -> Result<RteEthIpv4Flow> {
+            fn read_ipv4_mask(mask_val: &Value) -> errors::Result<RteEthIpv4Flow> {
                 let mut ipv4_mask = RteEthIpv4Flow {
                     src_ip: 0,
                     dst_ip: 0,
@@ -162,7 +162,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
                 }
             }
 
-            fn read_fdir(fdir_val: &Value) -> Result<RteFdirConf> {
+            fn read_fdir(fdir_val: &Value) -> errors::Result<RteFdirConf> {
                 let mut fdir_conf = RteFdirConf::new();
                 match *fdir_val {
                     Value::Table(ref fdir_def) => {
@@ -295,7 +295,7 @@ fn read_port(value: &Value) -> Result<PortConfiguration> {
     }
 }
 
-pub fn read_toml_table(toml_value: &Value, table_name: &str) -> Result<Value> {
+pub fn read_toml_table(toml_value: &Value, table_name: &str) -> errors::Result<Value> {
     match toml_value.get(table_name) {
         Some(value) => Ok(value.clone()),
         _ => {
@@ -308,7 +308,7 @@ pub fn read_toml_table(toml_value: &Value, table_name: &str) -> Result<Value> {
 /// Read a TOML string and create a `NetbricksConfiguration` structure.
 /// `configuration` is a TOML formatted string.
 /// `filename` is used for error reporting purposes, and is otherwise meaningless.
-pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Result<NetbricksConfiguration> {
+pub fn read_configuration_from_str(configuration: &str, filename: &str) -> errors::Result<NetbricksConfiguration> {
     // Parse string for TOML file.
     let toml = match toml::de::from_str::<Value>(configuration) {
         Ok(toml) => toml,
@@ -466,7 +466,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> Resul
 
 /// Read a configuration file and create a `NetbricksConfiguration` structure.
 /// `filename` should be TOML formatted file.
-pub fn read_configuration(filename: &str) -> Result<NetbricksConfiguration> {
+pub fn read_configuration(filename: &str) -> errors::Result<NetbricksConfiguration> {
     let mut toml_str = String::new();
     let _ = File::open(filename)
         .and_then(|mut f| f.read_to_string(&mut toml_str))

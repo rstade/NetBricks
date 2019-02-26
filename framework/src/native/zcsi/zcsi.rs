@@ -655,6 +655,27 @@ pub enum RteEthPayloadType {
     RteEthPayloadMax = 8,
 }
 
+/// returned by eth_tx_descriptor_status()
+pub enum RteEthTxDescriptorStatus {
+    /**< Desc filled for hw, waiting xmit. */
+    RteEthTxDescFull    = 0,
+    /**< Desc done, packet is transmitted. */
+    RteEthTxDescDone    = 1,
+    /**< Desc used by driver or hw. */
+    RteEthTxDescUnavail = 2,
+}
+
+/// returned by eth_rx_descriptor_status()
+pub enum RteEthRxDescriptorStatus {
+    /**< Desc available for hw. */
+    RteEthRxDescAvail    = 0,
+    /**< Desc done, filled by hw. */
+    RteEthRxDescDone     = 1,
+    /**< Desc used by driver or hw. */
+    RteEthRxDescUnavail  = 2,
+}
+
+
 /**
  *  Select report mode of FDIR hash information in RX descriptors.
  */
@@ -831,35 +852,36 @@ extern "C" {
         vdev_count: i32,
     ) -> i32;
     pub fn init_pmd_port(
-        port: i32,
-        rxqs: i32,
-        txqs: i32,
+        port: u16,
+        rxqs: u16,
+        txqs: u16,
         rx_cores: *const i32,
         tx_cores: *const i32,
-        nrxd: i32,
-        ntxd: i32,
+        nrxd: u16,
+        ntxd: u16,
         loopback: i32,
         tso: i32,
         csumoffload: i32,
         fdir_conf_ptr: *const RteFdirConf,
-        max_tx_packet_burst: u16,
     ) -> i32;
-    pub fn free_pmd_port(port: i32) -> i32;
+    pub fn free_pmd_port(port: u16) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
-    pub fn eth_rx_burst(port: i32, qid: i32, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
+    pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
     pub fn eth_rx_queue_count(port_id: u16, queue_id: u16) -> i32;
     // rte_eth_tx_burst is inline C, we cannot directly use it here:
     pub fn eth_tx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
+    pub fn eth_tx_descriptor_status(port: u16, qid: u16, offset: u16) -> i32;
+    pub fn eth_rx_descriptor_status(port: u16, qid: u16, offset: u16) -> i32;
     pub fn eth_tx_prepare(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
     pub fn num_pmd_ports() -> i32;
-    pub fn rte_eth_macaddr_get(port: i32, address: *mut MacAddress);
+    pub fn rte_eth_macaddr_get(port: u16, address: *mut MacAddress);
     pub fn init_bess_eth_ring(ifname: *const c_char, core: i32) -> i32;
     pub fn init_ovs_eth_ring(iface: i32, core: i32) -> i32;
     pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
     pub fn attach_pmd_device(dev: *const c_char) -> i32;
     // TODO: Generic PMD info
-    pub fn max_rxqs(port: i32) -> i32;
-    pub fn max_txqs(port: i32) -> i32;
+    pub fn max_rxqs(port: u16) -> i32;
+    pub fn max_txqs(port: u16) -> i32;
     pub fn mbuf_alloc() -> *mut MBuf;
     pub fn mbuf_free(buf: *mut MBuf);
     pub fn mbuf_alloc_bulk(array: *mut *mut MBuf, cnt: u32) -> i32;

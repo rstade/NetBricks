@@ -71,7 +71,7 @@ where
         let pre=self.parent.act();
         self.parent
             .get_packet_batch()
-            .send_q(&self.port)
+            .send_q(&mut self.port)
             .and_then(|x| {
                 count=x;
                 self.sent += x as u64;
@@ -83,7 +83,7 @@ where
 
     fn done(&mut self) {}
 
-    fn send_q(&mut self, _: &PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, _: &mut PacketTx) -> errors::Result<u32> {
         panic!("Cannot send a sent packet batch")
     }
 

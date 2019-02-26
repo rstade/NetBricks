@@ -71,7 +71,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

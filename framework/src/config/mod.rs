@@ -113,9 +113,9 @@ pub struct PortConfiguration {
     /// Core on which sending node lives.
     pub tx_queues: Vec<i32>,
     /// Number of RX descriptors to use.
-    pub rxd: i32,
+    pub rxd: u16,
     /// Number of TX descriptors to use.
-    pub txd: i32,
+    pub txd: u16,
     pub loopback: bool,
     pub tso: bool,
     pub csum: bool,

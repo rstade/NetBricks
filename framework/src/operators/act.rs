@@ -12,7 +12,7 @@ pub trait Act {
     fn done(&mut self);
 
     #[inline]
-    fn send_q(&mut self, port: &PacketTx) -> Result<u32>;
+    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32>;
 
     #[inline]
     fn capacity(&self) -> i32;

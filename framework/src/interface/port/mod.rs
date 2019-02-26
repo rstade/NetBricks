@@ -15,6 +15,7 @@ pub mod fdir;
 /// Statistics for PMD port.
 pub struct PortStats {
     pub stats: AtomicUsize,
+    pub lost: AtomicUsize,
     pub q_len: AtomicUsize,
     pub max_q_len: AtomicUsize,
     pub cycles: AtomicU64,
@@ -24,6 +25,7 @@ impl PortStats {
     pub fn new() -> CacheAligned<PortStats> {
         CacheAligned::allocate(PortStats {
             stats: AtomicUsize::new(0),
+            lost: AtomicUsize::new(0),
             q_len: AtomicUsize::new(0),
             max_q_len: AtomicUsize::new(0),
             cycles: AtomicU64::new(0),
@@ -47,19 +49,11 @@ impl<T: PacketRx> PacketRx for CacheAligned<T> {
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         T::recv(&*self, pkts)
     }
-
-    fn port_id(&self) -> i32 {
-        T::port_id(&*self)
-    }
 }
 
 impl<T: PacketTx> PacketTx for CacheAligned<T> {
     #[inline]
-    fn send(&self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
-        T::send(&*self, pkts)
-    }
-
-    fn port_id(&self) -> i32 {
-        T::port_id(&*self)
+    fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
+        T::send(&mut *self, pkts)
     }
 }
