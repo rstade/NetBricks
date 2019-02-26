@@ -14,9 +14,9 @@ use std::result;
 pub struct PacketBatch {
     array: Vec<*mut MBuf>,
     scratch: Vec<*mut MBuf>,
-//    parent_tasks: Vec<usize>,
-    b_keep_mbuf: bool, // if false the mbuf array will be de-allocated, each time new packets are received
-                       //    port_id: Option<i32>,
+    /// if false the mbuf array will be de-allocated, each time new packets are received
+    b_keep_mbuf: bool,
+    n_freed_slow_path: u32,
 }
 
 // *mut MBuf is not send by default.
@@ -28,20 +28,11 @@ impl PacketBatch {
         PacketBatch {
             array: Vec::<*mut MBuf>::with_capacity(cnt as usize),
             scratch: Vec::<*mut MBuf>::with_capacity(cnt as usize),
-//            parent_tasks: vec![],
             b_keep_mbuf,
+            n_freed_slow_path: 0,
         }
     }
-    //
-    //    #[inline]
-    //    pub fn add_parent_task(&mut self, task: usize) {
-    //        self.parent_tasks.push(task);
-    //    }
-    //
-    //    #[inline]
-    //    pub fn get_parent_task(&self) -> &Vec<usize> {
-    //        &self.parent_tasks
-    //    }
+
 
     /// Allocate as many mbufs as batch can hold. `len` here merely sets the extent of the mbuf considered when sending
     /// a packet. We always allocate mbuf's of the same size.
@@ -149,7 +140,7 @@ impl PacketBatch {
                     let array_ptr = self.scratch.as_mut_ptr();
                     let ret = mbuf_free_bulk(array_ptr, len as i32);
                     self.scratch.clear();
-                    if ret == 0 {
+                    if ret >= 0 {
                         Some(len)
                     } else {
                         None
@@ -203,10 +194,10 @@ impl PacketBatch {
     }
 
     #[inline]
-    fn free_packet_batch(&mut self) -> result::Result<(), ()> {
+    fn free_packet_batch(&mut self) -> result::Result<i32, ()> {
         unsafe {
             if self.array.is_empty() || self.b_keep_mbuf {
-                Ok(())
+                Ok(0)
             } else {
                 let len = self.array.len() as i32;
                 let ret = {
@@ -215,8 +206,12 @@ impl PacketBatch {
                 };
                 // If free fails, I am not sure we can do much to recover this batch.
                 self.array.set_len(0);
-                if ret == 0 {
-                    Ok(())
+                if ret >= 0 {
+                    if ret > 0 {
+                        self.n_freed_slow_path += 1;
+                        if self.n_freed_slow_path % 100 == 0 { info!("freed over slow path = {}", self.n_freed_slow_path); }
+                    }
+                    Ok(ret)
                 } else {
                     Err(())
                 }

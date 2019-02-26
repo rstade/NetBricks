@@ -19,6 +19,7 @@ unsigned int mbuf_avail_count();
 struct rte_mbuf* mbuf_alloc();
 void mbuf_free(struct rte_mbuf* buf);
 int mbuf_alloc_bulk(struct rte_mbuf **array, unsigned int cnt);
+/// returns 0 if it used fast path (assambler), returns 1 if it used rte_pktmbuf_free on each array element (slow path)
 int mbuf_free_bulk(mbuf_array_t array, int cnt);
 struct rte_mempool* get_pframe_pool(int coreid, int sid);
 struct rte_mempool* get_mempool_for_core(int coreid);

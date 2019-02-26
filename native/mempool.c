@@ -308,8 +308,8 @@ int mbuf_free_bulk(mbuf_array_t array, int cnt) {
 
 slow_path:
     for (i = 0; i < cnt; i++)
-        mbuf_free(array[i]);
-    return 0;
+        rte_pktmbuf_free(array[i]);
+    return 1;
 }
 
 void dump_pkt(struct rte_mbuf *buf) {
