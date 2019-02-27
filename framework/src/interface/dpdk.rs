@@ -126,7 +126,7 @@ pub fn init_thread(tid: i32, core: i32) {
     if numa == -1 {
         info!("No NUMA information found, support disabled");
     } else {
-        info!("Running on numa node {}", numa);
+        info!("thread/core {}/{} is running on numa node {}", tid, core, numa);
     };
 }
 

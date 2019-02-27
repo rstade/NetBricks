@@ -433,9 +433,11 @@ impl PmdPort {
         let csumoffloadv = i32_from_bool(csumoffload);
         let max_txqs = unsafe { max_txqs(port) };
         let max_rxqs = unsafe { max_rxqs(port) };
-        let actual_rxqs = min(max_rxqs, rxqs as i32);
-        let actual_txqs = min(max_txqs, txqs as i32);
-        debug!("max_rxqs={}, max_txqs={}", max_rxqs, max_txqs);
+        assert!(max_rxqs >= 0);
+        assert!(max_txqs >= 0);
+        let actual_rxqs = min(max_rxqs as u16, rxqs);
+        let actual_txqs = min(max_txqs as u16, txqs);
+        if actual_rxqs < rxqs || actual_txqs < txqs { warn!("exceeding #queue limits: max_rxqs={}, max_txqs={}, using max value(s)", max_rxqs, max_txqs); }
         if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) && (actual_rxqs > 0 && actual_txqs > 0) {
             debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
             let ret = unsafe {
