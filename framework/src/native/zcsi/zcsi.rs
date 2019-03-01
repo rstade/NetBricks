@@ -877,8 +877,10 @@ extern "C" {
     pub fn rte_eth_macaddr_get(port: u16, address: *mut MacAddress);
     pub fn init_bess_eth_ring(ifname: *const c_char, core: i32) -> i32;
     pub fn init_ovs_eth_ring(iface: i32, core: i32) -> i32;
-    pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
-    pub fn attach_pmd_device(dev: *const c_char) -> i32;
+    //pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
+    //pub fn attach_pmd_device(dev: *const c_char) -> i32;
+    /// returns portids of all matching ports for the device
+    pub fn attach_device(identifier: *const c_char, port_id_ptr: *mut u16, max_port_ids: u32) -> i32;
     // TODO: Generic PMD info
     pub fn max_rxqs(port: u16) -> i32;
     pub fn max_txqs(port: u16) -> i32;

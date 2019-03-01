@@ -25,11 +25,7 @@
 /* Options for configuring ethernet port */
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
-		.header_split = 0,      /* Header Split disabled */
-		.hw_ip_checksum = 0,    /* IP checksum offload disabled */
-		.hw_vlan_filter = 0,    /* VLAN filtering disabled */
-		.jumbo_frame = 0,       /* Jumbo Frame Support disabled */
-		.hw_strip_crc = 1,      /* CRC stripped by hardware */
+		.offloads = 0,
 	},
 	.txmode = {
 		.mq_mode = ETH_MQ_TX_NONE,
@@ -72,7 +68,7 @@ kni_change_mtu(uint16_t port_id, unsigned new_mtu)
 	int ret;
 	struct rte_eth_conf conf;
 
-	if (port_id >= rte_eth_dev_count()) {
+	if (port_id >= rte_eth_dev_count_avail()) {
 		RTE_LOG(ERR, APP, "Invalid port id %d\n", port_id);
 		return -EINVAL;
 	}
@@ -83,11 +79,6 @@ kni_change_mtu(uint16_t port_id, unsigned new_mtu)
 	rte_eth_dev_stop(port_id);
 
 	memcpy(&conf, &port_conf, sizeof(conf));
-	/* Set new MTU */
-	if (new_mtu > ETHER_MAX_LEN)
-		conf.rxmode.jumbo_frame = 1;
-	else
-		conf.rxmode.jumbo_frame = 0;
 
 	/* mtu + length of header + length of FCS = max pkt length */
 	conf.rxmode.max_rx_pkt_len = new_mtu + KNI_ENET_HEADER_SIZE +
@@ -114,7 +105,7 @@ kni_config_network_interface(uint16_t port_id, uint8_t if_up)
 {
 	int ret = 0;
 
-	if (port_id >= rte_eth_dev_count() || port_id >= RTE_MAX_ETHPORTS) {
+	if (port_id >= rte_eth_dev_count_avail() || port_id >= RTE_MAX_ETHPORTS) {
 		RTE_LOG(ERR, APP, "Invalid port id %d\n", port_id);
 		return -EINVAL;
 	}
@@ -172,13 +163,16 @@ kni_config_network_interface(uint16_t port_id, uint8_t if_up)
 		 if (i == 0) {
 			 struct rte_kni_ops ops;
 			 struct rte_eth_dev_info dev_info;
+			 const struct rte_pci_device *pci_dev;
 
 
 			 memset(&dev_info, 0, sizeof(dev_info));
 			 rte_eth_dev_info_get(port_id, &dev_info);
-			 if (dev_info.pci_dev) {
-				conf.addr = dev_info.pci_dev->addr;
-				conf.id = dev_info.pci_dev->id;
+			 pci_dev = RTE_DEV_TO_PCI(dev_info.device);
+
+			 if (pci_dev) {
+				conf.addr = pci_dev->addr;
+				conf.id = pci_dev->id;
 			 }
 
 			 memset(&ops, 0, sizeof(ops));

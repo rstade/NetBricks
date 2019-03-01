@@ -252,10 +252,12 @@ impl PmdPort {
     }
 
     /// Find a port ID given a PCI-E string.
+    /*
     pub fn find_port_id(pcie: &str) -> i32 {
         let pcie_cstr = CString::new(pcie).unwrap();
         unsafe { find_port_with_pci_address(pcie_cstr.as_ptr()) }
     }
+    */
 
     pub fn port_id(&self) -> u16 {
         self.port
@@ -598,8 +600,12 @@ impl PmdPort {
     ) -> errors::Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         debug!("attach_pmd_device, port = {:?}", cannonical_spec);
-        let port = unsafe { attach_pmd_device((cannonical_spec[..]).as_ptr()) };
-        if port >= 0 {
+        let mut ports: Vec<u16> = Vec::with_capacity(16);
+        let rc = unsafe { attach_device((cannonical_spec[..]).as_ptr(), ports.as_mut_ptr(), 16) };
+        if rc >= 0 {
+            unsafe { ports.set_len(rc as usize); }
+            if rc > 1 { warn!("dpdk detected {} ports for spec {}, using first port with id {}", rc, spec, ports[0]); }
+            let port = ports[0];
             debug!("Going to initialize dpdk port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
                 port as u16,

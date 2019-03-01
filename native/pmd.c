@@ -41,15 +41,7 @@ static const struct rte_eth_conf default_eth_conf = {
                         .mq_mode        = ETH_MQ_RX_RSS, /* Use RSS without DCB or VMDQ */
                         .max_rx_pkt_len = 0,             /* valid only if jumbo is on */
                         .split_hdr_size = 0,             /* valid only if HS is on */
-                        .header_split   = 0,             /* Header Split off */
-                        .hw_ip_checksum = HW_RXCSUM,     /* IP checksum offload */
-                        .hw_vlan_filter = 0,             /* VLAN filtering */
-                        .hw_vlan_strip  = 0,             /* VLAN strip */
-                        .hw_vlan_extend = 0,             /* Extended VLAN */
-                        .jumbo_frame    = 0,             /* Jumbo Frame support */
-                        .hw_strip_crc   = 1,             /* CRC stripped by hardware */
-                        .enable_scatter = 0,             /* Enable scatter packets rx handler */
-                        .enable_lro     = 0,             /* Enable LRO */
+                        .offloads       = 0,
                 },
         .txmode =
                 {
@@ -57,6 +49,7 @@ static const struct rte_eth_conf default_eth_conf = {
                         .hw_vlan_reject_tagged = 0,
                         .hw_vlan_reject_untagged = 0,
                         .hw_vlan_insert_pvid = 0,
+                        .offloads = 0,
                 },
         /* is later on re-written taking the info from rte_eth_dev_get_info */
         .rx_adv_conf.rss_conf =
@@ -101,11 +94,11 @@ static const struct rte_eth_conf default_eth_conf = {
 };
 
 int num_pmd_ports() {
-    return rte_eth_dev_count();
+    return rte_eth_dev_count_avail();
 }
 
 int get_pmd_ports(struct rte_eth_dev_info *info, int len) {
-    int num_ports = rte_eth_dev_count();
+    int num_ports = rte_eth_dev_count_avail();
     int num_entries = MIN(num_ports, len);
     for (int i = 0; i < num_entries; i++) {
         memset(&info[i], 0, sizeof(struct rte_eth_dev_info));
@@ -115,7 +108,7 @@ int get_pmd_ports(struct rte_eth_dev_info *info, int len) {
 }
 
 int get_rte_eth_dev_info(int dev, struct rte_eth_dev_info *info) {
-    if (dev >= rte_eth_dev_count()) {
+    if (dev >= rte_eth_dev_count_avail()) {
         return -ENODEV;
     } else {
         rte_eth_dev_info_get(dev, info);
@@ -142,12 +135,13 @@ int max_txqs(uint16_t dev) {
 }
 
 void enumerate_pmd_ports() {
-    int num_dpdk_ports = rte_eth_dev_count();
+    int num_dpdk_ports = rte_eth_dev_count_avail();
     int i;
 
     printf("%d DPDK PMD ports have been recognized:\n", num_dpdk_ports);
     for (i = 0; i < num_dpdk_ports; i++) {
         struct rte_eth_dev_info dev_info;
+        const struct rte_pci_device *pci_dev;
 
         memset(&dev_info, 0, sizeof(dev_info));
         rte_eth_dev_info_get(i, &dev_info);
@@ -155,10 +149,12 @@ void enumerate_pmd_ports() {
         printf("DPDK port_id %d (%s)   RXQ %hu TXQ %hu  ", i, dev_info.driver_name,
                dev_info.max_rx_queues, dev_info.max_tx_queues);
 
-        if (dev_info.pci_dev) {
-            printf("%04hx:%02hhx:%02hhx.%02hhx %04hx:%04hx  ", dev_info.pci_dev->addr.domain,
-                   dev_info.pci_dev->addr.bus, dev_info.pci_dev->addr.devid, dev_info.pci_dev->addr.function,
-                   dev_info.pci_dev->id.vendor_id, dev_info.pci_dev->id.device_id);
+        pci_dev = RTE_DEV_TO_PCI(dev_info.device);
+
+        if (pci_dev) {
+            printf("%04x:%02hhx:%02hhx.%02hhx %04hx:%04hx  ", pci_dev->addr.domain,
+                   pci_dev->addr.bus, pci_dev->addr.devid, pci_dev->addr.function,
+                   pci_dev->id.vendor_id, pci_dev->id.device_id);
         }
 
         printf("\n");
@@ -251,7 +247,6 @@ static int log_eth_txconf(struct rte_eth_txconf *txconf) {
     RTE_LOG(INFO, PMD, "tx_free_thresh: %d\n", txconf->tx_free_thresh);
     RTE_LOG(INFO, PMD, "tx_rs_thresh: %d\n", txconf->tx_rs_thresh);
     RTE_LOG(INFO, PMD, "tx_deferred_start: %d\n", txconf->tx_deferred_start);
-    RTE_LOG(INFO, PMD, "txq_flags: 0x%x\n", txconf->txq_flags);
     RTE_LOG(INFO, PMD, "tx_offloads: 0x%lx\n", txconf->offloads);
 
     return 0;
@@ -319,9 +314,12 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     eth_txconf = dev_info.default_txconf;
     tso = !(!tso);
     csumoffload = !(!csumoffload);
+    /* removed in 18.08
     eth_txconf.txq_flags = ETH_TXQ_FLAGS_NOVLANOFFL | ETH_TXQ_FLAGS_NOMULTSEGS * (1 - tso) |
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
-
+    */
+    if (csumoffload) eth_txconf.offloads |= (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM);
+    if (tso) eth_txconf.offloads |= DEV_TX_OFFLOAD_MULTI_SEGS;
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
 
     rte_eth_dev_info_get(port, &dev_info);
@@ -358,7 +356,6 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
 
     for (i = 0; i < txqs; i++) {
         int sid = rte_lcore_to_socket_id(txq_core[i]);
-
         ret = rte_eth_tx_queue_setup(port, i, ntxd, sid, &eth_txconf);
         if (ret != 0) {
             RTE_LOG(CRIT, PMD, "Failed to initialize txq\n");
@@ -415,6 +412,7 @@ int32_t eth_rx_descriptor_status(uint16_t port_id, uint16_t queue_id, uint16_t o
     return rte_eth_rx_descriptor_status(port_id, queue_id, offset);
 }
 
+/* needs adaption to latest DPDK
 int find_port_with_pci_address(const char *pci) {
     struct rte_pci_addr addr;
     struct rte_eth_dev_info info;
@@ -432,7 +430,7 @@ int find_port_with_pci_address(const char *pci) {
         if (rte_eth_devices[i].state != RTE_ETH_DEV_ATTACHED) {
             continue;
         }
-/* TODO
+
         if (!rte_eth_devices[i].pci_dev) {
             continue;
         }
@@ -440,7 +438,7 @@ int find_port_with_pci_address(const char *pci) {
         if (rte_eal_compare_pci_addr(&addr, &rte_eth_devices[i].pci_dev->addr)) {
             continue;
         }
-*/
+
         // needs still testing:
         if (get_rte_eth_dev_info(i, &info)) {
             continue;
@@ -453,8 +451,6 @@ int find_port_with_pci_address(const char *pci) {
         return i;
     }
 
-    /* If not found, maybe the device has not been attached yet */
-
     snprintf(devargs, 1024, "%04x:%02x:%02x.%02x", addr.domain, addr.bus, addr.devid, addr.function);
 
     ret = rte_eth_dev_attach(devargs, &port_id);
@@ -464,10 +460,10 @@ int find_port_with_pci_address(const char *pci) {
     }
     return (int) port_id;
 }
-
+*/
 /* Attach a device with a given name (useful when attaching virtual devices). Returns either the
    port number of the
-   device or an error if not found. */
+   device or an error if not found.
 int attach_pmd_device(const char *devname) {
     uint16_t
             port = 0;
@@ -478,6 +474,38 @@ int attach_pmd_device(const char *devname) {
         return -ENODEV;
     }
     return (int) port;
+}
+*/
+
+int
+attach_device(char *identifier, portid_t* portid_ptr, unsigned int max_ports)
+{
+    portid_t pi;
+    struct rte_dev_iterator iterator;
+
+    if (identifier == NULL || portid_ptr == NULL) {
+        RTE_LOG(WARNING, PMD, "attach_port: null pointers not allowed\n");
+        return -1;
+    }
+
+    RTE_LOG(DEBUG, PMD, "trying to attach device %s\n", identifier);
+
+    if (rte_dev_probe(identifier) != 0) {
+        RTE_LOG(WARNING, PMD, "Failed to attach device %s\n", identifier);
+        return -ENODEV;
+    }
+
+    portid_t* ptr;
+    ptr = portid_ptr;
+    int count=0;
+    RTE_ETH_FOREACH_MATCHING_DEV(pi, identifier, &iterator) {
+        /* setup ports matching the devargs used for probing */
+        *ptr = pi;
+        ptr++;
+        count++;
+        if (count >= max_ports) break;
+    }
+    return count;
 }
 
 /* Add function to modify RSS hash function using
