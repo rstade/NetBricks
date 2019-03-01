@@ -30,6 +30,15 @@ CONFIG_RTE_PROC_INFO=y
 CONFIG_RTE_LIBRTE_VMBUS=y
 CONFIG_RTE_LIBRTE_NETVSC_PMD=y
 
+
+#
+# Compile software PMD backed by PCAP files
+#
+CONFIG_RTE_LIBRTE_PMD_PCAP=y
+
+CONFIG_RTE_PORT_PCAP=y
+
+
 #
 # Common libraries, before Bus/PMDs
 #
