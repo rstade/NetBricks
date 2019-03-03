@@ -866,7 +866,7 @@ extern "C" {
     ) -> i32;
     pub fn free_pmd_port(port: u16) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
-    pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u32; // sta
+    pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u32;
     pub fn eth_rx_queue_count(port_id: u16, queue_id: u16) -> i32;
     // rte_eth_tx_burst is inline C, we cannot directly use it here:
     pub fn eth_tx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
@@ -896,12 +896,13 @@ extern "C" {
 
     //usually called already by rte_eal_init when e.g. --vdev netkni0:
     pub fn rte_kni_init(max_kni_ifaces: u32);
-    pub fn kni_alloc(port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni; // sta
-    pub fn rte_kni_release(kni: *mut RteKni) -> i32; //sta
-    pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32; //sta
-    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
-    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32; //sta
+    pub fn kni_alloc(port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
+    pub fn rte_kni_release(kni: *mut RteKni) -> i32;
+    pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32;
+    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32;
+    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32;
     pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
+    pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
 
     pub fn rte_log_set_global_level(level: RteLogLevel);
     pub fn rte_log_get_global_level() -> u32;

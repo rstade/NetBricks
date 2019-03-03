@@ -48,10 +48,10 @@ pub struct PmdPort {
     should_close: bool,
     csumoffload: bool,
     port: u16,
-    kni: Option<Unique<RteKni>>,
     //must use Unique because raw ptr does not implement Send
-    linux_if: Option<String>,
+    kni: Option<Unique<RteKni>>,
     // used for kni interfaces
+    linux_if: Option<String>,
     rxqs: u16,
     txqs: u16,
     n_rx_desc: u16,
@@ -571,7 +571,7 @@ impl PmdPort {
                     txqs: 1,
                     n_tx_desc: 1,
                     n_rx_desc: 1,
-                    should_close: true, // sta, not clear what this is used for, and if to set true or false
+                    should_close: true, // closes the eth device and frees all resources, when PmdPort is dropped
                     csumoffload: false,
                     driver: DriverType::Unknown,
                     stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
