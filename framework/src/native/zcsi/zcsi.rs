@@ -139,22 +139,22 @@ impl fmt::Display for RteFilterType {
 pub enum RteFilterOp {
     /** used to check whether the type filter is supported */
     RteEthFilterNop = 0,
-    RteEthFilterAdd = 1,
     /**< add filter entry */
-    RteEthFilterUpdate = 2,
+    RteEthFilterAdd = 1,
     /**< update filter entry */
-    RteEthFilterDelete = 3,
+    RteEthFilterUpdate = 2,
     /**< delete filter entry */
-    RteEthFilterFlush = 4,
+    RteEthFilterDelete = 3,
     /**< flush all entries */
-    RteEthFilterGet = 5,
+    RteEthFilterFlush = 4,
     /**< get filter entry */
-    RteEthFilterSet = 6,
+    RteEthFilterGet = 5,
     /**< configurations */
-    RteEthFilterInfo = 7,
+    RteEthFilterSet = 6,
     /**< retrieve information */
-    RteEthFilterStats = 8,
+    RteEthFilterInfo = 7,
     /**< retrieve statistics */
+    RteEthFilterStats = 8,
     RteEthFilterOpMax,
 }
 

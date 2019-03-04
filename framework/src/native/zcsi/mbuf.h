@@ -1,5 +1,6 @@
 //
 // Created by rainer on 11.12.18.
+// addapted to DPDK 18.11, 04.03.2019
 //
 
 #include <stdint.h>
@@ -46,4 +47,16 @@ struct MBuf {
     uint16_t priv_size;
     uint16_t timesync;
     uint32_t seqn; // /** Sequence number. See also rte_reorder_insert(). */
+    struct rte_mbuf_ext_shared_info *shinfo;
+};
+
+typedef void (*rte_mbuf_extbuf_free_callback_t)(void *addr, void *opaque);
+typedef struct {
+        volatile int16_t cnt;
+} rte_atomic16_t;
+
+struct rte_mbuf_ext_shared_info {
+    rte_mbuf_extbuf_free_callback_t free_cb;
+    void *fcb_opaque;
+    rte_atomic16_t refcnt_atomic;
 };
