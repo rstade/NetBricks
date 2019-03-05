@@ -1,5 +1,6 @@
 use super::MBuf;
 use super::super::super::headers::IpHeader;
+use super::ethdev::rte_eth_dev_info;
 use eui48::MacAddress;
 use std::convert;
 use std::ffi::CStr;
@@ -921,6 +922,7 @@ extern "C" {
         dst_port_mask: u16,
         error: *const RteFlowError,
     ) -> *mut RteFlow;
+    pub fn rte_eth_dev_info_get(port_id: u16, dev_info : *mut rte_eth_dev_info);
     pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
     pub fn rte_eth_dev_filter_ctrl(
         port_id: u16,

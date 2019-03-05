@@ -1,21 +1,21 @@
-use std::sync::Arc;
 use std::collections::HashMap;
 use std::os::raw::c_void;
+use std::sync::Arc;
 
-use common::errors;
-use config::{DriverType};
 use super::PmdPort;
+use common::errors;
+use config::DriverType;
 use native::zcsi::*;
 
 #[derive(Clone, Copy)]
 pub struct L4Flow {
     pub ip: u32,
-    pub port:u16,
+    pub port: u16,
 }
 
 pub struct FlowDirector {
     pmd_port: Arc<PmdPort>,
-    flows: HashMap<u16,L4Flow>
+    flows: HashMap<u16, L4Flow>,
 }
 
 impl FlowDirector {
@@ -31,9 +31,18 @@ impl FlowDirector {
     }
 
     pub fn add_fdir_filter(&mut self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
-        self.flows.insert(rxq,L4Flow{ ip: dst_ip, port: dst_port});
-        if self.pmd_port.driver() == DriverType::I40e { self.add_fdir_filter_i40e(rxq, dst_ip, dst_port)}
-            else { self.add_fdir_filter_ixgbe(rxq, dst_ip, dst_port) }
+        self.flows.insert(
+            rxq,
+            L4Flow {
+                ip: dst_ip,
+                port: dst_port,
+            },
+        );
+        if self.pmd_port.driver() == DriverType::I40e {
+            self.add_fdir_filter_i40e(rxq, dst_ip, dst_port)
+        } else {
+            self.add_fdir_filter_ixgbe(rxq, dst_ip, dst_port)
+        }
     }
 
     fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
@@ -88,7 +97,8 @@ impl FlowDirector {
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterAdd,
                 fdir_filter_ptr as *mut c_void,
-            )).map_err(|e| e.into())
+            ))
+            .map_err(|e| e.into())
         }
     }
 
@@ -97,7 +107,8 @@ impl FlowDirector {
             let result: errors::Result<i32> = check_os_error(rte_eth_dev_filter_supported(
                 self.pmd_port.port_id() as u16,
                 RteFilterType::RteEthFilterFdir,
-            )).map_err(|e| e.into());
+            ))
+            .map_err(|e| e.into());
             result?;
         }
 
@@ -119,7 +130,8 @@ impl FlowDirector {
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterSet,
                 fdir_filter_info as *mut c_void,
-            )).map_err(|e| e.into());
+            ))
+            .map_err(|e| e.into());
             result?;
         }
 
@@ -195,7 +207,8 @@ impl FlowDirector {
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterAdd,
                 fdir_filter_ptr as *mut c_void,
-            )).map_err(|e| e.into())
+            ))
+            .map_err(|e| e.into())
         }
     }
 }

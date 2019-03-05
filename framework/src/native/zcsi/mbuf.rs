@@ -1,4 +1,5 @@
 #![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 use std::fmt;
 use std::ptr;
 use super::ol_flags::*;

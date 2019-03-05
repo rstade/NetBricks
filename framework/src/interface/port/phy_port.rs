@@ -5,6 +5,9 @@ use common::errors;
 use common::errors::{ErrorKind, ResultExt};
 use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
+use libc::if_indextoname;
+use native::zcsi::ethdev::{rss_flow_name, rte_eth_dev_info, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name};
+use native::zcsi::ethdev::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use native::zcsi::*;
 use regex::Regex;
 use std::cmp::min;
@@ -15,7 +18,7 @@ use std::ptr;
 use std::ptr::Unique;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use utils::{FiveTupleV4, rdtsc_unsafe};
+use utils::{rdtsc_unsafe, FiveTupleV4};
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -129,7 +132,6 @@ impl fmt::Display for PortQueue {
 
 /// Represents a single RX/TX queue pair for a port. This is what is needed to send or receive traffic.
 impl PortQueue {
-
     #[inline]
     fn send_queue(&mut self, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
         unsafe {
@@ -137,7 +139,7 @@ impl PortQueue {
                 rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
             } else {
                 if self.csum_offload() {
-                    let nb_prep= eth_tx_prepare(self.port_id as u16, self.txq as u16, pkts, to_send);
+                    let nb_prep = eth_tx_prepare(self.port_id as u16, self.txq as u16, pkts, to_send);
                     assert_eq!(nb_prep, to_send);
                 }
                 eth_tx_burst(self.port_id as u16, self.txq as u16, pkts, to_send) as u32
@@ -146,7 +148,7 @@ impl PortQueue {
             self.stats_tx.stats.store(update, Ordering::Relaxed);
             let lost = to_send as u32 - sent;
             if lost > 0 {
-                let update =  self.stats_tx.lost.load(Ordering::Relaxed) +lost as usize;
+                let update = self.stats_tx.lost.load(Ordering::Relaxed) + lost as usize;
                 self.stats_tx.lost.store(update, Ordering::Relaxed);
             }
             Ok(sent)
@@ -155,21 +157,26 @@ impl PortQueue {
 
     #[inline]
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
-        let start= rdtsc_unsafe();
+        let start = rdtsc_unsafe();
         unsafe {
             let (recv, q_count) = if self.port.is_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
-                (rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32), 0)
+                (
+                    rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32),
+                    0,
+                )
             } else {
                 //debug!("calling eth_rx_burst for {}.{}", self.port, self.rxq);
-                (eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv),
-                eth_rx_queue_count(self.port_id as u16, self.rxq as u16))
+                (
+                    eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv),
+                    eth_rx_queue_count(self.port_id as u16, self.rxq as u16),
+                )
             };
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
             self.stats_rx.set_q_len(q_count as usize);
-            if recv > 0 ||q_count > 0 {
+            if recv > 0 || q_count > 0 {
                 let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (rdtsc_unsafe() - start);
                 self.stats_rx.cycles.store(update, Ordering::Relaxed);
             }
@@ -203,13 +210,19 @@ impl PortQueue {
     }
 
     #[inline]
-    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> { self.stats_rx.clone() }
+    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_rx.clone()
+    }
 
     #[inline]
-    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> { self.stats_tx.clone() }
+    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_tx.clone()
+    }
 
     #[inline]
-    pub fn csum_offload(&self) -> bool { self.port.csumoffload }
+    pub fn csum_offload(&self) -> bool {
+        self.port.csumoffload
+    }
 }
 
 impl PacketTx for PortQueue {
@@ -220,7 +233,6 @@ impl PacketTx for PortQueue {
         let len = pkts.len() as u16;
         self.send_queue(pkts.as_mut_ptr(), len)
     }
-
 }
 
 impl PacketRx for PortQueue {
@@ -232,7 +244,9 @@ impl PacketRx for PortQueue {
         self.recv_queue(pkts, len)
     }
 
-    fn queued(&self) -> usize { self.stats_rx.get_q_len() }
+    fn queued(&self) -> usize {
+        self.stats_rx.get_q_len()
+    }
 }
 
 // Utility function to go from Rust bools to C ints. Allowing match bools since this looks nicer to me.
@@ -282,10 +296,12 @@ impl PmdPort {
     }
 
     pub fn driver(&self) -> DriverType {
-       self.driver
+        self.driver
     }
 
-    pub fn csum_offload(&self) -> bool { self.csumoffload }
+    pub fn csum_offload(&self) -> bool {
+        self.csumoffload
+    }
 
     pub fn get_tcp_dst_port_mask(&self) -> u16 {
         if self.fdir_conf.is_some() {
@@ -342,7 +358,6 @@ impl PmdPort {
         )
     }
 
-
     pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4) -> Option<&RteFlow> {
         unsafe {
             let mut error = RteFlowError {
@@ -363,7 +378,8 @@ impl PmdPort {
                 flow.dst_port,
                 flow_mask.dst_port,
                 &mut error,
-            ).as_ref();
+            )
+            .as_ref();
 
             if rte_flow.is_none() {
                 error!(
@@ -389,8 +405,8 @@ impl PmdPort {
         );
         */
         println!(
-         "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
-         "q", "rx_packets", "tx_packets", "tx_lost", "rx_q_len", "rx_cycles"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
+            "q", "rx_packets", "tx_packets", "tx_lost", "rx_q_len", "rx_cycles"
         );
         let (mut sin_p, mut sout_p, mut s_tx_lost) = (0usize, 0usize, 0usize);
         for q in 0..self.rxqs() {
@@ -413,6 +429,86 @@ impl PmdPort {
             "{0: >3} | {1: >20} | {2: >20} | {3: >20} | \n",
             "sum", sin_p, sout_p, s_tx_lost,
         );
+    }
+
+    fn print_eth_dev_info(port: u16) {
+        let mut dev_info = rte_eth_dev_info::new_null();
+        unsafe {
+            rte_eth_dev_info_get(port, &mut dev_info as *mut rte_eth_dev_info);
+        }
+        let if_index = dev_info.if_index;
+        let mut buffer = Vec::<u8>::with_capacity(1024);
+        let if_name = if if_index > 0 {
+            unsafe {
+                if_indextoname(if_index, buffer.as_mut_ptr() as *mut i8);
+                CString::new(buffer).expect("if_indextoname failed")
+            }
+        } else {
+            CString::new("-").expect("CString::new failed")
+        };
+
+        println!(
+            "Ethernet device information (port_id= {}, if_index= {}, if_name= {}, driver= {})",
+            port,
+            if_index,
+            if_name.into_string().expect("bad if_name"),
+            unsafe { CStr::from_ptr(dev_info.driver_name).to_str().expect("bad string") }
+        );
+
+        print!("   RX offload capabilities: ");
+        let rx_offload_capa = dev_info.rx_offload_capa;
+        for i in 0..64 {
+            let offload_id = 1u64 << i;
+            if offload_id & rx_offload_capa != 0 {
+                let offload_capa_name = unsafe { CStr::from_ptr(rte_eth_dev_rx_offload_name(offload_id)) };
+                print!("{} ", offload_capa_name.to_str().expect("bad string"));
+            }
+        }
+        println!("");
+
+        print!("   RX per queue offload capabilities: ");
+        let rx_offload_capa = dev_info.rx_queue_offload_capa;
+        for i in 0..64 {
+            let offload_id = 1u64 << i;
+            if offload_id & rx_offload_capa != 0 {
+                let offload_capa_name = unsafe { CStr::from_ptr(rte_eth_dev_rx_offload_name(offload_id)) };
+                print!("{} ", offload_capa_name.to_str().expect("bad string"));
+            }
+        }
+        println!("");
+
+        print!("   TX offload capabilities: ");
+        let tx_offload_capa = dev_info.tx_offload_capa;
+        for i in 0..64 {
+            let offload_id = 1u64 << i;
+            if offload_id & tx_offload_capa != 0 {
+                let offload_capa_name = unsafe { CStr::from_ptr(rte_eth_dev_tx_offload_name(offload_id)) };
+                print!("{} ", offload_capa_name.to_str().expect("bad string"));
+            }
+        }
+        println!("");
+
+        print!("   TX per queue offload capabilities: ");
+        let tx_offload_capa = dev_info.tx_queue_offload_capa;
+        for i in 0..64 {
+            let offload_id = 1u64 << i;
+            if offload_id & tx_offload_capa != 0 {
+                let offload_capa_name = unsafe { CStr::from_ptr(rte_eth_dev_tx_offload_name(offload_id)) };
+                print!("{} ", offload_capa_name.to_str().expect("bad string"));
+            }
+        }
+        println!("");
+
+        print!("   RSS offload capabilities: ");
+        let rss_offload_capa = dev_info.flow_type_rss_offloads;
+        for i in RTE_ETH_FLOW_UNKNOWN..RTE_ETH_FLOW_MAX {
+            let offload_id = 1u64 << i;
+            if offload_id & rss_offload_capa != 0 {
+                let offload_capa_name = rss_flow_name(i as usize);
+                print!("{} ", offload_capa_name);
+            }
+        }
+        println!("");
     }
 
     /// Create a PMD port with a given number of RX and TXQs.
@@ -439,8 +535,17 @@ impl PmdPort {
         assert!(max_txqs >= 0);
         let actual_rxqs = min(max_rxqs as u16, rxqs);
         let actual_txqs = min(max_txqs as u16, txqs);
-        if actual_rxqs < rxqs || actual_txqs < txqs { warn!("exceeding #queue limits: max_rxqs={}, max_txqs={}, using max value(s)", max_rxqs, max_txqs); }
-        if ((actual_txqs as usize) <= tx_cores.len()) && ((actual_rxqs as usize) <= rx_cores.len()) && (actual_rxqs > 0 && actual_txqs > 0) {
+        if actual_rxqs < rxqs || actual_txqs < txqs {
+            warn!(
+                "exceeding #queue limits: max_rxqs={}, max_txqs={}, using max value(s)",
+                max_rxqs, max_txqs
+            );
+        }
+        if ((actual_txqs as usize) <= tx_cores.len())
+            && ((actual_rxqs as usize) <= rx_cores.len())
+            && (actual_rxqs > 0 && actual_txqs > 0)
+        {
+            PmdPort::print_eth_dev_info(port);
             debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
             let ret = unsafe {
                 init_pmd_port(
@@ -603,8 +708,15 @@ impl PmdPort {
         let mut ports: Vec<u16> = Vec::with_capacity(16);
         let rc = unsafe { attach_device((cannonical_spec[..]).as_ptr(), ports.as_mut_ptr(), 16) };
         if rc >= 0 {
-            unsafe { ports.set_len(rc as usize); }
-            if rc > 1 { warn!("dpdk detected {} ports for spec {}, using first port with id {}", rc, spec, ports[0]); }
+            unsafe {
+                ports.set_len(rc as usize);
+            }
+            if rc > 1 {
+                warn!(
+                    "dpdk detected {} ports for spec {}, using first port with id {}",
+                    rc, spec, ports[0]
+                );
+            }
             let port = ports[0];
             debug!("Going to initialize dpdk port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
@@ -620,7 +732,8 @@ impl PmdPort {
                 csumoffload,
                 driver,
                 fdir_conf,
-            ).chain_err(|| ErrorKind::BadDev(String::from(spec)))
+            )
+            .chain_err(|| ErrorKind::BadDev(String::from(spec)))
         } else {
             Err(ErrorKind::BadDev(String::from(spec)).into())
         }
