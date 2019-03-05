@@ -448,7 +448,7 @@ impl PmdPort {
         };
 
         println!(
-            "Ethernet device information (port_id= {}, if_index= {}, if_name= {}, driver= {})",
+            "\nEthernet device information (port_id: {}, if_index: {}, if_name: {}, driver: {})",
             port,
             if_index,
             if_name.into_string().expect("bad if_name"),
@@ -508,6 +508,13 @@ impl PmdPort {
                 print!("{} ", offload_capa_name);
             }
         }
+        println!("");
+
+        let x= (dev_info.max_rx_queues, dev_info.max_tx_queues);
+        println!("   Max RX/TX queues:  {} / {}", x.0, x.1);
+
+        let x= dev_info.max_mac_addrs;
+        println!("   Max MAC addresses:  {}", x);
         println!("");
     }
 
