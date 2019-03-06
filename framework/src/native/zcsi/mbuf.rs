@@ -723,6 +723,17 @@ impl MBuf {
     }
 
     #[inline]
+    pub fn clear_offload_flags(&mut self) {
+        self.ol_flags = 0;
+    }
+
+    #[inline]
+    pub fn clear_rx_offload_flags(&mut self) -> u64 {
+        self.ol_flags &= !(PKT_RX_OFFLOAD_MASK as u64);
+        self.ol_flags
+    }
+
+    #[inline]
     pub fn set_tcp_ipv4_checksum_tx_offload(&mut self) {
         self.ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM | PKT_TX_TCP_CKSUM;
     }

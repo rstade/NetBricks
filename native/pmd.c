@@ -274,8 +274,9 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     eth_txconf.txq_flags = ETH_TXQ_FLAGS_NOVLANOFFL | ETH_TXQ_FLAGS_NOMULTSEGS * (1 - tso) |
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
     */
-    if (csumoffload) eth_txconf.offloads |= (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM);
-    if (tso) eth_txconf.offloads |= DEV_TX_OFFLOAD_MULTI_SEGS;
+    //following is only per queue offload
+    //if (csumoffload) eth_txconf.offloads |= (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM);
+    //if (tso) eth_txconf.offloads |= DEV_TX_OFFLOAD_MULTI_SEGS;
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
 
     rte_eth_dev_info_get(port, &dev_info);
