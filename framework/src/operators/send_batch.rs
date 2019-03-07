@@ -14,7 +14,7 @@ where
 {
     port: Port,
     parent: V,
-    pub sent: u64,
+//    pub sent: u64,
 }
 
 impl<Port, V> SendBatch<Port, V>
@@ -25,7 +25,7 @@ where
     pub fn new(parent: V, port: Port) -> SendBatch<Port, V> {
         SendBatch {
             port: port,
-            sent: 0,
+//            sent: 0,
             parent: parent,
         }
     }
@@ -74,7 +74,7 @@ where
             .send_q(&mut self.port)
             .and_then(|x| {
                 count=x;
-                self.sent += x as u64;
+//                self.sent += x as u64;
                 Ok(x)
             }).expect("Send failed");
         self.parent.done();

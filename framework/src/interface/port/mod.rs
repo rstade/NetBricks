@@ -15,7 +15,7 @@ mod virt_port;
 /// Statistics for PMD port.
 pub struct PortStats {
     pub stats: AtomicUsize,
-    pub lost: AtomicUsize,
+    pub queued: AtomicUsize,
     pub q_len: AtomicUsize,
     pub max_q_len: AtomicUsize,
     pub cycles: AtomicU64,
@@ -25,7 +25,7 @@ impl PortStats {
     pub fn new() -> CacheAligned<PortStats> {
         CacheAligned::allocate(PortStats {
             stats: AtomicUsize::new(0),
-            lost: AtomicUsize::new(0),
+            queued: AtomicUsize::new(0),
             q_len: AtomicUsize::new(0),
             max_q_len: AtomicUsize::new(0),
             cycles: AtomicU64::new(0),

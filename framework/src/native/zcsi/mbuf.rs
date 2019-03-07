@@ -761,6 +761,7 @@ impl MBuf {
     pub fn l3_len(&self) -> u64 {
         unsafe { self.tx_offload.l234len.l3_len() }
     }
+
     #[inline]
     pub fn set_l3_len(&mut self, val: u64) {
         unsafe { self.tx_offload.l234len.set_l3_len(val); }
@@ -770,6 +771,7 @@ impl MBuf {
     pub fn l4_len(&self) -> u64 {
         unsafe { self.tx_offload.l234len.l4_len() }
     }
+
     #[inline]
     pub fn set_l4_len(&mut self, val: u64) {
         unsafe { self.tx_offload.l234len.set_l4_len(val); }

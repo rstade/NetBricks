@@ -54,6 +54,7 @@ extern crate log;
 extern crate eui48;
 #[cfg(unix)]
 extern crate nix;
+extern crate core;
 
 pub mod allocators;
 pub mod common;

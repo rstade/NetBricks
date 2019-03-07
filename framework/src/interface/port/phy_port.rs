@@ -18,6 +18,7 @@ use std::ptr;
 use std::ptr::Unique;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::collections::{VecDeque, };
 use utils::{rdtsc_unsafe, FiveTupleV4};
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
@@ -82,7 +83,11 @@ pub struct PortQueue {
     port_id: u16,
     txq: u16,
     rxq: u16,
+    tx_buffer: VecDeque<Vec<*mut MBuf>>,
+    tx_queue_len: usize,
 }
+
+unsafe impl Send for PortQueue {}
 
 impl PartialEq for CacheAligned<PortQueue> {
     fn eq(&self, other: &CacheAligned<PortQueue>) -> bool {
@@ -132,26 +137,65 @@ impl fmt::Display for PortQueue {
 
 /// Represents a single RX/TX queue pair for a port. This is what is needed to send or receive traffic.
 impl PortQueue {
+
     #[inline]
-    fn send_queue(&mut self, pkts: *mut *mut MBuf, to_send: u16) -> errors::Result<u32> {
-        unsafe {
-            let sent = if self.port.is_kni() {
-                rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts, to_send as u32)
-            } else {
-                if self.csum_offload() {
-                    let nb_prep = eth_tx_prepare(self.port_id as u16, self.txq as u16, pkts, to_send);
-                    assert_eq!(nb_prep, to_send);
-                }
-                eth_tx_burst(self.port_id as u16, self.txq as u16, pkts, to_send) as u32
-            };
-            let update = self.stats_tx.stats.load(Ordering::Relaxed) + sent as usize;
-            self.stats_tx.stats.store(update, Ordering::Relaxed);
-            let lost = to_send as u32 - sent;
-            if lost > 0 {
-                let update = self.stats_tx.lost.load(Ordering::Relaxed) + lost as usize;
-                self.stats_tx.lost.store(update, Ordering::Relaxed);
+    fn try_send(&mut self, pkts: &mut [*mut MBuf], to_send: u32) -> u32 {
+        let sent = if self.port.is_kni() {
+            unsafe { rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_send ) }
+        } else {
+            if self.csum_offload() {
+                let nb_prep = unsafe { eth_tx_prepare(self.port_id , self.txq, pkts.as_mut_ptr(), to_send as u16) };
+                assert_eq!(nb_prep, to_send as u16);
             }
-            Ok(sent)
+            unsafe { eth_tx_burst(self.port_id, self.txq, pkts.as_mut_ptr(), to_send as u16) as u32 }
+        };
+        let update = self.stats_tx.stats.load(Ordering::Relaxed) + sent as usize;
+        self.stats_tx.stats.store(update, Ordering::Relaxed);
+        sent
+    }
+
+    fn queue(&mut self, pkts: &mut [*mut MBuf]) {
+        let len = pkts.len();
+        let mut pkt_vec = Vec::with_capacity(len);
+        pkt_vec.extend_from_slice(pkts);
+        self.tx_buffer.push_back(pkt_vec);
+        let update = self.stats_tx.queued.load(Ordering::Relaxed) + len;
+        self.stats_tx.queued.store(update, Ordering::Relaxed);
+        self.tx_queue_len += len;
+    }
+
+    #[inline]
+    fn send_queue(&mut self, pkts: &mut [*mut MBuf], to_send: u32) -> errors::Result<u32> {
+        if self.tx_buffer.is_empty() {
+            let sent = self.try_send(pkts, to_send);
+            if sent < to_send {
+                self.queue(&mut pkts[sent as usize..to_send as usize]);
+            }
+            Ok(to_send)
+        }
+        else {
+            loop {
+                let mut queued_batch = self.tx_buffer.pop_front().unwrap();
+                let len = queued_batch.len();
+                let sent = self.try_send(&mut queued_batch[..], len as u32) as usize;
+                self.tx_queue_len -= sent;
+                if sent < len {
+                    let mut pkt_vec = Vec::with_capacity(len-sent);
+                    pkt_vec.extend_from_slice(&queued_batch[sent..len]);
+                    self.tx_buffer.push_front(pkt_vec);
+                    self.queue(pkts);
+                    break;
+                }
+                if self.tx_buffer.is_empty() {
+                    let sent = self.try_send(pkts, to_send);
+                    if sent < to_send {
+                        self.queue(&mut pkts[sent as usize..to_send as usize]);
+                    }
+                    break;
+                }
+            }
+            self.stats_tx.set_q_len(self.tx_queue_len);
+            Ok(to_send)
         }
     }
 
@@ -230,9 +274,10 @@ impl PacketTx for PortQueue {
     /// called).
     #[inline]
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
-        let len = pkts.len() as u16;
-        self.send_queue(pkts.as_mut_ptr(), len)
+        let len = pkts.len();
+        self.send_queue(pkts, len as u32)
     }
+
 }
 
 impl PacketRx for PortQueue {
@@ -332,6 +377,8 @@ impl PmdPort {
                 rxq,
                 stats_rx: port.stats_rx[rxq as usize].clone(),
                 stats_tx: port.stats_tx[txq as usize].clone(),
+                tx_buffer: VecDeque::with_capacity(4096),
+                tx_queue_len: 0,
             }))
         }
     }
@@ -347,12 +394,13 @@ impl PmdPort {
     }
 
     /// Get stats for an RX/TX queue pair.
-    fn stats_5(&self, queue: u16) -> (usize, usize, usize, usize, u64) {
+    fn queue_stats(&self, queue: u16) -> (usize, usize, usize, usize, usize, u64) {
         let idx = queue as usize;
         (
             self.stats_rx[idx].stats.load(Ordering::Relaxed),
             self.stats_tx[idx].stats.load(Ordering::Relaxed),
-            self.stats_tx[idx].lost.load(Ordering::Relaxed),
+            self.stats_tx[idx].queued.load(Ordering::Relaxed),
+            self.stats_tx[idx].get_max_q_len(),
             self.stats_rx[idx].get_max_q_len(),
             self.stats_rx[idx].cycles(),
         )
@@ -398,36 +446,24 @@ impl PmdPort {
     }
 
     pub fn print_soft_statistics(&self) {
-        /*
         println!(
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >10} | {6: >10} | {7: >20} | {8: >20}",
-            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors", "rx_q_len", "rx_cycles"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} |",
+            "q", "rx_packets", "tx_packets", "tx_queued", "tx_q_len", "rx_q_len", "rx_cycles"
         );
-        */
-        println!(
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | ",
-            "q", "rx_packets", "tx_packets", "tx_lost", "rx_q_len", "rx_cycles"
-        );
-        let (mut sin_p, mut sout_p, mut s_tx_lost) = (0usize, 0usize, 0usize);
+        let (mut sin_p, mut sout_p, mut s_tx_queued) = (0usize, 0usize, 0usize);
         for q in 0..self.rxqs() {
-            let (in_p, out_p, tx_lost, rx_max_q_len, cycles) = self.stats_5(q);
+            let (in_p, out_p, tx_queued, tx_max_q_len, rx_max_q_len, cycles) = self.queue_stats(q);
             sin_p += in_p;
             sout_p += out_p;
-            s_tx_lost += tx_lost;
-            /*
+            s_tx_queued += tx_queued;
             println!(
-                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >10} | {6: >10} | {7: >20} | {8: >20}",
-                q, in_p, out_p, 0, 0, 0, 0, rx_max_q_len, cycles
-            );
-            */
-            println!(
-                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} |",
-                q, in_p, out_p, tx_lost, rx_max_q_len, cycles
+                "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} |",
+                q, in_p, out_p, tx_queued, tx_max_q_len, rx_max_q_len, cycles
             );
         }
         println!(
             "{0: >3} | {1: >20} | {2: >20} | {3: >20} | \n",
-            "sum", sin_p, sout_p, s_tx_lost,
+            "sum", sin_p, sout_p, s_tx_queued,
         );
     }
 
