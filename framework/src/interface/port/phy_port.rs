@@ -170,6 +170,7 @@ impl PortQueue {
             let sent = self.try_send(pkts, to_send);
             if sent < to_send {
                 self.queue(&mut pkts[sent as usize..to_send as usize]);
+                info!("sent {} of {} fresh packets, queued remaining, tx q len = {}, batches = {}", sent, to_send, self.tx_queue_len, self.tx_buffer.len());
             }
             Ok(to_send)
         }
@@ -178,18 +179,22 @@ impl PortQueue {
                 let mut queued_batch = self.tx_buffer.pop_front().unwrap();
                 let len = queued_batch.len();
                 let sent = self.try_send(&mut queued_batch[..], len as u32) as usize;
+                info!("sent {} of {} queued packets, tx q len before = {}, batches= {}", sent, len, self.tx_queue_len, self.tx_buffer.len());
+                assert!(sent <= self.tx_queue_len);
                 self.tx_queue_len -= sent;
                 if sent < len {
                     let mut pkt_vec = Vec::with_capacity(len-sent);
                     pkt_vec.extend_from_slice(&queued_batch[sent..len]);
                     self.tx_buffer.push_front(pkt_vec);
-                    self.queue(pkts);
+                    self.queue(&mut pkts[0 .. to_send as usize]);
+                    info!("queuing full fresh {} packets, tx q len= {}, batches= {}", to_send, self.tx_queue_len, self.tx_buffer.len());
                     break;
                 }
                 if self.tx_buffer.is_empty() {
                     let sent = self.try_send(pkts, to_send);
                     if sent < to_send {
                         self.queue(&mut pkts[sent as usize..to_send as usize]);
+                        info!("queuing remaining fresh {} packets, tx q len= {}, batches= {}", to_send -sent, self.tx_queue_len, self.tx_buffer.len());
                     }
                     break;
                 }
