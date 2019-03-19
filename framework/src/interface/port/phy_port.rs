@@ -387,7 +387,7 @@ impl PacketTx for PortQueueTxBuffered {
     #[inline]
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         let len = pkts.len();
-        self.port_queue.send_queue(pkts, len as u32)
+        self.send_queue(pkts, len as u32)
     }
 }
 
