@@ -100,6 +100,27 @@ impl NetBricksContext {
         }
     }
 
+    /// Run a function (which installs a tx buffered pipeline) on all schedulers in the system.
+    pub fn add_pipeline_to_run_tx_buffered<T>(&mut self, run: Box<T>)
+        where
+            T: Fn(i32, HashMap<String, Arc<PmdPort>>, &mut StandaloneScheduler)
+            + Send
+            + Clone
+            + 'static
+    {
+        for (core, channel) in &self.scheduler_channels {
+            let core_id = *core;
+            let run_clone = run.clone();
+            let ports= self.ports.clone();
+
+            let closure = Box::new(move |s: &mut StandaloneScheduler| {
+                run_clone(core_id, ports.clone(), s)
+            });
+            channel.send(SchedulerCommand::Run(closure)).unwrap();
+        }
+    }
+
+
     pub fn add_test_pipeline<S>(&mut self, run: Box<S>)
     where
         S: Fn(i32, Vec<AlignedVirtualQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,

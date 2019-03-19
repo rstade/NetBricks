@@ -75,9 +75,9 @@ pub fn merge_auto<T: Batch>(batches: Vec<T>, policy: SchedulingPolicy) -> MergeB
 }
 
 /// Public trait implemented by every packet batch type. This trait should be used as a constraint for any functions or
-/// places where a Batch type is required. We declare batches as sendable, they cannot be copied but we allow it to be
-/// sent to another thread.
-pub trait Batch: BatchIterator + Act + Send {
+/// places where a Batch type is required.
+///
+pub trait Batch: BatchIterator + Act {
     fn queued(&self) -> usize;
 
     /// Parse the payload as header of type.

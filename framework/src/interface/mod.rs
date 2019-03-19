@@ -7,13 +7,13 @@ use native::zcsi::MBuf;
 use common::errors;
 
 /// Generic trait for objects that can receive packets.
-pub trait PacketRx: Send {
+pub trait PacketRx {
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)>; // (packets received, queue length (if >=0))
     fn queued(&self) -> usize { 1 }
 }
 
 /// Generic trait for objects that can send packets.
-pub trait PacketTx: Send {
+pub trait PacketTx {
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32>;
 }
 

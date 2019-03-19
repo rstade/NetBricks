@@ -5,6 +5,7 @@ use std::fmt;
 mod config_reader;
 mod flag_reader;
 
+#[derive(Clone)]
 /// `NetBricks` control configuration. In theory all applications create one of these, either through the use of
 /// `read_configuration` or manually using args.
 pub struct NetbricksConfiguration {
@@ -99,6 +100,7 @@ pub enum DriverType {
     I40e=2,
 }
 
+#[derive(Clone)]
 /// Configuration for each port (network device) in `NetBricks`.
 pub struct PortConfiguration {
     /// Name. The exact semantics vary by backend. For DPDK, we allow things of the form:
