@@ -24,7 +24,7 @@ net2 = "*"
 nix = ">=0.10.0"
 # Figure out if we want this permanently or just for now.
 rust-sctp = { git="https://github.com/netsys/rust-sctp", optional = true}
-toml = ">=0.4"
+toml = "~0.4"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
 error-chain = ">=0.12"

@@ -133,28 +133,34 @@ impl TxQueue {
         }
     }
 
+    #[inline]
     fn push_back(&mut self, pkts: Vec<*mut MBuf>) {
         let len = pkts.len();
         self.tx_buffer.push_back(pkts);
         self.tx_queue_len += len;
     }
 
+    #[inline]
     fn push_front(&mut self, pkts: Vec<*mut MBuf>) {
         let len = pkts.len();
         self.tx_buffer.push_front(pkts);
         self.tx_queue_len += len;
     }
 
+    #[inline]
     fn pop_front(&mut self) -> Option<Vec<*mut MBuf>> {
         let r = self.tx_buffer.pop_front();
         if r.is_some() { self.tx_queue_len -= r.as_ref().unwrap().len(); }
         r
     }
 
+    #[inline]
     fn len(&self) -> usize { self.tx_queue_len }
 
+    #[inline]
     fn batches(&self) -> usize { self.tx_buffer.len() }
 
+    #[inline]
     fn is_empty(&self) -> bool { self.batches() == 0 }
 }
 
@@ -322,7 +328,7 @@ impl PortQueueTxBuffered {
         self.tx_queue.borrow_mut().push_back(pkt_vec);
         let update = self.port_queue.stats_tx.queued.load(Ordering::Relaxed) + len;
         self.port_queue.stats_tx.queued.store(update, Ordering::Relaxed);
-        info!("+qlen= {}", self.tx_queue_len());
+        trace!("qlen= {}", self.tx_queue_len());
     }
 
     #[inline]
@@ -347,29 +353,30 @@ impl PortQueueTxBuffered {
             let sent = self.port_queue.try_send(pkts, to_send);
             if sent < to_send {
                 self.queue(&mut pkts[sent as usize..to_send as usize]);
-                info!("{}, {}: sent {} of {} fresh packets, queued remaining, tx q len = {}, batches = {}", self.port_queue.txq, stamp, sent, to_send, self.tx_queue_len(), self.tx_batches());
+                trace!("txq={}, {}: sent {} of {} fresh packets, queued remaining, tx q len = {}, batches = {}", self.port_queue.txq, stamp, sent, to_send, self.tx_queue_len(), self.tx_batches());
             }
             Ok(to_send)
         } else {
             loop {
+                //let tx_q_len= self.tx_queue_len();
                 let mut queued_batch = self.tx_queue.borrow_mut().pop_front().unwrap();
                 let len = queued_batch.len();
                 let sent = self.port_queue.try_send(&mut queued_batch[..], len as u32) as usize;
-                info!("{}, {}: sent {} of {} queued packets, tx q len before = {}, batches= {}", self.port_queue.txq, stamp, sent, len, self.tx_queue_len(), self.tx_batches());
-                assert!(sent <= self.tx_queue_len());
+                trace!("txq={}, {}: sent {} of {} queued packets, tx q len = {}, batches= {}", self.port_queue.txq, stamp, sent, len, self.tx_queue_len(), self.tx_batches());
+                //assert!(sent <= tx_q_len);
                 if sent < len {
                     let mut pkt_vec = Vec::with_capacity(len - sent);
                     pkt_vec.extend_from_slice(&queued_batch[sent..len]);
                     self.tx_queue.borrow_mut().push_front(pkt_vec);
                     self.queue(&mut pkts[0..to_send as usize]);
-                    info!("{}, {}: queuing full fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send, self.tx_queue_len(), self.tx_batches());
+                    trace!("txq={}, {}: queuing full fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send, self.tx_queue_len(), self.tx_batches());
                     break;
                 }
                 if self.tx_queue_is_empty() {
                     let sent = self.port_queue.try_send(pkts, to_send);
                     if sent < to_send {
                         self.queue(&mut pkts[sent as usize..to_send as usize]);
-                        info!("{}, {}: queuing remaining fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send - sent, self.tx_queue_len(), self.tx_batches());
+                        trace!("txq={}, {}: queuing remaining fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send - sent, self.tx_queue_len(), self.tx_batches());
                     }
                     break;
                 }
@@ -407,6 +414,7 @@ impl PacketRx for PortQueueTxBuffered {
 
 
 impl PmdPort {
+    #[inline]
     /// Determine the number of ports in a system.
     pub fn num_pmd_ports() -> i32 {
         unsafe { num_pmd_ports() }
@@ -420,36 +428,44 @@ impl PmdPort {
     }
     */
 
+    #[inline]
     pub fn port_id(&self) -> u16 {
         self.port
     }
 
+    #[inline]
     pub fn linux_if(&self) -> Option<&String> {
         self.linux_if.as_ref()
     }
 
+    #[inline]
     pub fn port_type(&self) -> &PortType {
         &self.port_type
     }
 
+    #[inline]
     /// Number of configured RXQs.
     pub fn rxqs(&self) -> u16 {
         self.rxqs
     }
 
+    #[inline]
     /// Number of configured TXQs.
     pub fn txqs(&self) -> u16 {
         self.txqs
     }
 
+    #[inline]
     pub fn driver(&self) -> DriverType {
         self.driver
     }
 
+    #[inline]
     pub fn csum_offload(&self) -> bool {
         self.csumoffload
     }
 
+    #[inline]
     pub fn get_tcp_dst_port_mask(&self) -> u16 {
         if self.fdir_conf.is_some() {
             u16::from_be(self.fdir_conf.unwrap().mask.dst_port_mask)
@@ -458,10 +474,12 @@ impl PmdPort {
         }
     }
 
+    #[inline]
     pub fn is_kni(&self) -> bool {
         self.kni.is_some()
     }
 
+    #[inline]
     pub fn get_kni(&self) -> *mut RteKni {
         self.kni.unwrap().as_ptr()
     }
@@ -472,7 +490,7 @@ impl PmdPort {
         } else if txq > port.txqs {
             Err(ErrorKind::BadTxQueue(port.port, txq).into())
         } else {
-            info!("allocating PortQueue type= {}, port_id= {}, rxq= {}, txq= {}", port.port_type,  port.port, rxq, txq);
+            debug!("allocating PortQueue type= {}, port_id= {}, rxq= {}, txq= {}", port.port_type,  port.port, rxq, txq);
             Ok(CacheAligned::allocate(PortQueue {
                 port: port.clone(),
                 port_id: port.port,
@@ -490,7 +508,7 @@ impl PmdPort {
         } else if txq > port.txqs {
             Err(ErrorKind::BadTxQueue(port.port, txq).into())
         } else {
-            info!("allocating PortQueueTxBuffered port_id= {}, rxq= {}, txq= {}", port.port, rxq, txq);
+            debug!("allocating PortQueueTxBuffered port_id= {}, rxq= {}, txq= {}", port.port, rxq, txq);
             Ok(CacheAligned::allocate(PortQueueTxBuffered {
                 port_queue: PortQueue {
                     port: port.clone(),
