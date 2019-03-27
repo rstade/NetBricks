@@ -1,8 +1,8 @@
 use super::act::Act;
 use super::iterator::{BatchIterator, PacketDescriptor};
 use super::Batch;
-use common::{errors, EmptyMetadata};
 use common::errors::ErrorKind;
+use common::{errors, EmptyMetadata};
 use headers::NullHeader;
 use interface::*;
 use native::zcsi::*;
@@ -30,7 +30,6 @@ impl PacketBatch {
             b_keep_mbuf,
         }
     }
-
 
     /// Allocate as many mbufs as batch can hold. `len` here merely sets the extent of the mbuf considered when sending
     /// a packet. We always allocate mbuf's of the same size.
@@ -223,6 +222,7 @@ impl BatchIterator for PacketBatch {
         if idx < self.array.len() {
             Some(PacketDescriptor {
                 packet: packet_from_mbuf_no_free::<NullHeader>(self.array[idx], 0),
+                pdu: pdu_from_mbuf_no_increment(self.array[idx]),
             })
         } else {
             None
@@ -237,7 +237,9 @@ impl BatchIterator for PacketBatch {
 /// Internal interface for packets.
 impl Act for PacketBatch {
     #[inline]
-    fn act(&mut self) -> (u32, i32) { (0, 0) }
+    fn act(&mut self) -> (u32, i32) {
+        (0, 0)
+    }
 
     #[inline]
     fn done(&mut self) {}
@@ -286,7 +288,9 @@ impl Act for PacketBatch {
 }
 
 impl Batch for PacketBatch {
-    fn queued(&self) -> usize { self.available() }
+    fn queued(&self) -> usize {
+        self.available()
+    }
 }
 
 impl Drop for PacketBatch {

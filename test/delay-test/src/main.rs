@@ -8,11 +8,11 @@ extern crate time;
 extern crate uuid;
 
 use self::nf::*;
+use e2d2::allocators::CacheAligned;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
-use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
@@ -92,13 +92,17 @@ fn main() {
             context.start_schedulers();
 
             if phy_ports {
-                context.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                    test (p, s, delay_arg)
-                } ));
+                context.add_pipeline_to_run(Box::new(
+                    move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
+                        test(p, s, delay_arg)
+                    },
+                ));
             } else {
-                context.add_test_pipeline(Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
-                    testv (p, s, delay_arg)
-                } ));
+                context.add_test_pipeline(Box::new(
+                    move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
+                        testv(p, s, delay_arg)
+                    },
+                ));
             }
             context.execute();
 

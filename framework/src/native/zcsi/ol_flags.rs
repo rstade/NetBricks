@@ -54,9 +54,8 @@ pub const PKT_TX_OUTER_IPV6: u64 = 1152921504606846976;
 pub const PKT_TX_OFFLOAD_MASK: u64 = 468365565153509376;
 pub const __RESERVED: u64 = 2305843009213693952;
 pub const IND_ATTACHED_MBUF: u64 = 4611686018427387904;
-pub const CTRL_MBUF_FLAG: i64 = - 9223372036854775808;
+pub const CTRL_MBUF_FLAG: i64 = -9223372036854775808;
 /***************  end of generated code ***************/
 
-
 /* this must be adapted when new RX offloads are added */
-pub const PKT_RX_OFFLOAD_MASK: u32 = (1 << 20) -1;
+pub const PKT_RX_OFFLOAD_MASK: u32 = (1 << 20) - 1;

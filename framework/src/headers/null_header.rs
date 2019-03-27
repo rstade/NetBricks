@@ -1,5 +1,5 @@
 use super::EndOffset;
-use super::Header;
+use super::HeaderKind;
 
 use std::fmt;
 
@@ -35,7 +35,7 @@ impl EndOffset for NullHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> Header {
-        Header::Null
+    fn is_header(&self) -> HeaderKind {
+        HeaderKind::Null
     }
 }

@@ -1,11 +1,6 @@
 use self::act::Act;
-pub use self::add_metadata::AddMetadataBatch;
-use self::add_metadata::MetadataFn;
-pub use self::add_metadata_mut::MutableAddMetadataBatch;
-use self::add_metadata_mut::MutableMetadataFn;
 
 pub use self::composition_batch::CompositionBatch;
-pub use self::deparsed_batch::DeparsedBatch;
 pub use self::filter_batch::FilterBatch;
 
 use self::filter_batch::FilterFn;
@@ -32,10 +27,7 @@ use uuid::Uuid;
 mod macros;
 
 mod act;
-mod add_metadata;
-mod add_metadata_mut;
 mod composition_batch;
-mod deparsed_batch;
 mod filter_batch;
 mod group_by;
 mod iterator;
@@ -55,9 +47,8 @@ mod transform_batch;
 
 pub enum SchedulingPolicy {
     RoundRobin,
-    LongestQueue
+    LongestQueue,
 }
-
 
 #[inline]
 pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
@@ -65,7 +56,7 @@ pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
 }
 
 #[inline]
-pub fn merge_with_selector<T: Batch>(batches: Vec<T>, selector:Vec<usize>) -> MergeBatch<T> {
+pub fn merge_with_selector<T: Batch>(batches: Vec<T>, selector: Vec<usize>) -> MergeBatch<T> {
     MergeBatch::new_with_selector(batches, selector)
 }
 
@@ -86,26 +77,6 @@ pub trait Batch: BatchIterator + Act {
         Self: Sized,
     {
         ParsedBatch::<T, Self>::new(self)
-    }
-
-    fn metadata<M: Sized + Send>(
-        self,
-        generator: MetadataFn<Self::Header, Self::Metadata, M>,
-    ) -> AddMetadataBatch<M, Self>
-    where
-        Self: Sized,
-    {
-        AddMetadataBatch::new(self, generator)
-    }
-
-    fn metadata_mut<M: Sized + Send>(
-        self,
-        generator: MutableMetadataFn<Self::Header, Self::Metadata, M>,
-    ) -> MutableAddMetadataBatch<M, Self>
-    where
-        Self: Sized,
-    {
-        MutableAddMetadataBatch::new(self, generator)
     }
 
     /// Send this batch out a particular port and queue.
@@ -162,19 +133,11 @@ pub trait Batch: BatchIterator + Act {
         ResetParsingBatch::<Self>::new(self)
     }
 
-    /// Deparse, i.e., remove the last parsed header. Note the assumption here is that T = the last header parsed
-    /// (which we cannot statically enforce since we loose reference to that header).
-    fn deparse(self) -> DeparsedBatch<Self>
-    where
-        Self: Sized,
-    {
-        DeparsedBatch::<Self>::new(self)
-    }
-
     fn group_by<S: Scheduler + Sized>(
         self,
         groups: usize,
-        group_f: GroupFn<Self::Header, Self::Metadata>,
+        // group_f: GroupFn<Self::Header, Self::Metadata>,
+        group_f: GroupFnPdu,
         sched: &mut S,
         name: String,
         uuid: Uuid,

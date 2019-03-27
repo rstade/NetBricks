@@ -25,7 +25,9 @@ impl CompositionBatch {
 }
 
 impl Batch for CompositionBatch {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl BatchIterator for CompositionBatch {
@@ -45,15 +47,14 @@ impl BatchIterator for CompositionBatch {
 
 /// Internal interface for packets.
 impl Act for CompositionBatch {
-    act!{}
+    act! {}
 }
 
 impl Executable for CompositionBatch {
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
-        let count= self.act();
+        let count = self.act();
         self.done();
         count
     }
-
 }

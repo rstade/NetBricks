@@ -1,10 +1,11 @@
 use headers::EndOffset;
-use interface::Packet;
+use interface::{Packet, Pdu};
 use std::cell::Cell;
 use std::marker::PhantomData;
 
 pub struct PacketDescriptor<T: EndOffset, M: Sized + Send> {
     pub packet: Packet<T, M>,
+    pub pdu: Pdu,
 }
 
 /// An interface implemented by all batches for iterating through the set of packets in a batch.
@@ -36,6 +37,7 @@ where
 {
     pub index: usize,
     pub packet: Packet<T, M>,
+    pub pdu: Pdu,
 }
 
 /// An enumerator over both the header and the payload. The payload is represented as an appropriately sized slice of
@@ -77,13 +79,14 @@ where
         let original_idx = self.idx.get();
         let item = unsafe { batch.next_payload(original_idx) };
         match item {
-            Some(PacketDescriptor { packet }) => {
+            Some(PacketDescriptor { packet, pdu }) => {
                 // This is safe (assuming our size accounting has been correct so far).
                 // Switch to providing packets
                 self.idx.set(original_idx + 1);
                 Some(ParsedDescriptor {
                     index: original_idx,
                     packet,
+                    pdu,
                 })
             }
             None => None,

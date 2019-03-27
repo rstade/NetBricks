@@ -1,5 +1,5 @@
 use super::METADATA_SLOTS;
-use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_POOL_SIZE, DEFAULT_MBUF_CNT};
+use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE};
 use native::libnuma;
 use native::zcsi;
 use std::cell::Cell;

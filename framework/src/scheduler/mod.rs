@@ -10,7 +10,7 @@ mod standalone_scheduler;
 mod context;
 
 pub trait Executable {
-    fn execute(&mut self) -> (u32, i32);  // returns #packets processed, or a comparable metric
+    fn execute(&mut self) -> (u32, i32); // returns #packets processed, or a comparable metric
 }
 
 impl<F> Executable for F
@@ -20,7 +20,6 @@ where
     fn execute(&mut self) -> (u32, i32) {
         (*self)()
     }
-
 }
 
 pub trait Scheduler {
@@ -29,6 +28,4 @@ pub trait Scheduler {
         Self: Sized;
 }
 
-pub trait Message {
-
-}
+pub trait Message {}

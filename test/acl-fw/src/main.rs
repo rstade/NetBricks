@@ -7,7 +7,6 @@ extern crate rand;
 extern crate time;
 extern crate uuid;
 
-use uuid::Uuid;
 use self::nf::*;
 use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
@@ -19,6 +18,7 @@ use std::collections::HashSet;
 use std::env;
 use std::thread;
 use std::time::Duration;
+use uuid::Uuid;
 
 mod nf;
 
@@ -33,16 +33,14 @@ fn test<S: Scheduler + Sized>(ports: HashSet<CacheAligned<PortQueue>>, sched: &m
             port.txq()
         );
     }
-    let acls = vec![
-        Acl {
-            src_ip: Some(Ipv4Prefix::new(0, 0)),
-            dst_ip: None,
-            src_port: None,
-            dst_port: None,
-            established: None,
-            drop: false,
-        },
-    ];
+    let acls = vec![Acl {
+        src_ip: Some(Ipv4Prefix::new(0, 0)),
+        dst_ip: None,
+        src_port: None,
+        dst_port: None,
+        established: None,
+        drop: false,
+    }];
     let pipelines: Vec<_> = ports
         .iter()
         .map(|port| acl_match(ReceiveBatch::new(port.clone()), acls.clone()).send(port.clone()))
@@ -66,8 +64,8 @@ fn main() {
     let mut config = initialize_system(&mut configuration).unwrap();
 
     config.start_schedulers();
-    config.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler|
-        test(p, s)
+    config.add_pipeline_to_run(Box::new(
+        move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| test(p, s),
     ));
     config.execute();
 

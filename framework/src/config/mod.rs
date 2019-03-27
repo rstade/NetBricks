@@ -95,9 +95,9 @@ impl fmt::Display for NetbricksConfiguration {
 
 #[derive(Deserialize, Clone, Copy, PartialEq)]
 pub enum DriverType {
-    Unknown=0,
-    Ixgbe=1,
-    I40e=2,
+    Unknown = 0,
+    Ixgbe = 1,
+    I40e = 2,
 }
 
 #[derive(Clone)]

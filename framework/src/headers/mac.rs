@@ -1,4 +1,4 @@
-use super::{EndOffset, Header};
+use super::{EndOffset, HeaderKind};
 use eui48::MacAddress;
 use headers::NullHeader;
 use std::default::Default;
@@ -39,7 +39,6 @@ impl EndOffset for MacHeader {
     }
     #[inline]
     fn size() -> usize {
-        // The struct itself is always 20 bytes. Really ?????
         HDR_SIZE
     }
 
@@ -54,8 +53,8 @@ impl EndOffset for MacHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> Header {
-        Header::Mac
+    fn is_header(&self) -> HeaderKind {
+        HeaderKind::Mac
     }
 }
 

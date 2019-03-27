@@ -4,14 +4,15 @@ use super::Batch;
 use super::ReceiveBatch;
 use super::RestoreHeader;
 use headers::EndOffset;
-use interface::Packet;
+use interface::{Packet, Pdu};
 use queues::*;
 use scheduler::{Executable, Runnable, Scheduler};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
-pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize>;
+//pub type GroupFn<T, M> = Box<FnMut(&mut Packet<T, M>) -> usize>;
+pub type GroupFnPdu = Box<FnMut(&mut Pdu) -> usize>;
 
 pub struct GroupBy<T, V>
 where
@@ -31,7 +32,8 @@ where
 {
     parent: V,
     producers: Vec<MpscProducer>,
-    group_fn: GroupFn<T, V::Metadata>,
+    // group_fn: GroupFn<T, V::Metadata>,
+    group_fn: GroupFnPdu,
 }
 
 impl<T, V> Executable for GroupByProducer<T, V>
@@ -42,11 +44,15 @@ where
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
         let mut count = 0;
-        let pre= self.parent.act(); // Let the parent get some packets.
+        let pre = self.parent.act(); // Let the parent get some packets.
         {
             let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
-            while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
-                let group = (self.group_fn)(&mut packet);
+            while let Some(ParsedDescriptor {
+                mut packet, mut pdu, ..
+            }) = iter.next(&mut self.parent)
+            {
+                //let group = (self.group_fn)(&mut packet);
+                let group = (self.group_fn)(&mut pdu);
                 packet.save_header_and_offset();
                 if !self.producers[group].enqueue_one(packet) {
                     warn!("queue overflow in GroupByProducer for group {}", group);
@@ -74,7 +80,8 @@ where
     pub fn new<S: Scheduler + Sized>(
         parent: V,
         groups: usize,
-        group_fn: GroupFn<T, V::Metadata>,
+        //group_fn: GroupFn<T, V::Metadata>,
+        group_fn: GroupFnPdu,
         sched: &mut S,
         name: String,
         uuid: Uuid, // task id
@@ -95,7 +102,8 @@ where
                     group_fn,
                     producers,
                 },
-            ).move_unready(),
+            )
+            .move_unready(),
         );
         GroupBy {
             _phantom_v: PhantomData,

@@ -1,14 +1,14 @@
 use super::{Executable, Scheduler};
+use std::cmp;
 use std::collections::HashMap;
-use std::sync::mpsc::{ Receiver, RecvError, Sender, SyncSender };
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{Receiver, RecvError, Sender, SyncSender};
 use std::sync::Arc;
 use std::thread;
-use std::cmp;
 
+use separator::Separatable;
 use utils;
 use uuid::Uuid;
-use separator::Separatable;
 
 /// Used to keep stats about each pipeline and eventually grant tokens, etc.
 pub struct Runnable {
@@ -50,25 +50,25 @@ impl Runnable {
 
     #[inline]
     pub fn ready(&self) -> &Self {
-        self.is_ready.store( true, Ordering::SeqCst);
+        self.is_ready.store(true, Ordering::SeqCst);
         self
     }
 
     #[inline]
     pub fn unready(&self) -> &Self {
-        self.is_ready.store( false, Ordering::SeqCst);
+        self.is_ready.store(false, Ordering::SeqCst);
         self
     }
 
     #[inline]
     pub fn move_ready(self) -> Self {
-        self.is_ready.store( true, Ordering::SeqCst);
+        self.is_ready.store(true, Ordering::SeqCst);
         self
     }
 
     #[inline]
     pub fn move_unready(self) -> Self {
-        self.is_ready.store( false, Ordering::SeqCst);
+        self.is_ready.store(false, Ordering::SeqCst);
         self
     }
 
@@ -170,28 +170,24 @@ impl StandaloneScheduler {
     pub fn set_task_state(&mut self, uuid: &Uuid, ready: bool) -> Option<bool> {
         match self.uuid2index.get(uuid) {
             Some(index) => {
-                let previous=self.run_q[*index].is_ready.swap(ready, Ordering::SeqCst);
+                let previous = self.run_q[*index].is_ready.swap(ready, Ordering::SeqCst);
                 Some(previous)
             }
-            None => { None }
+            None => None,
         }
     }
 
     pub fn get_ready_flag(&self, uuid: &Uuid) -> Option<Arc<AtomicBool>> {
         match self.uuid2index.get(uuid) {
-            Some(index) => {
-                Some(self.run_q[*index].get_ready_atomic())
-            }
-            None => { None }
+            Some(index) => Some(self.run_q[*index].get_ready_atomic()),
+            None => None,
         }
     }
 
     pub fn task_is_ready(&self, uuid: &Uuid) -> Option<bool> {
         match self.uuid2index.get(uuid) {
-            Some(index) => {
-                Some(self.run_q[*index].is_ready())
-            }
-            None => { None }
+            Some(index) => Some(self.run_q[*index].is_ready()),
+            None => None,
         }
     }
 
@@ -212,16 +208,27 @@ impl StandaloneScheduler {
             }
             SchedulerCommand::SetTaskStateAll(state) => {
                 for r in &mut self.run_q {
-                    if state { r.ready(); } else { r.unready(); }
+                    if state {
+                        r.ready();
+                    } else {
+                        r.unready();
+                    }
                 }
-                debug!("core {}: set task state all {:?} at {:>20}", self.core, state, utils::rdtsc_unsafe().separated_string());
+                debug!(
+                    "core {}: set task state all {:?} at {:>20}",
+                    self.core,
+                    state,
+                    utils::rdtsc_unsafe().separated_string()
+                );
             }
             SchedulerCommand::GetPerformance => {
-                let mut data:  HashMap<Uuid, (String, u64, u64, u32)> = HashMap::with_capacity(DEFAULT_Q_SIZE);
+                let mut data: HashMap<Uuid, (String, u64, u64, u32)> = HashMap::with_capacity(DEFAULT_Q_SIZE);
                 for r in &self.run_q {
                     data.insert(r.uuid, (r.name.clone(), r.cycles, r.count, r.queue_len));
                 }
-                self.sender.send(SchedulerReply::PerformanceData(self.core, data)).unwrap();
+                self.sender
+                    .send(SchedulerReply::PerformanceData(self.core, data))
+                    .unwrap();
             }
             SchedulerCommand::Handshake(chan) => {
                 chan.send(true).unwrap(); // Inform context about reaching barrier.
@@ -261,7 +268,7 @@ impl StandaloneScheduler {
                 }
                 task.last_run = end;
                 if q_len > 0 {
-                    task.queue_len=cmp::max(task.queue_len, q_len as u32);
+                    task.queue_len = cmp::max(task.queue_len, q_len as u32);
                 }
                 end
             } else {

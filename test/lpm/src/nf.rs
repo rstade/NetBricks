@@ -230,6 +230,7 @@ pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S:
         groups.get_group(0).unwrap(),
         groups.get_group(1).unwrap(),
         groups.get_group(2).unwrap(),
-    ]).compose();
+    ])
+    .compose();
     pipeline
 }

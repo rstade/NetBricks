@@ -7,7 +7,6 @@ extern crate rand;
 extern crate time;
 extern crate uuid;
 
-use uuid::Uuid;
 use self::nf::*;
 use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
@@ -18,6 +17,7 @@ use std::collections::HashSet;
 use std::env;
 use std::thread::sleep;
 use std::time::Duration;
+use uuid::Uuid;
 
 mod nf;
 
@@ -48,10 +48,9 @@ fn main() {
 
     config.start_schedulers();
 
-    config.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-        test(p, s)
-    })
-    );
+    config.add_pipeline_to_run(Box::new(
+        move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| test(p, s),
+    ));
     println!("BEGIN TEST OUTPUT");
     config.execute();
 

@@ -6,8 +6,8 @@ extern crate time;
 use e2d2::allocators::*;
 use e2d2::common::*;
 use e2d2::headers::*;
-use e2d2::interface::*;
 use e2d2::interface::dpdk::*;
+use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::Executable;
 use e2d2::state::*;
@@ -81,7 +81,7 @@ fn main() {
     }
 
     let cores_str = matches.opt_strs("c");
-    let master_core:i32 = matches
+    let master_core: i32 = matches
         .opt_str("m")
         .unwrap_or_else(|| String::from("0"))
         .parse()

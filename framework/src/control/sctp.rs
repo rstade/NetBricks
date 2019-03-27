@@ -29,15 +29,15 @@ pub struct SctpControlServer<T: SctpControlAgent> {
 }
 
 impl<T: SctpControlAgent> Executable for SctpControlServer<T> {
-    fn execute(&mut self) -> (u32, i32){
+    fn execute(&mut self) -> (u32, i32) {
         self.schedule();
-        (0,0)
+        (0, 0)
     }
 
-//    #[inline]
-//    fn dependencies(&mut self) -> Vec<usize> {
-//        vec![]
-//    }
+    //    #[inline]
+    //    fn dependencies(&mut self) -> Vec<usize> {
+    //        vec![]
+    //    }
 }
 
 // TODO: Add one-to-many SCTP support?

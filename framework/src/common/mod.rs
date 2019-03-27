@@ -1,7 +1,7 @@
 pub mod errors;
-pub use self::errors::{Error,ErrorKind};
 pub use self::errors::Result;
 pub use self::errors::ResultExt;
+pub use self::errors::{Error, ErrorKind};
 
 /// Null metadata associated with packets initially.
 pub struct EmptyMetadata;

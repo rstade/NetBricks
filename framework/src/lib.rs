@@ -24,8 +24,8 @@ extern crate fnv;
 extern crate libc;
 extern crate net2;
 extern crate regex;
-extern crate twox_hash;
 extern crate separator;
+extern crate twox_hash;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -50,11 +50,11 @@ extern crate error_chain;
 #[macro_use]
 extern crate log;
 
+extern crate core;
 #[allow(dead_code)]
 extern crate eui48;
 #[cfg(unix)]
 extern crate nix;
-extern crate core;
 
 pub mod allocators;
 pub mod common;
@@ -69,6 +69,3 @@ pub mod scheduler;
 pub mod shared_state;
 pub mod state;
 pub mod utils;
-
-
-

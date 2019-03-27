@@ -24,7 +24,7 @@ where
     M: Sized + Send,
     V: Batch + BatchIterator + Act,
 {
-    act!{}
+    act! {}
 }
 
 impl<T, M, V> Batch for RestoreHeader<T, M, V>
@@ -33,7 +33,9 @@ where
     M: Sized + Send,
     T: EndOffset + 'static,
 {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl<T, M, V> RestoreHeader<T, M, V>
@@ -62,6 +64,7 @@ where
     type Metadata = M;
     unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T, M>> {
         self.parent.next_payload(idx).map(|p| PacketDescriptor {
+            pdu: p.pdu,
             packet: p.packet.restore_saved_header().unwrap(),
         })
     }

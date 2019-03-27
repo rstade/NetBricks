@@ -5,7 +5,7 @@ use interface::{PmdPort, PortQueue, VirtualPort, VirtualQueue};
 use scheduler::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::sync::mpsc::{channel, sync_channel, Sender, Receiver, SyncSender};
+use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::sync::Arc;
 use std::thread::{self, JoinHandle, Thread};
 
@@ -49,7 +49,7 @@ impl NetBricksContext {
     pub fn start_schedulers(&mut self) {
         let cores = self.active_cores.clone();
         let (reply_sender, reply_receiver) = channel::<SchedulerReply>();
-        self.reply_receiver= Some(reply_receiver);
+        self.reply_receiver = Some(reply_receiver);
         for core in &cores {
             self.init_scheduler(*core, reply_sender.clone());
         }
@@ -68,17 +68,15 @@ impl NetBricksContext {
                 // Other init?
                 let mut sched = StandaloneScheduler::new_with_channel(core, receiver, reply_sender);
                 sched.handle_requests()
-            }).unwrap();
+            })
+            .unwrap();
         self.scheduler_handles.insert(core, join_handle);
     }
 
     /// Run a function (which installs a pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run<T>(&mut self, run: Box<T>)
     where
-        T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler)
-            + Send
-            + Clone
-            + 'static,
+        T: Fn(i32, HashSet<AlignedPortQueue>, &mut StandaloneScheduler) + Send + Clone + 'static,
     {
         for (core, channel) in &self.scheduler_channels {
             let mut ports = match self.rx_queues.get(core) {
@@ -93,33 +91,25 @@ impl NetBricksContext {
             let core_id = *core;
             let run_clone = run.clone();
 
-            let closure = Box::new(move |s: &mut StandaloneScheduler| {
-                run_clone(core_id, ports.clone(), s)
-            });
+            let closure = Box::new(move |s: &mut StandaloneScheduler| run_clone(core_id, ports.clone(), s));
             channel.send(SchedulerCommand::Run(closure)).unwrap();
         }
     }
 
     /// Run a function (which installs a tx buffered pipeline) on all schedulers in the system.
     pub fn add_pipeline_to_run_tx_buffered<T>(&mut self, run: Box<T>)
-        where
-            T: Fn(i32, HashMap<String, Arc<PmdPort>>, &mut StandaloneScheduler)
-            + Send
-            + Clone
-            + 'static
+    where
+        T: Fn(i32, HashMap<String, Arc<PmdPort>>, &mut StandaloneScheduler) + Send + Clone + 'static,
     {
         for (core, channel) in &self.scheduler_channels {
             let core_id = *core;
             let run_clone = run.clone();
-            let ports= self.ports.clone();
+            let ports = self.ports.clone();
 
-            let closure = Box::new(move |s: &mut StandaloneScheduler| {
-                run_clone(core_id, ports.clone(), s)
-            });
+            let closure = Box::new(move |s: &mut StandaloneScheduler| run_clone(core_id, ports.clone(), s));
             channel.send(SchedulerCommand::Run(closure)).unwrap();
         }
     }
-
 
     pub fn add_test_pipeline<S>(&mut self, run: Box<S>)
     where
@@ -289,7 +279,8 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
                     return Err(ErrorKind::ConfigurationError(format!(
                         "Port {} could not be initialized {:?}",
                         port.name, e
-                    )).into())
+                    ))
+                    .into());
                 }
             }
 
@@ -315,7 +306,8 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
                             "Queue {} on port {} could not be \
                              initialized {:?}",
                             rx_q, port.name, e
-                        )).into())
+                        ))
+                        .into());
                     }
                 }
             }
@@ -330,7 +322,8 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
                 "Strict configuration selected but core(s) {} appear \
                  in port configuration but not in cores",
                 missing_str
-            )).into());
+            ))
+            .into());
         }
     } else {
         cores.extend(ctx.rx_queues.keys());

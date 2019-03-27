@@ -10,18 +10,18 @@ use native::zcsi::ethdev::{rss_flow_name, rte_eth_dev_info, rte_eth_dev_rx_offlo
 use native::zcsi::ethdev::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use native::zcsi::*;
 use regex::Regex;
+use std::cell::RefCell;
 use std::cmp::min;
+use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ptr;
 use std::ptr::Unique;
-use std::sync::Arc;
-use std::sync::atomic::Ordering;
-use std::collections::VecDeque;
-use utils::{rdtsc_unsafe, FiveTupleV4};
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use utils::{rdtsc_unsafe, FiveTupleV4};
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -117,7 +117,6 @@ pub struct PortQueueTxBuffered {
     tx_queue: Rc<RefCell<TxQueue>>,
 }
 
-
 struct TxQueue {
     ///tx queue for MBufs which could not be sent so far, organized as a VecDeque of MBuf batches
     tx_buffer: VecDeque<Vec<*mut MBuf>>,
@@ -150,20 +149,27 @@ impl TxQueue {
     #[inline]
     fn pop_front(&mut self) -> Option<Vec<*mut MBuf>> {
         let r = self.tx_buffer.pop_front();
-        if r.is_some() { self.tx_queue_len -= r.as_ref().unwrap().len(); }
+        if r.is_some() {
+            self.tx_queue_len -= r.as_ref().unwrap().len();
+        }
         r
     }
 
     #[inline]
-    fn len(&self) -> usize { self.tx_queue_len }
+    fn len(&self) -> usize {
+        self.tx_queue_len
+    }
 
     #[inline]
-    fn batches(&self) -> usize { self.tx_buffer.len() }
+    fn batches(&self) -> usize {
+        self.tx_buffer.len()
+    }
 
     #[inline]
-    fn is_empty(&self) -> bool { self.batches() == 0 }
+    fn is_empty(&self) -> bool {
+        self.batches() == 0
+    }
 }
-
 
 impl Drop for PmdPort {
     fn drop(&mut self) {
@@ -214,7 +220,6 @@ impl PortQueue {
         let sent = self.try_send(pkts, to_send);
         Ok(sent)
     }
-
 
     #[inline]
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
@@ -353,7 +358,15 @@ impl PortQueueTxBuffered {
             let sent = self.port_queue.try_send(pkts, to_send);
             if sent < to_send {
                 self.queue(&mut pkts[sent as usize..to_send as usize]);
-                trace!("txq={}, {}: sent {} of {} fresh packets, queued remaining, tx q len = {}, batches = {}", self.port_queue.txq, stamp, sent, to_send, self.tx_queue_len(), self.tx_batches());
+                trace!(
+                    "txq={}, {}: sent {} of {} fresh packets, queued remaining, tx q len = {}, batches = {}",
+                    self.port_queue.txq,
+                    stamp,
+                    sent,
+                    to_send,
+                    self.tx_queue_len(),
+                    self.tx_batches()
+                );
             }
             Ok(to_send)
         } else {
@@ -362,21 +375,43 @@ impl PortQueueTxBuffered {
                 let mut queued_batch = self.tx_queue.borrow_mut().pop_front().unwrap();
                 let len = queued_batch.len();
                 let sent = self.port_queue.try_send(&mut queued_batch[..], len as u32) as usize;
-                trace!("txq={}, {}: sent {} of {} queued packets, tx q len = {}, batches= {}", self.port_queue.txq, stamp, sent, len, self.tx_queue_len(), self.tx_batches());
+                trace!(
+                    "txq={}, {}: sent {} of {} queued packets, tx q len = {}, batches= {}",
+                    self.port_queue.txq,
+                    stamp,
+                    sent,
+                    len,
+                    self.tx_queue_len(),
+                    self.tx_batches()
+                );
                 //assert!(sent <= tx_q_len);
                 if sent < len {
                     let mut pkt_vec = Vec::with_capacity(len - sent);
                     pkt_vec.extend_from_slice(&queued_batch[sent..len]);
                     self.tx_queue.borrow_mut().push_front(pkt_vec);
                     self.queue(&mut pkts[0..to_send as usize]);
-                    trace!("txq={}, {}: queuing full fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send, self.tx_queue_len(), self.tx_batches());
+                    trace!(
+                        "txq={}, {}: queuing full fresh {} packets, tx q len= {}, batches= {}",
+                        self.port_queue.txq,
+                        stamp,
+                        to_send,
+                        self.tx_queue_len(),
+                        self.tx_batches()
+                    );
                     break;
                 }
                 if self.tx_queue_is_empty() {
                     let sent = self.port_queue.try_send(pkts, to_send);
                     if sent < to_send {
                         self.queue(&mut pkts[sent as usize..to_send as usize]);
-                        trace!("txq={}, {}: queuing remaining fresh {} packets, tx q len= {}, batches= {}", self.port_queue.txq, stamp, to_send - sent, self.tx_queue_len(), self.tx_batches());
+                        trace!(
+                            "txq={}, {}: queuing remaining fresh {} packets, tx q len= {}, batches= {}",
+                            self.port_queue.txq,
+                            stamp,
+                            to_send - sent,
+                            self.tx_queue_len(),
+                            self.tx_batches()
+                        );
                     }
                     break;
                 }
@@ -386,7 +421,6 @@ impl PortQueueTxBuffered {
         }
     }
 }
-
 
 impl PacketTx for PortQueueTxBuffered {
     /// Send a batch of packets out this PortQueue. Note this method is internal to NetBricks (should not be directly
@@ -411,7 +445,6 @@ impl PacketRx for PortQueueTxBuffered {
         self.port_queue.stats_rx.get_q_len()
     }
 }
-
 
 impl PmdPort {
     #[inline]
@@ -490,7 +523,10 @@ impl PmdPort {
         } else if txq > port.txqs {
             Err(ErrorKind::BadTxQueue(port.port, txq).into())
         } else {
-            debug!("allocating PortQueue type= {}, port_id= {}, rxq= {}, txq= {}", port.port_type,  port.port, rxq, txq);
+            debug!(
+                "allocating PortQueue type= {}, port_id= {}, rxq= {}, txq= {}",
+                port.port_type, port.port, rxq, txq
+            );
             Ok(CacheAligned::allocate(PortQueue {
                 port: port.clone(),
                 port_id: port.port,
@@ -502,13 +538,20 @@ impl PmdPort {
         }
     }
 
-    pub fn new_tx_buffered_queue_pair(port: &Arc<PmdPort>, rxq: u16, txq: u16) -> errors::Result<CacheAligned<PortQueueTxBuffered>> {
+    pub fn new_tx_buffered_queue_pair(
+        port: &Arc<PmdPort>,
+        rxq: u16,
+        txq: u16,
+    ) -> errors::Result<CacheAligned<PortQueueTxBuffered>> {
         if rxq > port.rxqs {
             Err(ErrorKind::BadRxQueue(port.port, rxq).into())
         } else if txq > port.txqs {
             Err(ErrorKind::BadTxQueue(port.port, txq).into())
         } else {
-            debug!("allocating PortQueueTxBuffered port_id= {}, rxq= {}, txq= {}", port.port, rxq, txq);
+            debug!(
+                "allocating PortQueueTxBuffered port_id= {}, rxq= {}, txq= {}",
+                port.port, rxq, txq
+            );
             Ok(CacheAligned::allocate(PortQueueTxBuffered {
                 port_queue: PortQueue {
                     port: port.clone(),
@@ -567,7 +610,7 @@ impl PmdPort {
                 flow_mask.dst_port,
                 &mut error,
             )
-                .as_ref();
+            .as_ref();
 
             if rte_flow.is_none() {
                 error!(
@@ -848,9 +891,10 @@ impl PmdPort {
         }
     }
 
-    fn new_kni_port(kni_port_params: Box<KniPortParams>,
-                    rx_cores: &[i32],
-                    tx_cores: &[i32]
+    fn new_kni_port(
+        kni_port_params: Box<KniPortParams>,
+        rx_cores: &[i32],
+        tx_cores: &[i32],
     ) -> errors::Result<Arc<PmdPort>> {
         // This call returns a pointer to an opaque C struct
         let port_id = kni_port_params.port_id;
@@ -927,7 +971,7 @@ impl PmdPort {
                 driver,
                 fdir_conf,
             )
-                .chain_err(|| ErrorKind::BadDev(String::from(spec)))
+            .chain_err(|| ErrorKind::BadDev(String::from(spec)))
         } else {
             Err(ErrorKind::BadDev(String::from(spec)).into())
         }
@@ -1001,12 +1045,16 @@ impl PmdPort {
                     .parse::<u16>()
                     .expect(&format!("cannot parse port_id from {} as an u16", name));
 
-                PmdPort::new_kni_port(Box::new(KniPortParams::new(
-                    port_id,
-                    rx_cores[0] as u32,
-                    tx_cores[0] as u32,
-                    &port_config.k_cores,
-                )), rx_cores, tx_cores)
+                PmdPort::new_kni_port(
+                    Box::new(KniPortParams::new(
+                        port_id,
+                        rx_cores[0] as u32,
+                        tx_cores[0] as u32,
+                        &port_config.k_cores,
+                    )),
+                    rx_cores,
+                    tx_cores,
+                )
             }
             "null" => PmdPort::null_port(),
             _ => PmdPort::new_dpdk_port(

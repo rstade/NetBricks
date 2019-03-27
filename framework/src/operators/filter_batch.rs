@@ -37,7 +37,7 @@ where
     }
 }
 
-batch_no_new!{FilterBatch}
+batch_no_new! {FilterBatch}
 
 impl<T, V> Act for FilterBatch<T, V>
 where
@@ -47,14 +47,19 @@ where
     #[inline]
     fn act(&mut self) -> (u32, i32) {
         let mut count = 0;
-        let pre=self.parent.act();
+        let pre = self.parent.act();
         // Filter during the act
         let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
-        while let Some(ParsedDescriptor { mut packet, index: idx }) = iter.next(&mut self.parent) {
+        while let Some(ParsedDescriptor {
+            mut packet,
+            index: idx,
+            pdu,
+        }) = iter.next(&mut self.parent)
+        {
             if !(self.filter)(&mut packet) {
                 self.remove.push(idx)
             }
-            count +=1;
+            count += 1;
         }
         if !self.remove.is_empty() {
             self.parent

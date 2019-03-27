@@ -10,13 +10,13 @@ use std::cmp;
 pub struct MergeBatch<T: Batch> {
     parents: Vec<T>,
     which: usize,
-    slot: usize,   // index into selector
+    slot: usize, // index into selector
     selector: Vec<usize>,
 }
 
 impl<T: Batch> MergeBatch<T> {
     pub fn new(parents: Vec<T>) -> MergeBatch<T> {
-        let selector:Vec<usize>= (0..parents.len()).collect();
+        let selector: Vec<usize> = (0..parents.len()).collect();
         MergeBatch {
             parents,
             which: selector[0],
@@ -38,8 +38,10 @@ impl<T: Batch> Batch for MergeBatch<T> {
     fn queued(&self) -> usize {
         let mut result = 0;
         for parent in &self.parents {
-            result=parent.queued();
-            if result  >0 { break; }
+            result = parent.queued();
+            if result > 0 {
+                break;
+            }
         }
         result
     }
@@ -63,7 +65,7 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
 /// Internal interface for packets.
 impl<T: Batch> Act for MergeBatch<T> {
     #[inline]
-    fn act(&mut self)-> (u32, i32) {
+    fn act(&mut self) -> (u32, i32) {
         self.parents[self.which].act()
     }
 
@@ -76,7 +78,7 @@ impl<T: Batch> Act for MergeBatch<T> {
         } else {
             self.slot = next
         }
-        self.which=self.selector[self.slot]
+        self.which = self.selector[self.slot]
     }
 
     #[inline]

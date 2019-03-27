@@ -14,7 +14,7 @@ where
 {
     port: Port,
     parent: V,
-//    pub sent: u64,
+    //    pub sent: u64,
 }
 
 impl<Port, V> SendBatch<Port, V>
@@ -25,7 +25,7 @@ where
     pub fn new(parent: V, port: Port) -> SendBatch<Port, V> {
         SendBatch {
             port: port,
-//            sent: 0,
+            //            sent: 0,
             parent: parent,
         }
     }
@@ -36,7 +36,9 @@ where
     Port: PacketTx,
     V: Batch + BatchIterator + Act,
 {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl<Port, V> BatchIterator for SendBatch<Port, V>
@@ -67,16 +69,17 @@ where
     fn act(&mut self) -> (u32, i32) {
         // debug!("SendBatch.act with port {}", self.port.port_id());
         // First everything is applied
-        let mut count:u32 =0;
-        let pre=self.parent.act();
+        let mut count: u32 = 0;
+        let pre = self.parent.act();
         self.parent
             .get_packet_batch()
             .send_q(&mut self.port)
             .and_then(|x| {
-                count=x;
-//                self.sent += x as u64;
+                count = x;
+                //                self.sent += x as u64;
                 Ok(x)
-            }).expect("Send failed");
+            })
+            .expect("Send failed");
         self.parent.done();
         (count, pre.1)
     }

@@ -1,5 +1,5 @@
-use e2d2::control::IOScheduler;
 use e2d2::control::sctp::*;
+use e2d2::control::IOScheduler;
 use nix::errno;
 use sctp::*;
 use std::net::SocketAddr;
@@ -42,8 +42,7 @@ impl SctpControlAgent for ControlListener {
                     false
                 }
             }
-        }
-        {}
+        } {}
         if schedule {
             self.scheduler.schedule_read();
         };

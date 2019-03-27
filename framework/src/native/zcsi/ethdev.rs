@@ -10205,7 +10205,6 @@ pub struct rte_mempool {
     pub _address: u8,
 }
 
-
 /******* end of generated code ******/
 
 use std::ptr;
@@ -10249,7 +10248,6 @@ impl rte_eth_dev_info {
         }
     }
 }
-
 
 impl rte_eth_rxconf {
     pub fn new_null() -> rte_eth_rxconf {
@@ -10317,7 +10315,32 @@ impl rte_eth_switch_info {
     }
 }
 
-const rss_flow_names:[&str;24] = ["Unknown", "Raw", "Ipv4", "FragIpv4", "NonFragIpv4Tcp", "NonFragIpv4Udp", "NonFragIpv4Sctp", "NonFragIpv4Other", "IPv6", "FragIpv6", "NonFragIpv6Tcp", "NonFragIpv6Udp", "NonFragIpv6Sctp", "NonFragIpv6Other", "L2Payload", "Ipv6Ex", "Ipv6TcpEx", "Ipv6UdpEx", "Port", "Vxlan", "Geneve", "Nvgre", "VxlanGpe", "Max"];
+const rss_flow_names: [&str; 24] = [
+    "Unknown",
+    "Raw",
+    "Ipv4",
+    "FragIpv4",
+    "NonFragIpv4Tcp",
+    "NonFragIpv4Udp",
+    "NonFragIpv4Sctp",
+    "NonFragIpv4Other",
+    "IPv6",
+    "FragIpv6",
+    "NonFragIpv6Tcp",
+    "NonFragIpv6Udp",
+    "NonFragIpv6Sctp",
+    "NonFragIpv6Other",
+    "L2Payload",
+    "Ipv6Ex",
+    "Ipv6TcpEx",
+    "Ipv6UdpEx",
+    "Port",
+    "Vxlan",
+    "Geneve",
+    "Nvgre",
+    "VxlanGpe",
+    "Max",
+];
 
 pub fn rss_flow_name(rss_flow_id: usize) -> &'static str {
     if rss_flow_id <= RTE_ETH_FLOW_MAX as usize {
@@ -10326,4 +10349,3 @@ pub fn rss_flow_name(rss_flow_id: usize) -> &'static str {
         rss_flow_names[0]
     }
 }
-

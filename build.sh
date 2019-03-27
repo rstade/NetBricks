@@ -238,7 +238,7 @@ libunwind () {
 }
 
 rust_fmt () {
-    RUSTFMT=${BIN_DIR}/cargo-fmt
+    RUSTFMT=${BIN_DIR}/rustfmt
     echo "Checking if ${RUSTFMT} exists (${REQUIRE_RUSTFMT})"
     if [ ! -e "${RUSTFMT}" ]; then
         ${CARGO} install --root ${TOOLS_BASE} rustfmt
@@ -403,7 +403,7 @@ case $TASK in
         pushd $BASE_DIR/framework
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
 #        sudo -E env "PATH=$PATH" ${CARGO} test --release
-        ${CARGO} test --release
+        ${CARGO} test --release -- $2
         popd
 
         for testname in tcp_payload macswap; do

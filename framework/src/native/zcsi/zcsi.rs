@@ -1,6 +1,6 @@
-use super::MBuf;
 use super::super::super::headers::IpHeader;
 use super::ethdev::rte_eth_dev_info;
+use super::MBuf;
 use eui48::MacAddress;
 use std::convert;
 use std::ffi::CStr;
@@ -49,7 +49,6 @@ pub enum RteFlow {}
 #define RTE_ETH_FLOW_NVGRE              21 /**< NVGRE protocol based flow */
 #define RTE_ETH_FLOW_MAX                22
 */
-
 
 pub const RTE_ETH_FLOW_NONFRAG_IPV4_TCP: u16 = 4;
 
@@ -161,13 +160,13 @@ pub enum RteFilterOp {
 
 /* see kni.c
 struct kni_port_params {
-        uint16_t port_id; // Port ID 
-        unsigned lcore_rx; // lcore ID for RX 
+        uint16_t port_id; // Port ID
+        unsigned lcore_rx; // lcore ID for RX
         unsigned lcore_tx; // lcore ID for TX
-        uint32_t nb_lcore_k; // Number of lcores for KNI multi kernel threads 
-        uint32_t nb_kni; // Number of KNI devices to be created 
-        unsigned lcore_k[KNI_MAX_KTHREAD]; // lcore ID list for kthreads 
-        struct rte_kni *kni[KNI_MAX_KTHREAD]; // KNI context pointers 
+        uint32_t nb_lcore_k; // Number of lcores for KNI multi kernel threads
+        uint32_t nb_kni; // Number of KNI devices to be created
+        unsigned lcore_k[KNI_MAX_KTHREAD]; // lcore ID list for kthreads
+        struct rte_kni *kni[KNI_MAX_KTHREAD]; // KNI context pointers
 } __rte_cache_aligned;
 */
 pub const KNI_MAX_KTHREAD: usize = 32;
@@ -192,9 +191,9 @@ pub struct KniPortParams {
 impl KniPortParams {
     pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
         let mut params = KniPortParams {
-            port_id,                 // Port ID
-            lcore_rx,               // lcore ID for RX
-            lcore_tx,               // lcore ID for TX
+            port_id,                          // Port ID
+            lcore_rx,                         // lcore ID for RX
+            lcore_tx,                         // lcore ID for TX
             nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
             nb_kni: 1,
             lcore_k: [0u32; KNI_MAX_KTHREAD],        // lcore ID list for kthreads
@@ -270,19 +269,22 @@ impl fmt::Display for RteEthStats {
             f,
             "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
             "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors"
-        ).unwrap();
+        )
+        .unwrap();
         for q in 0..8 {
             write!(
                 f,
                 "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | \n",
                 q, self.q_ipackets[q], self.q_opackets[q], self.q_ibytes[q], self.q_obytes[q], self.q_errors[q],
-            ).unwrap();
+            )
+            .unwrap();
         }
         write!(
             f,
             "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
             "sum", self.ipackets, self.opackets, self.ibytes, self.obytes, self.ierrors, self.oerrors,
-        ).unwrap();
+        )
+        .unwrap();
         Ok(())
     }
 }
@@ -464,7 +466,8 @@ pub struct RteEthFdirFilter {
     pub action: RteEthFdirAction, // < Action taken when match
 }
 
-pub const RTE_ETH_INSET_SIZE_MAX:usize=   128; /**< Max length of input set. */
+pub const RTE_ETH_INSET_SIZE_MAX: usize = 128;
+/**< Max length of input set. */
 
 /**
  * Input set fields for Flow Director and Hash filters
@@ -510,7 +513,7 @@ pub enum RteEthInputSetField {
     TunnelGreKey,
 
     /* Flexible Payload */
-    FlexPayload1stWord= 641,
+    FlexPayload1stWord = 641,
     FlexPayload2ndWord,
     FlexPayload3rdWord,
     FlexPayload4thWord,
@@ -524,15 +527,16 @@ pub enum RteEthInputSetField {
     MAX = 65535,
 }
 
-
 /**
  * Filters input set operations
  */
 #[repr(C)]
 pub enum RteFilterInputSetOp {
     OpUnknown,
-    Select, /**< select input set */
-    Add,    /**< add input set entry */
+    Select,
+    /**< select input set */
+    Add,
+    /**< add input set entry */
     OpMax,
 }
 
@@ -544,20 +548,19 @@ pub enum RteFilterInputSetOp {
 pub struct RteEthInputSetConf {
     pub flow_type: u16,
     pub inset_size: u16,
-    pub field: [RteEthInputSetField;RTE_ETH_INSET_SIZE_MAX],
+    pub field: [RteEthInputSetField; RTE_ETH_INSET_SIZE_MAX],
     pub op: RteFilterInputSetOp,
 }
-
 
 /**
  * Flow Director filter information types.
  */
 #[repr(C)]
 pub enum RteEthFdirFilterInfoType {
-    RteEthFdirFilterInfoTypeUnknown=0,
+    RteEthFdirFilterInfoTypeUnknown = 0,
     /** Flow Director filter input set configuration */
-    RteEthFdirFilterInputSetSelect=1,
-    RteEthFdirFilterInfoTypeMax=2,
+    RteEthFdirFilterInputSetSelect = 1,
+    RteEthFdirFilterInfoTypeMax = 2,
 }
 
 /**
@@ -566,12 +569,12 @@ pub enum RteEthFdirFilterInfoType {
  */
 #[repr(C)]
 pub struct RteEthFdirFilterInfo {
-    pub info_type:  RteEthFdirFilterInfoType, /**< Information type */
+    pub info_type: RteEthFdirFilterInfoType,
+    /**< Information type */
     /** Details of fdir filter information */
     /** Flow Director input set configuration per port */
     pub input_set_conf: RteEthInputSetConf,
 }
-
 
 /**
  *  A structure used to configure FDIR masks that are used by the device
@@ -590,7 +593,7 @@ pub struct RteEthFdirMasks {
     /** Bit mask for L4 destination port in big endian. */
     pub dst_port_mask: u16,
     /** 6 bit mask for proper 6 bytes of Mac address, bit 0 matches the
-        first byte on the wire */
+    first byte on the wire */
     pub mac_addr_byte_mask: u8,
     /** Bit mask for tunnel ID in big endian. */
     pub tunnel_id_mask: u32,
@@ -659,9 +662,9 @@ pub enum RteEthPayloadType {
 /// returned by eth_tx_descriptor_status()
 pub enum RteEthTxDescriptorStatus {
     /**< Desc filled for hw, waiting xmit. */
-    RteEthTxDescFull    = 0,
+    RteEthTxDescFull = 0,
     /**< Desc done, packet is transmitted. */
-    RteEthTxDescDone    = 1,
+    RteEthTxDescDone = 1,
     /**< Desc used by driver or hw. */
     RteEthTxDescUnavail = 2,
 }
@@ -669,13 +672,12 @@ pub enum RteEthTxDescriptorStatus {
 /// returned by eth_rx_descriptor_status()
 pub enum RteEthRxDescriptorStatus {
     /**< Desc available for hw. */
-    RteEthRxDescAvail    = 0,
+    RteEthRxDescAvail = 0,
     /**< Desc done, filled by hw. */
-    RteEthRxDescDone     = 1,
+    RteEthRxDescDone = 1,
     /**< Desc used by driver or hw. */
-    RteEthRxDescUnavail  = 2,
+    RteEthRxDescUnavail = 2,
 }
-
 
 /**
  *  Select report mode of FDIR hash information in RX descriptors.
@@ -714,9 +716,9 @@ pub struct RteEthFlexPayloadCfg {
     /**< Payload type */
 
     /**< Offset in bytes from the beginning of packet's payload
-     src_offset[i] indicates the flexbyte i's offset in original
-     packet payload. This value should be less than
-     flex_payload_limit in struct rte_eth_fdir_info.*/
+    src_offset[i] indicates the flexbyte i's offset in original
+    packet payload. This value should be less than
+    flex_payload_limit in struct rte_eth_fdir_info.*/
     src_offset: [u16; RTE_ETH_FDIR_MAX_FLEXLEN],
 }
 
@@ -922,7 +924,7 @@ extern "C" {
         dst_port_mask: u16,
         error: *const RteFlowError,
     ) -> *mut RteFlow;
-    pub fn rte_eth_dev_info_get(port_id: u16, dev_info : *mut rte_eth_dev_info);
+    pub fn rte_eth_dev_info_get(port_id: u16, dev_info: *mut rte_eth_dev_info);
     pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
     pub fn rte_eth_dev_filter_ctrl(
         port_id: u16,

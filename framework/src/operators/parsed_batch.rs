@@ -21,7 +21,7 @@ where
     T: EndOffset<PreviousHeader = V::Header>,
     V: Batch + BatchIterator + Act,
 {
-    act!{}
+    act! {}
 }
 
 impl<T, V> Batch for ParsedBatch<T, V>
@@ -29,7 +29,9 @@ where
     V: Batch + BatchIterator + Act,
     T: EndOffset<PreviousHeader = V::Header>,
 {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl<T, V> ParsedBatch<T, V>
@@ -55,6 +57,7 @@ where
     type Metadata = V::Metadata;
     unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T, V::Metadata>> {
         self.parent.next_payload(idx).map(|p| PacketDescriptor {
+            pdu: p.pdu,
             packet: p.packet.parse_header(),
         })
     }

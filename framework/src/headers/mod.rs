@@ -1,16 +1,19 @@
+use std::fmt;
+
 pub use self::ip::*;
 pub use self::mac::*;
 pub use self::null_header::*;
 pub use self::tcp::*;
 pub use self::udp::*;
+
 mod ip;
 mod mac;
 mod null_header;
 mod tcp;
 mod udp;
 
-#[derive(Debug)]
-pub enum Header {
+#[derive(Debug, PartialEq)]
+pub enum HeaderKind {
     Null,
     Mac,
     Ip,
@@ -35,5 +38,100 @@ pub trait EndOffset: Send {
 
     fn check_correct(&self, prev: &Self::PreviousHeader) -> bool;
 
-    fn is_header(&self) -> Header;
+    fn is_header(&self) -> HeaderKind;
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Header {
+    Null,
+    Mac(*mut MacHeader),
+    Ip(*mut IpHeader),
+    Tcp(*mut TcpHeader),
+    Udp(*mut UdpHeader),
+}
+
+impl Header {
+    pub fn as_mac(&self) -> Option<&mut MacHeader> {
+        match &self {
+            Header::Mac(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
+    }
+
+    pub fn as_ip(&self) -> Option<&mut IpHeader> {
+        match &self {
+            Header::Ip(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
+    }
+
+    pub fn as_tcp(&self) -> Option<&mut TcpHeader> {
+        match &self {
+            Header::Tcp(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
+    }
+
+    pub fn as_udp(&self) -> Option<&mut UdpHeader> {
+        match &self {
+            Header::Udp(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
+    }
+
+    pub fn kind(&self) -> HeaderKind {
+        match &self {
+            Header::Null => HeaderKind::Null,
+            Header::Mac(_) => HeaderKind::Mac,
+            Header::Ip(_) => HeaderKind::Ip,
+            Header::Tcp(_) => HeaderKind::Tcp,
+            Header::Udp(_) => HeaderKind::Udp,
+        }
+    }
+
+    pub fn offset(&self) -> Option<usize> {
+        match &self {
+            Header::Null => None,
+            Header::Mac(_) => Some(self.as_mac().unwrap().offset()),
+            Header::Ip(_) => Some(self.as_ip().unwrap().offset()),
+            Header::Tcp(_) => Some(self.as_tcp().unwrap().offset()),
+            Header::Udp(_) => Some(self.as_udp().unwrap().offset()),
+        }
+    }
+
+    pub fn as_ptr_u8(&self) -> Option<*mut u8> {
+        match &self {
+            Header::Null => None,
+            Header::Mac(p) => Some(*p as *mut u8),
+            Header::Ip(p) => Some(*p as *mut u8),
+            Header::Tcp(p) => Some(*p as *mut u8),
+            Header::Udp(p) => Some(*p as *mut u8),
+        }
+    }
+}
+
+impl fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Header::Null => write!(f, "{:?}", &self),
+            Header::Mac(_) => write!(f, "{:?}", &self.as_mac().unwrap()),
+            Header::Ip(_) => write!(f, "{:?}", &self.as_ip().unwrap()),
+            Header::Tcp(_) => write!(f, "{:?}", &self.as_tcp().unwrap()),
+            Header::Udp(_) => write!(f, "{:?}", &self.as_udp().unwrap()),
+        }
+    }
+}
+
+#[test]
+
+fn test_headers() {
+    let mut ip_header = IpHeader::new();
+    println!("ip_header= {:?}", ip_header);
+    let header = Header::Ip(&mut ip_header as *mut IpHeader);
+    println!("header= {}, header.kind= {:?}", header, header.kind());
+    assert_eq!(header.kind(), HeaderKind::Ip);
+    assert!(header.as_ip().is_some());
+    assert!(header.as_mac().is_none());
+    assert!(header.as_tcp().is_none());
+    assert!(header.as_udp().is_none());
 }

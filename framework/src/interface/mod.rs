@@ -1,15 +1,19 @@
 pub use self::packet::*;
+pub use self::pdu::*;
 pub use self::port::*;
 pub mod dpdk;
 mod packet;
+mod pdu;
 mod port;
-use native::zcsi::MBuf;
 use common::errors;
+use native::zcsi::MBuf;
 
 /// Generic trait for objects that can receive packets.
 pub trait PacketRx {
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)>; // (packets received, queue length (if >=0))
-    fn queued(&self) -> usize { 1 }
+    fn queued(&self) -> usize {
+        1
+    }
 }
 
 /// Generic trait for objects that can send packets.

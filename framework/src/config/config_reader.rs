@@ -1,17 +1,17 @@
-use super::{NetbricksConfiguration, PortConfiguration, DriverType};
+use super::{DriverType, NetbricksConfiguration, PortConfiguration};
 use common::*;
-use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType,};
+use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
+use std::clone::Clone;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::net::Ipv4Addr;
-use std::str::FromStr;
-use toml::{self, Value};
 use std::option::Option::Some;
-use std::clone::Clone;
 use std::result::Result::Err;
+use std::str::FromStr;
 use std::string::String;
 use std::string::ToString;
+use toml::{self, Value};
 
 /// Default configuration values
 pub const DEFAULT_MBUF_CNT: u32 = 65535;
@@ -39,7 +39,8 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     return Err(ErrorKind::ConfigurationError(format!(
                         "Could not parse number of rx descriptors {:?}",
                         v
-                    )).into())
+                    ))
+                    .into());
                 }
             };
 
@@ -50,7 +51,8 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     return Err(ErrorKind::ConfigurationError(format!(
                         "Could not parse number of tx descriptors {:?}",
                         v
-                    )).into())
+                    ))
+                    .into());
                 }
             };
 
@@ -79,7 +81,8 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     "cores specified along with rx_cores and/or tx_cores \
                      for port {}",
                     name
-                )).into());
+                ))
+                .into());
             }
 
             fn read_queue(queue: &Value) -> errors::Result<Vec<i32>> {
@@ -93,7 +96,8 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                                 return Err(ErrorKind::ConfigurationError(format!(
                                     "Could not parse queue spec {:?}",
                                     q
-                                )).into());
+                                ))
+                                .into());
                             };
                         }
                         Ok(qs)
@@ -167,12 +171,14 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 match *fdir_val {
                     Value::Table(ref fdir_def) => {
                         match fdir_def.get("pballoc") {
-                            Some(v) =>  fdir_conf.pballoc= v.clone().try_into::<RteFdirPballocType>()?,
-                            None => () // X710 does not support pballoc
+                            Some(v) => fdir_conf.pballoc = v.clone().try_into::<RteFdirPballocType>()?,
+                            None => (), // X710 does not support pballoc
                         };
                         match fdir_def.get("mode") {
                             Some(v) => fdir_conf.mode = v.clone().try_into::<RteFdirMode>()?,
-                            None =>  return Err(ErrorKind::ConfigurationError("missing fdir mode spec".to_string()).into()),
+                            None => {
+                                return Err(ErrorKind::ConfigurationError("missing fdir mode spec".to_string()).into());
+                            }
                         };
                         match fdir_def.get("ipv4_mask") {
                             Some(v) => fdir_conf.mask.ipv4_mask = read_ipv4_mask(v)?,
@@ -216,7 +222,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
             };
 
             let driver = match port_def.get("driver") {
-                Some(v) =>  v.clone().try_into::<DriverType>()?,
+                Some(v) => v.clone().try_into::<DriverType>()?,
                 None => DriverType::Unknown,
             };
 
@@ -225,58 +231,58 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
             pub struct FdirMasks {
                 pub vlan_tci_mask: Option<u16>, // < Bit mask for vlan_tci in big endian
                 /** Bit mask for ipv4 flow in big endian. */
-                pub ipv4_mask: Option<RteEthIpv4Flow>,
-                /** Bit maks for ipv6 flow in big endian. */
-                pub ipv6_mask: Option<RteEthIpv6Flow>,
-                /** Bit mask for L4 source port in big endian. */
-                pub src_port_mask: Option<u16>,
-                /** Bit mask for L4 destination port in big endian. */
-                pub dst_port_mask: Option<u16>,
-                /** 6 bit mask for proper 6 bytes of Mac address, bit 0 matches the
-                    first byte on the wire */
-                pub mac_addr_byte_mask: Option<u8>,
-                /** Bit mask for tunnel ID in big endian. */
-                pub tunnel_id_mask: Option<u32>,
-                pub tunnel_type_mask: Option<u8>, // < 1 - Match tunnel type,  0 - Ignore tunnel type.
-            }
+            pub ipv4_mask: Option<RteEthIpv4Flow>,
+            /** Bit maks for ipv6 flow in big endian. */
+                            pub ipv6_mask: Option<RteEthIpv6Flow>,
+                            /** Bit mask for L4 source port in big endian. */
+                            pub src_port_mask: Option<u16>,
+                            /** Bit mask for L4 destination port in big endian. */
+                            pub dst_port_mask: Option<u16>,
+                            /** 6 bit mask for proper 6 bytes of Mac address, bit 0 matches the
+                                first byte on the wire */
+                            pub mac_addr_byte_mask: Option<u8>,
+                            /** Bit mask for tunnel ID in big endian. */
+                            pub tunnel_id_mask: Option<u32>,
+                            pub tunnel_type_mask: Option<u8>, // < 1 - Match tunnel type,  0 - Ignore tunnel type.
+                        }
 
-            #[derive(Deserialize, Clone, Copy)]
-            pub struct FdirConf {
-                pub mode: RteFdirMode,           // Flow Director mode.
-                pub pballoc: Option<RteFdirPballocType>, // Space for FDIR filters.
-                pub status: Option<RteFdirStatusMode>,   // How to report FDIR hash.
-                // RX queue of packets matching a "drop" filter in perfect mode.
-                pub drop_queue: Option<u8>,
-                pub mask: FdirMasks,
-                pub flex_conf: Option<RteEthFdirFlexConf>,
-            }
-            let fdir_conf_option= match port_def.get("fdir") {
-                Some(v) => {
-                    Some(v.clone().try_into::<FdirConf>()?)
-                },
-                None => None
-            };
+                        #[derive(Deserialize, Clone, Copy)]
+                        pub struct FdirConf {
+                            pub mode: RteFdirMode,           // Flow Director mode.
+                            pub pballoc: Option<RteFdirPballocType>, // Space for FDIR filters.
+                            pub status: Option<RteFdirStatusMode>,   // How to report FDIR hash.
+                            // RX queue of packets matching a "drop" filter in perfect mode.
+                            pub drop_queue: Option<u8>,
+                            pub mask: FdirMasks,
+                            pub flex_conf: Option<RteEthFdirFlexConf>,
+                        }
+                        let fdir_conf_option= match port_def.get("fdir") {
+                            Some(v) => {
+                                Some(v.clone().try_into::<FdirConf>()?)
+                            },
+                            None => None
+                        };
 
-            let fdir_conf= if fdir_conf_option.is_some() {
-                let mut fc = RteFdirConf::new();
-                let fco = fdir_conf_option.unwrap();
-                fc.mode = fco.mode;
-                if fco.pballoc.is_some() { fc.pballoc = fco.pballoc.unwrap(); }
-                if fco.status.is_some() { fc.status = fco.status.unwrap(); }
-                if fco.drop_queue.is_some() { fc.drop_queue = fco.drop_queue.unwrap(); }
-                if fco.mask.vlan_tci_mask.is_some() { fc.mask.vlan_tci_mask = fco.mask.vlan_tci_mask.unwrap(); }
-                if fco.mask.ipv4_mask.is_some() { fc.mask.ipv4_mask = fco.mask.ipv4_mask.unwrap(); }
-                if fco.mask.ipv6_mask.is_some() { fc.mask.ipv6_mask = fco.mask.ipv6_mask.unwrap(); }
-                if fco.mask.src_port_mask.is_some() { fc.mask.src_port_mask = fco.mask.src_port_mask.unwrap(); }
-                if fco.mask.dst_port_mask.is_some() { fc.mask.dst_port_mask = fco.mask.dst_port_mask.unwrap(); }
-                if fco.mask.mac_addr_byte_mask.is_some() { fc.mask.mac_addr_byte_mask = fco.mask.mac_addr_byte_mask.unwrap(); }
-                if fco.mask.tunnel_id_mask.is_some() { fc.mask.tunnel_id_mask = fco.mask.tunnel_id_mask.unwrap(); }
-                if fco.mask.tunnel_type_mask.is_some() { fc.mask.tunnel_type_mask = fco.mask.tunnel_type_mask.unwrap(); }
-                Some(fc)
-            } else {
-                None
-            };
-*/
+                        let fdir_conf= if fdir_conf_option.is_some() {
+                            let mut fc = RteFdirConf::new();
+                            let fco = fdir_conf_option.unwrap();
+                            fc.mode = fco.mode;
+                            if fco.pballoc.is_some() { fc.pballoc = fco.pballoc.unwrap(); }
+                            if fco.status.is_some() { fc.status = fco.status.unwrap(); }
+                            if fco.drop_queue.is_some() { fc.drop_queue = fco.drop_queue.unwrap(); }
+                            if fco.mask.vlan_tci_mask.is_some() { fc.mask.vlan_tci_mask = fco.mask.vlan_tci_mask.unwrap(); }
+                            if fco.mask.ipv4_mask.is_some() { fc.mask.ipv4_mask = fco.mask.ipv4_mask.unwrap(); }
+                            if fco.mask.ipv6_mask.is_some() { fc.mask.ipv6_mask = fco.mask.ipv6_mask.unwrap(); }
+                            if fco.mask.src_port_mask.is_some() { fc.mask.src_port_mask = fco.mask.src_port_mask.unwrap(); }
+                            if fco.mask.dst_port_mask.is_some() { fc.mask.dst_port_mask = fco.mask.dst_port_mask.unwrap(); }
+                            if fco.mask.mac_addr_byte_mask.is_some() { fc.mask.mac_addr_byte_mask = fco.mask.mac_addr_byte_mask.unwrap(); }
+                            if fco.mask.tunnel_id_mask.is_some() { fc.mask.tunnel_id_mask = fco.mask.tunnel_id_mask.unwrap(); }
+                            if fco.mask.tunnel_type_mask.is_some() { fc.mask.tunnel_type_mask = fco.mask.tunnel_type_mask.unwrap(); }
+                            Some(fc)
+                        } else {
+                            None
+                        };
+            */
             Ok(PortConfiguration {
                 name: name,
                 rx_queues: rx_queues,
@@ -414,7 +420,8 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
             return Err(ErrorKind::ConfigurationError(format!(
                 "Could not parse strict spec (should be boolean) {:?}",
                 v
-            )).into())
+            ))
+            .into());
         }
     };
 

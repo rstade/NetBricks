@@ -28,31 +28,37 @@ impl<T: Batch> MergeBatchAuto<T> {
     pub fn new(parents: Vec<T>, policy: SchedulingPolicy) -> MergeBatchAuto<T> {
         let select_queue;
         match policy {
-            SchedulingPolicy::LongestQueue => select_queue= MergeBatchAuto::longest_queue as fn(&mut MergeBatchAuto<T>) -> usize,
-            SchedulingPolicy::RoundRobin => select_queue= MergeBatchAuto::round_robin as fn(&mut MergeBatchAuto<T>) -> usize,
+            SchedulingPolicy::LongestQueue => {
+                select_queue = MergeBatchAuto::longest_queue as fn(&mut MergeBatchAuto<T>) -> usize
+            }
+            SchedulingPolicy::RoundRobin => {
+                select_queue = MergeBatchAuto::round_robin as fn(&mut MergeBatchAuto<T>) -> usize
+            }
         }
-        let len=parents.len();
+        let len = parents.len();
         MergeBatchAuto {
             parents,
             state: vec![1; len],
             which: 0,
             queue_size: 0,
-            queue_max:0,
-            select_queue
+            queue_max: 0,
+            select_queue,
         }
     }
 
     #[inline]
     fn update_state(&mut self) {
-        let state=&mut self.state;
-        let mut max_queue:(usize, usize) = (0, 0);
-        self.parents.iter().enumerate().for_each( |(i,batch)| {
-            let q=batch.queued();
-            state[i]=q;
-            if q > max_queue.0 { max_queue=(q, i); }
+        let state = &mut self.state;
+        let mut max_queue: (usize, usize) = (0, 0);
+        self.parents.iter().enumerate().for_each(|(i, batch)| {
+            let q = batch.queued();
+            state[i] = q;
+            if q > max_queue.0 {
+                max_queue = (q, i);
+            }
         });
-        self.queue_max=max_queue.1;
-        self.queue_size=max_queue.0;
+        self.queue_max = max_queue.1;
+        self.queue_size = max_queue.0;
     }
 
     // selects next ready parent and returns queue length if a ready parent found
@@ -60,16 +66,18 @@ impl<T: Batch> MergeBatchAuto<T> {
     fn round_robin(&mut self) -> usize {
         let mut queue = 0;
         for _i in 0..self.state.len() {
-            self.which=(self.which+1) % self.state.len();
-            queue=self.state[self.which];
-            if queue>0 { break }
+            self.which = (self.which + 1) % self.state.len();
+            queue = self.state[self.which];
+            if queue > 0 {
+                break;
+            }
         }
         queue
     }
 
     #[inline]
     fn longest_queue(&mut self) -> usize {
-        self.which=self.queue_max;
+        self.which = self.queue_max;
         self.queue_size
     }
 }
@@ -99,11 +107,13 @@ impl<T: Batch> BatchIterator for MergeBatchAuto<T> {
 /// Internal interface for packets.
 impl<T: Batch> Act for MergeBatchAuto<T> {
     #[inline]
-    fn act(&mut self)-> (u32, i32) {
+    fn act(&mut self) -> (u32, i32) {
         self.update_state();
         if (self.select_queue)(self) > 0 {
             self.parents[self.which].act()
-        } else { (0, 0) }
+        } else {
+            (0, 0)
+        }
     }
 
     #[inline]
@@ -135,7 +145,6 @@ impl<T: Batch> Act for MergeBatchAuto<T> {
     fn get_packet_batch(&mut self) -> &mut PacketBatch {
         self.parents[self.which].get_packet_batch()
     }
-
 }
 
 impl<T: Batch> Executable for MergeBatchAuto<T> {

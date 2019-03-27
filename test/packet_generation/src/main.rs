@@ -8,19 +8,19 @@ extern crate rand;
 extern crate time;
 extern crate uuid;
 
-use uuid::Uuid;
+use e2d2::allocators::CacheAligned;
 use e2d2::config::{basic_opts, read_matches};
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::queues::*;
 use e2d2::scheduler::*;
-use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
 use std::process;
 use std::thread;
 use std::time::Duration;
+use uuid::Uuid;
 
 mod nf;
 
@@ -29,9 +29,9 @@ use self::nf::*;
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
 fn test<T, S>(ports: HashSet<T>, sched: &mut S)
-    where
-        T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
-        S: Scheduler + Sized,
+where
+    T: PacketRx + PacketTx + Display + Clone + Eq + std::hash::Hash + 'static,
+    S: Scheduler + Sized,
 {
     if ports.len() > 1 {
         panic!("Currently this pipeline cannot handle more than one port per pipeline");
@@ -62,9 +62,9 @@ fn main() {
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
             context.start_schedulers();
-            context.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                test(p, s)
-            }));
+            context.add_pipeline_to_run(Box::new(
+                move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| test(p, s),
+            ));
             context.execute();
 
             let mut pkts_so_far = (0, 0);

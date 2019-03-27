@@ -42,17 +42,20 @@ impl<T: PacketRx> ReceiveBatch<T> {
     }
 
     pub fn set_urgent(mut self) -> ReceiveBatch<T> {
-        self.urgent=true;
+        self.urgent = true;
         self
     }
 }
 
-impl<T: PacketRx> Batch for ReceiveBatch<T>
-{
+impl<T: PacketRx> Batch for ReceiveBatch<T> {
     fn queued(&self) -> usize {
         if self.urgent {
             // we implement priority by faking the queue length
-            if self.packet_rx.queued() > 0 { 10000 } else { 0 }
+            if self.packet_rx.queued() > 0 {
+                10000
+            } else {
+                0
+            }
         } else {
             self.packet_rx.queued()
         }
@@ -82,18 +85,19 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
             .recv(&self.packet_rx)
             .and_then(|x| {
                 /*
-                if x.0 > 0 && self.packet_rx.port_id().is_some() {
-                    trace!(
-                        "received batch with {} packets on port {}, Queue lenght= {}. ",
-                        x.0,
-                        self.packet_rx.port_id().unwrap(),
-                        x.1
-                    );
-                }
-*/
+                                if x.0 > 0 && self.packet_rx.port_id().is_some() {
+                                    trace!(
+                                        "received batch with {} packets on port {}, Queue lenght= {}. ",
+                                        x.0,
+                                        self.packet_rx.port_id().unwrap(),
+                                        x.1
+                                    );
+                                }
+                */
                 self.received += x.0 as u64;
                 Ok(x)
-            }).expect("Receive failure")
+            })
+            .expect("Receive failure")
     }
 
     #[inline]
@@ -126,5 +130,4 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
     fn get_packet_batch(&mut self) -> &mut PacketBatch {
         &mut self.parent
     }
-
 }

@@ -1,4 +1,4 @@
-use super::{EndOffset, Header};
+use super::{EndOffset, HeaderKind};
 use byteorder::{BigEndian, ByteOrder};
 use headers::MacHeader;
 use std::convert::From;
@@ -66,8 +66,8 @@ impl EndOffset for IpHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> Header {
-        Header::Ip
+    fn is_header(&self) -> HeaderKind {
+        HeaderKind::Ip
     }
 }
 

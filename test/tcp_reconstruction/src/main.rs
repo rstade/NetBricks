@@ -7,7 +7,6 @@ extern crate rand;
 extern crate time;
 extern crate uuid;
 
-use uuid::Uuid;
 use self::nf::*;
 use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
@@ -18,6 +17,7 @@ use std::collections::HashSet;
 use std::env;
 use std::thread;
 use std::time::Duration;
+use uuid::Uuid;
 mod nf;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
@@ -56,10 +56,9 @@ fn main() {
     let mut config = initialize_system(&mut configuration).unwrap();
     config.start_schedulers();
 
-    config.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-        test(p, s)
-    } )
-    );
+    config.add_pipeline_to_run(Box::new(
+        move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| test(p, s),
+    ));
     config.execute();
 
     let mut pkts_so_far = (0, 0);

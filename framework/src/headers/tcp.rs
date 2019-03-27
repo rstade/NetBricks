@@ -1,4 +1,4 @@
-use super::{EndOffset, Header};
+use super::{EndOffset, HeaderKind};
 use headers::IpHeader;
 use std::default::Default;
 use std::fmt;
@@ -87,8 +87,8 @@ impl EndOffset for TcpHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> Header {
-        Header::Tcp
+    fn is_header(&self) -> HeaderKind {
+        HeaderKind::Tcp
     }
 }
 

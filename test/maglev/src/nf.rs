@@ -4,8 +4,8 @@ use e2d2::scheduler::*;
 use e2d2::utils::*;
 use fnv::FnvHasher;
 use std::collections::HashMap;
-use std::hash::{BuildHasher, Hash, Hasher};
 use std::hash::BuildHasherDefault;
+use std::hash::{BuildHasher, Hash, Hasher};
 use twox_hash::XxHash;
 use uuid::Uuid;
 
@@ -37,12 +37,8 @@ impl Maglev {
         let xx_hasher: XxHashFactory = Default::default();
         backends
             .iter()
-            .map(|n| {
-                Maglev::offset_skip_for_name(n, &fnv_hasher, &xx_hasher, lsize)
-            })
-            .map(|(offset, skip)| {
-                (0..lsize).map(|j| (offset + j * skip) % lsize).collect()
-            })
+            .map(|n| Maglev::offset_skip_for_name(n, &fnv_hasher, &xx_hasher, lsize))
+            .map(|(offset, skip)| (0..lsize).map(|j| (offset + j * skip) % lsize).collect())
             .collect()
     }
 

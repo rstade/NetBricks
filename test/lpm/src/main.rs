@@ -9,11 +9,11 @@ extern crate uuid;
 use uuid::Uuid;
 
 use self::nf::*;
+use e2d2::allocators::CacheAligned;
 use e2d2::config::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
-use e2d2::allocators::CacheAligned;
 use std::collections::HashSet;
 use std::env;
 use std::fmt::Display;
@@ -68,7 +68,6 @@ where
     }
 }
 
-
 fn main() {
     let mut opts = basic_opts();
     opts.optflag("t", "test", "Test mode do not use real ports");
@@ -83,17 +82,16 @@ fn main() {
 
     match initialize_system(&mut configuration) {
         Ok(mut context) => {
-
             context.start_schedulers();
 
             if phy_ports {
-                context.add_pipeline_to_run(Box::new(move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| {
-                    test(p, s)
-                } ) );
+                context.add_pipeline_to_run(Box::new(
+                    move |_core: i32, p: HashSet<CacheAligned<PortQueue>>, s: &mut StandaloneScheduler| test(p, s),
+                ));
             } else {
-                context.add_test_pipeline(Box::new(move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| {
-                    testv (p, s)
-                } ));
+                context.add_test_pipeline(Box::new(
+                    move |_core: i32, p: Vec<CacheAligned<VirtualQueue>>, s: &mut StandaloneScheduler| testv(p, s),
+                ));
             }
             context.execute();
 

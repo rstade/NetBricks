@@ -41,7 +41,9 @@ where
     T: EndOffset,
     V: Batch + BatchIterator<Header = T> + Act,
 {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl<T, V> BatchIterator for TransformBatch<T, V>
@@ -77,7 +79,7 @@ where
                 let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
                 while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
                     (self.transformer)(&mut packet);
-                    count +=1
+                    count += 1
                 }
             }
             self.applied = true;

@@ -2,10 +2,10 @@ use e2d2::common::*;
 use e2d2::headers::*;
 use e2d2::interface::*;
 use e2d2::queues::*;
+use e2d2::scheduler::Executable;
+use eui48::MacAddress;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
-use eui48::{MacAddress};
-use e2d2::scheduler::Executable;
 
 pub struct PacketCreator {
     mac: MacHeader,
@@ -16,8 +16,8 @@ pub struct PacketCreator {
 impl PacketCreator {
     pub fn new(producer: MpscProducer) -> PacketCreator {
         let mut mac = MacHeader::new();
-        mac.dst = MacAddress::new ([0x68, 0x05, 0xca, 0x00, 0x00, 0xac]);
-        mac.src = MacAddress::new ([0x68, 0x05, 0xca, 0x00, 0x00, 0x01]);
+        mac.dst = MacAddress::new([0x68, 0x05, 0xca, 0x00, 0x00, 0xac]);
+        mac.src = MacAddress::new([0x68, 0x05, 0xca, 0x00, 0x00, 0x01]);
         mac.set_etype(0x0800);
         let mut ip = IpHeader::new();
         ip.set_src(u32::from(Ipv4Addr::from_str("10.0.0.1").unwrap()));
@@ -35,10 +35,7 @@ impl PacketCreator {
 
     #[inline]
     fn initialize_packet(&self, pkt: Packet<NullHeader, EmptyMetadata>) -> Packet<IpHeader, EmptyMetadata> {
-        pkt.push_header(&self.mac)
-            .unwrap()
-            .push_header(&self.ip)
-            .unwrap()
+        pkt.push_header(&self.mac).unwrap().push_header(&self.ip).unwrap()
     }
 
     #[inline]
@@ -51,7 +48,7 @@ impl Executable for PacketCreator {
     fn execute(&mut self) -> (u32, i32) {
         for _ in 0..16 {
             self.producer.enqueue_one(self.create_packet());
-        };
+        }
         (16, 0)
     }
 }
