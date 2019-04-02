@@ -17,9 +17,9 @@
 
 macro_rules! batch_no_new {
     ($name : ident) => {
-        impl<T, V> Batch for $name<T, V>
-            where T: EndOffset,
-            V:Batch + BatchIterator<Header=T> + Act {
+        impl<V> Batch for $name<V>
+            where
+            V:Batch + BatchIterator + Act {
                 fn queued(&self) -> usize { self.parent.queued() }
         }
     };
@@ -27,7 +27,7 @@ macro_rules! batch_no_new {
         batch!{$name, [$($parts:$pty),*], []}
     }
 }
-
+/*
 macro_rules! act {
     () => {
         #[inline]
@@ -64,10 +64,6 @@ macro_rules! act {
         fn get_packet_batch(&mut self) -> &mut PacketBatch {
             self.parent.get_packet_batch()
         }
-
-//        #[inline]
-//        fn get_task_dependencies(&self) -> Vec<usize> {
-//            self.parent.get_task_dependencies()
-//        }
     }
 }
+*/

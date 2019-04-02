@@ -3,71 +3,60 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use headers::EndOffset;
-use interface::Packet;
+use interface::Pdu;
 use interface::PacketTx;
-use std::marker::PhantomData;
 
-pub type TransformFn<T, M> = Box<FnMut(&mut Packet<T, M>) + Send>;
+pub type TransformFn = Box<FnMut(&mut Pdu) + Send>;
 
-pub struct TransformBatch<T, V>
+pub struct TransformBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     parent: V,
-    transformer: TransformFn<T, V::Metadata>,
+    transformer: TransformFn,
     applied: bool,
-    phantom_t: PhantomData<T>,
 }
 
-impl<T, V> TransformBatch<T, V>
+impl<V> TransformBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
-    pub fn new(parent: V, transformer: TransformFn<T, V::Metadata>) -> TransformBatch<T, V> {
+    pub fn new(parent: V, transformer: TransformFn) -> TransformBatch<V> {
         TransformBatch {
             parent,
             transformer,
             applied: false,
-            phantom_t: PhantomData,
         }
     }
 }
 
-impl<T, V> Batch for TransformBatch<T, V>
+impl<V> Batch for TransformBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     fn queued(&self) -> usize {
         self.parent.queued()
     }
 }
 
-impl<T, V> BatchIterator for TransformBatch<T, V>
+impl<V> BatchIterator for TransformBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
-    type Header = T;
-    type Metadata = <V as BatchIterator>::Metadata;
     #[inline]
     fn start(&mut self) -> usize {
         self.parent.start()
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T, Self::Metadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }
 
-impl<T, V> Act for TransformBatch<T, V>
+impl<V> Act for TransformBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn act(&mut self) -> (u32, i32) {
@@ -76,9 +65,9 @@ where
         if !self.applied {
             q_len = self.parent.act().1;
             {
-                let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
-                while let Some(ParsedDescriptor { mut packet, .. }) = iter.next(&mut self.parent) {
-                    (self.transformer)(&mut packet);
+                let iter = PayloadEnumerator::new(&mut self.parent);
+                while let Some(ParsedDescriptor { mut pdu, .. }) = iter.next(&mut self.parent) {
+                    (self.transformer)(&mut pdu);
                     count += 1
                 }
             }
@@ -106,6 +95,11 @@ where
     #[inline]
     fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize> {
         self.parent.drop_packets(idxes)
+    }
+
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.parent.drop_packets_all()
     }
 
     #[inline]

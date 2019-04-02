@@ -1,38 +1,29 @@
-use super::act::Act;
-use super::iterator::{BatchIterator, PacketDescriptor};
-use super::packet_batch::PacketBatch;
-use super::Batch;
-use common::*;
-use headers::EndOffset;
-use headers::NullHeader;
-use interface::PacketTx;
+use super::{Batch, BatchIterator, PacketBatch, Act};
+use super::super::interface::{Pdu, PacketTx };
+use super::super::common::errors;
 use scheduler::Executable;
 
-/// `CompositionBatch` allows multiple NFs to be combined. A composition batch resets the packet pointer so that each NF
-/// can treat packets as originating from the NF itself.
+/// `CompositionBatch` allows multiple NFs to be combined.
+///
 pub struct CompositionBatch {
-    parent: Box<Batch<Header = NullHeader, Metadata = EmptyMetadata>>,
+    parent: Box<Batch>,
 }
 
 impl CompositionBatch {
-    pub fn new<T: EndOffset, M: Sized + Send, V: 'static + Batch<Header = T, Metadata = M>>(
+    pub fn new<V: 'static + Batch>(
         parent: V,
     ) -> CompositionBatch {
         CompositionBatch {
-            parent: box parent.reset(),
+            parent: box parent,
         }
     }
 }
 
 impl Batch for CompositionBatch {
-    fn queued(&self) -> usize {
-        self.parent.queued()
-    }
+    fn queued(&self) -> usize { self.parent.queued() }
 }
 
 impl BatchIterator for CompositionBatch {
-    type Header = NullHeader;
-    type Metadata = EmptyMetadata;
 
     #[inline]
     fn start(&mut self) -> usize {
@@ -40,21 +31,60 @@ impl BatchIterator for CompositionBatch {
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }
 
 /// Internal interface for packets.
 impl Act for CompositionBatch {
-    act! {}
+    #[inline]
+    fn act(&mut self) -> (u32, i32) {
+        self.parent.act()
+    }
+
+    #[inline]
+    fn done(&mut self) {
+        self.parent.done();
+    }
+
+    #[inline]
+    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+        self.parent.send_q(port)
+    }
+
+    #[inline]
+    fn capacity(&self) -> i32 {
+        self.parent.capacity()
+    }
+
+    #[inline]
+    fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize> {
+        self.parent.drop_packets(idxes)
+    }
+
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.parent.drop_packets_all()
+    }
+
+    #[inline]
+    fn clear_packets(&mut self) {
+        self.parent.clear_packets()
+    }
+
+    #[inline]
+    fn get_packet_batch(&mut self) -> &mut PacketBatch {
+        self.parent.get_packet_batch()
+    }
 }
 
 impl Executable for CompositionBatch {
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
-        let count = self.act();
+        let count= self.act();
         self.done();
         count
     }
+
 }

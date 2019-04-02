@@ -1,4 +1,3 @@
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::state::*;
@@ -13,7 +12,7 @@ type FnvHash = BuildHasherDefault<FnvHasher>;
 const BUFFER_SIZE: usize = 2048;
 const PRINT_SIZE: usize = 256;
 
-pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
+pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
     parent: T,
     sched: &mut S,
 ) -> CompositionBatch {
@@ -21,14 +20,12 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
     let mut read_buf: Vec<u8> = (0..PRINT_SIZE).map(|_| 0).collect();
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .parse::<MacHeader>()
         .transform(box move |p| {
-            p.get_mut_header().swap_addresses();
+            p.get_header_mut(0).as_mac().unwrap().swap_addresses();
         })
-        .parse::<IpHeader>()
         .group_by(
             2,
-            box move |p| if p.get_header().protocol() == 6 { 0 } else { 1 },
+            box move |p| if p.get_header(1).as_ip().unwrap().protocol() == 6 { 0 } else { 1 },
             sched,
             "GroupByProtocol".to_string(),
             uuid,
@@ -36,21 +33,16 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
     let pipe = groups
         .get_group(0)
         .unwrap()
-        .metadata(box move |p| {
-            let flow = p.get_header().flow().unwrap();
-            flow
-        })
-        .parse::<TcpHeader>()
         .transform(box move |p| {
-            if !p.get_header().psh_flag() {
-                let flow = p.read_metadata();
-                let seq = p.get_header().seq_num();
-                match cache.entry(*flow) {
+            if !p.get_header(2).as_tcp().unwrap().psh_flag() {
+                let flow = p.get_header(1).as_ip().unwrap().flow().unwrap();
+                let seq = p.get_header(2).as_tcp().unwrap().seq_num();
+                match cache.entry(flow) {
                     Entry::Occupied(mut e) => {
-                        let reset = p.get_header().rst_flag();
+                        let reset = p.get_header(2).as_tcp().unwrap().rst_flag();
                         {
                             let entry = e.get_mut();
-                            let result = entry.add_data(seq, p.get_payload());
+                            let result = entry.add_data(seq, p.get_payload(2));
                             match result {
                                 InsertionResult::Inserted { available, .. } => {
                                     if available > PRINT_SIZE {
@@ -65,7 +57,7 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
                                     if written == 0 {
                                         // println!("Resetting since receiving data that is too far ahead");
                                         entry.reset();
-                                        entry.seq(seq, p.get_payload());
+                                        entry.seq(seq, p.get_payload(2));
                                     }
                                 }
                             }
@@ -77,8 +69,8 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
                     }
                     Entry::Vacant(e) => match ReorderedBuffer::new(BUFFER_SIZE) {
                         Ok(mut b) => {
-                            if !p.get_header().syn_flag() {}
-                            let result = b.seq(seq, p.get_payload());
+                            if !p.get_header(2).as_tcp().unwrap().syn_flag() {}
+                            let result = b.seq(seq, p.get_payload(2));
                             match result {
                                 InsertionResult::Inserted { available, .. } => {
                                     if available > PRINT_SIZE {

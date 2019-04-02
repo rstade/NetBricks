@@ -20,6 +20,9 @@ pub trait Act {
     #[inline]
     fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize>;
 
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize>;
+
     /// Remove all packets from the batch (without actually freeing them).
     #[inline]
     fn clear_packets(&mut self) {

@@ -1,3 +1,16 @@
+## Remarks to Branch e2d2-rs-v1
+
+This branch is a major change to the original NetBricks code. The code of packet.rs was replaced by pdu.rs. Pdu stands for "protocol data unit". Objective was to allow for a more arbitrary protocol stacking and header parsing. In the original code the protocol stacks must follow a tree topology, which is fixed at compile time through type parameters (e.g. PreviousHeader). The Pdu struct has no longer type parameters but includes a stack of Rust enumeration values (enum Header) which can abstract any arbitrary sequence of protocol encapsulations. The protocol sequence is determined at run time by the pdu parser and not limited at compile time, except through the capabilities of the parser. 
+
+As a positive side effect the code becomes more comprehensive as a lot of type parameters can be removed. This makes also the code easier to understand. Also we found no negative impact on the performance.
+ 
+After parsing we specialize the parsed generic Header type to a specific Rust struct type, e.g. a struct IpHeader. Therefore we still utilize the full type checking capabilities of Rust at compile time and we lose nothing compared to the original code. 
+
+
+## The original NetBricks ReadMe:
+
+
+
 [NetBricks](http://netbricks.io/) is a Rust based framework for NFV development. Please refer to the
 [paper](https://people.eecs.berkeley.edu/~apanda/assets/papers/osdi16.pdf) for information
 about the architecture and design. Currently NetBricks requires a relatively modern Linux version.

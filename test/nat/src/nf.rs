@@ -1,4 +1,3 @@
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::utils::*;
@@ -18,7 +17,7 @@ struct FlowUsed {
 }
 
 type FnvHash = BuildHasherDefault<FnvHasher>;
-pub fn nat<T: 'static + Batch<Header = NullHeader>>(
+pub fn nat<T: 'static + Batch>(
     parent: T,
     _s: &mut Scheduler,
     nat_ip: &Ipv4Addr,
@@ -30,9 +29,8 @@ pub fn nat<T: 'static + Batch<Header = NullHeader>>(
     let mut next_port = 1024;
     const MIN_PORT: u16 = 1024;
     const MAX_PORT: u16 = 65535;
-    let pipeline = parent.parse::<MacHeader>().transform(box move |pkt| {
-        // let hdr = pkt.get_mut_header();
-        let payload = pkt.get_mut_payload();
+    let pipeline = parent.transform(box move |pkt| {
+        let payload = pkt.get_payload_mut(0);
         let flow = ipv4_extract_flow(payload);
         let found = match port_hash.get(&flow) {
             Some(s) => {

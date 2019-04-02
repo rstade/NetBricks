@@ -50,7 +50,7 @@ impl EndOffset for UdpHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> HeaderKind {
+    fn header_kind(&self) -> HeaderKind {
         HeaderKind::Udp
     }
 }

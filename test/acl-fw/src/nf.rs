@@ -1,4 +1,3 @@
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::utils::{FiveTupleV4, Ipv4Prefix};
 use fnv::FnvHasher;
@@ -37,16 +36,14 @@ impl Acl {
     }
 }
 
-pub fn acl_match<T: 'static + Batch<Header = NullHeader>>(parent: T, acls: Vec<Acl>) -> CompositionBatch {
+pub fn acl_match<T: 'static + Batch>(parent: T, acls: Vec<Acl>) -> CompositionBatch {
     let mut flow_cache = HashSet::<FiveTupleV4, FnvHash>::with_hasher(Default::default());
     parent
-        .parse::<MacHeader>()
         .transform(box move |p| {
-            p.get_mut_header().swap_addresses();
+            p.get_header_mut(0).as_mac().unwrap().swap_addresses();
         })
-        .parse::<IpHeader>()
         .filter(box move |p| {
-            let flow = p.get_header().flow().unwrap();
+            let flow = p.get_header(1).as_ip().unwrap().flow().unwrap();
             for acl in &acls {
                 if acl.matches(&flow, &flow_cache) {
                     if !acl.drop {

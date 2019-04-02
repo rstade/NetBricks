@@ -3,8 +3,7 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use headers::NullHeader;
-use interface::PacketTx;
+use interface::{PacketTx, Pdu};
 use scheduler::Executable;
 
 pub struct SendBatch<Port, V>
@@ -14,7 +13,6 @@ where
 {
     port: Port,
     parent: V,
-    //    pub sent: u64,
 }
 
 impl<Port, V> SendBatch<Port, V>
@@ -25,7 +23,6 @@ where
     pub fn new(parent: V, port: Port) -> SendBatch<Port, V> {
         SendBatch {
             port: port,
-            //            sent: 0,
             parent: parent,
         }
     }
@@ -46,15 +43,13 @@ where
     Port: PacketTx,
     V: Batch + BatchIterator + Act,
 {
-    type Header = NullHeader;
-    type Metadata = EmptyMetadata;
     #[inline]
     fn start(&mut self) -> usize {
         panic!("Cannot iterate send batch")
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, _: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    fn next_payload(&mut self, _: usize) -> Option<Pdu> {
         panic!("Cannot iterate send batch")
     }
 }
@@ -96,6 +91,11 @@ where
 
     #[inline]
     fn drop_packets(&mut self, _: &[usize]) -> Option<usize> {
+        panic!("Cannot drop packets from a sent batch")
+    }
+
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
         panic!("Cannot drop packets from a sent batch")
     }
 

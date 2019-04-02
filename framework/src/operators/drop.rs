@@ -3,67 +3,51 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use interface::Pdu;
-use interface::PacketTx;
+use interface::{PacketTx, Pdu};
 
-pub type MapFn = Box<FnMut(&Pdu) + Send>;
 
-pub struct MapBatch<V>
-where
-    V: Batch + BatchIterator + Act,
+pub struct DropBatch<V>
+    where
+        V: Batch + BatchIterator + Act,
 {
     parent: V,
-    transformer: MapFn,
-    applied: bool,
 }
 
-impl<V> MapBatch<V>
-where
-    V: Batch + BatchIterator + Act,
+impl<V> DropBatch<V>
+    where
+        V: Batch + BatchIterator + Act,
 {
-    pub fn new(parent: V, transformer: MapFn) -> MapBatch<V> {
-        MapBatch {
+    pub fn new(parent: V) -> DropBatch<V> {
+        DropBatch {
             parent: parent,
-            transformer: transformer,
-            applied: false,
         }
     }
 }
 
-impl<V> Batch for MapBatch<V>
-where
-    V: Batch + BatchIterator + Act,
+impl<V> Batch for DropBatch<V>
+    where
+        V: Batch + BatchIterator + Act,
 {
     fn queued(&self) -> usize {
         self.parent.queued()
     }
 }
 
-impl<V> Act for MapBatch<V>
-where
-    V: Batch + BatchIterator + Act,
+impl<V> Act for DropBatch<V>
+    where
+        V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn act(&mut self) -> (u32, i32) {
-        let mut count = 0;
-        let mut q_len = 0;
-        if !self.applied {
-            q_len = self.parent.act().1;
-            {
-                let iter = PayloadEnumerator::new(&mut self.parent);
-                while let Some(ParsedDescriptor { pdu, .. }) = iter.next(&mut self.parent) {
-                    (self.transformer)(&pdu);
-                    count += 1;
-                }
-            }
-            self.applied = true;
+        let q_len = self.parent.act().1;
+        match self.parent.drop_packets_all() {
+            Some(dropped) => (dropped as u32, q_len),
+            None => { warn!("failed to drop packet batch"); (0,q_len) }
         }
-        (count, q_len)
     }
 
     #[inline]
     fn done(&mut self) {
-        self.applied = false;
         self.parent.done();
     }
 
@@ -99,9 +83,9 @@ where
 
 }
 
-impl<V> BatchIterator for MapBatch<V>
-where
-    V: Batch + BatchIterator + Act,
+impl<V> BatchIterator for DropBatch<V>
+    where
+        V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn start(&mut self) -> usize {

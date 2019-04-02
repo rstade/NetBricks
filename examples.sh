@@ -11,7 +11,6 @@ export examples=(
         test/tcp_check
         test/sctp-test
         test/config-test
-        test/reset-parse
         test/tcp_reconstruction
         test/acl-fw
         test/packet_generation

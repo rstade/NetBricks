@@ -1,4 +1,3 @@
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::utils::*;
@@ -82,7 +81,7 @@ impl Maglev {
     }
 }
 
-pub fn maglev<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
+pub fn maglev<T: 'static + Batch, S: Scheduler + Sized>(
     parent: T,
     s: &mut S,
     backends: &[&str],
@@ -92,16 +91,15 @@ pub fn maglev<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
     let mut cache = HashMap::<usize, usize, FnvHash>::with_hasher(Default::default());
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .parse::<MacHeader>()
         .transform(box move |pkt| {
             assert!(pkt.refcnt() == 1);
-            let hdr = pkt.get_mut_header();
+            let hdr = pkt.get_header_mut(0).as_mac().unwrap();
             hdr.swap_addresses();
         })
         .group_by(
             ct,
             box move |pkt| {
-                let payload = pkt.get_payload();
+                let payload = pkt.get_payload(0);
                 let hash = ipv4_flow_hash(payload, 0);
                 let out = cache.entry(hash).or_insert_with(|| lut.lookup(hash));
                 *out

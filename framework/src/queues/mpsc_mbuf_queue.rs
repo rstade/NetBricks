@@ -1,6 +1,5 @@
 use common::*;
-use headers::EndOffset;
-use interface::{Packet, PacketRx};
+use interface::{Pdu, PacketRx};
 use native::zcsi::MBuf;
 use operators::ReceiveBatch;
 use std::clone::Clone;
@@ -229,8 +228,8 @@ impl Clone for MpscProducer {
 }
 
 impl MpscProducer {
-    pub fn enqueue<T: EndOffset, M: Sized + Send>(&self, packets: &mut Vec<Packet<T, M>>) -> usize {
-        let mbufs: Vec<_> = packets.drain(..).map(|p| unsafe { p.get_mbuf() }).collect();
+    pub fn enqueue(&self, pdus: &mut Vec<Pdu>) -> usize {
+        let mbufs: Vec<_> = pdus.drain(..).map(|p| unsafe { p.get_mbuf() }).collect();
         self.mpsc_queue.enqueue(&mbufs[..])
     }
 
@@ -240,13 +239,13 @@ impl MpscProducer {
     }
 
     #[inline]
-    pub fn enqueue_one<T: EndOffset, M: Sized + Send>(&self, packet: Packet<T, M>) -> bool {
-        unsafe { self.mpsc_queue.enqueue_one(packet.get_mbuf()) }
+    pub fn enqueue_one(&self, pdu: Pdu) -> bool {
+        unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
     }
 
     #[inline]
-    pub fn enqueue_one_boxed<T: EndOffset, M: Sized + Send>(&self, packet: Box<Packet<T, M>>) -> bool {
-        unsafe { self.mpsc_queue.enqueue_one(packet.get_mbuf()) }
+    pub fn enqueue_one_boxed(&self, pdu: Box<Pdu>) -> bool {
+        unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
     }
 
     #[inline]

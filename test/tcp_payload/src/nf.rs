@@ -1,6 +1,5 @@
 //! This NF reconstructs TCP flows. The entire payload is printed when a FIN packet is received.
 
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::state::*;
@@ -31,7 +30,7 @@ fn read_payload(
     }
 }
 
-pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Sized>(
+pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
     parent: T,
     sched: &mut S,
 ) -> CompositionBatch {
@@ -39,14 +38,12 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
     let mut payload_cache = HashMap::<FiveTupleV4, Vec<u8>>::with_hasher(Default::default());
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .parse::<MacHeader>()
         .transform(box move |p| {
-            p.get_mut_header().swap_addresses();
+            p.get_header_mut(0).as_mac().unwrap().swap_addresses();
         })
-        .parse::<IpHeader>()
         .group_by(
             2,
-            box move |p| if p.get_header().protocol() == 6 { 0 } else { 1 },
+            box move |p| if p.get_header(1).as_ip().unwrap().protocol() == 6 { 0 } else { 1 },
             sched,
             "GroupByProtocol".to_string(),
             uuid,
@@ -54,36 +51,31 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
     let pipe = groups
         .get_group(0)
         .unwrap()
-        .metadata(box move |p| {
-            let flow = p.get_header().flow().unwrap();
-            flow
-        })
-        .parse::<TcpHeader>()
         .transform(box move |p| {
-            let flow = p.read_metadata();
-            let mut seq = p.get_header().seq_num();
-            match rb_map.entry(*flow) {
+            let flow = p.get_header(1).as_ip().unwrap().flow().unwrap();
+            let mut seq = p.get_header(2).as_tcp().unwrap().seq_num();
+            match rb_map.entry(flow) {
                 Entry::Occupied(mut e) => {
                     {
                         let b = e.get_mut();
-                        let result = b.add_data(seq, p.get_payload());
+                        let result = b.add_data(seq, p.get_payload(2));
                         match result {
                             InsertionResult::Inserted { available, .. } => {
-                                read_payload(b, available, *flow, &mut payload_cache);
+                                read_payload(b, available, flow, &mut payload_cache);
                             }
                             InsertionResult::OutOfMemory { written, .. } => {
                                 if written == 0 {
                                     println!("Resetting since receiving data that is too far ahead");
                                     b.reset();
-                                    b.seq(seq, p.get_payload());
+                                    b.seq(seq, p.get_payload(2));
                                 }
                             }
                         }
                     }
-                    if p.get_header().rst_flag() {
+                    if p.get_header(2).as_tcp().unwrap().rst_flag() {
                         e.remove_entry();
-                    } else if p.get_header().fin_flag() {
-                        match payload_cache.entry(*flow) {
+                    } else if p.get_header(2).as_tcp().unwrap().fin_flag() {
+                        match payload_cache.entry(flow) {
                             Entry::Occupied(e) => {
                                 let (_, payload) = e.remove_entry();
                                 println!("{}", String::from_utf8_lossy(&payload));
@@ -98,16 +90,16 @@ pub fn reconstruction<T: 'static + Batch<Header = NullHeader>, S: Scheduler + Si
                 Entry::Vacant(e) => {
                     match ReorderedBuffer::new(BUFFER_SIZE) {
                         Ok(mut b) => {
-                            if p.get_header().syn_flag() {
+                            if p.get_header(2).as_tcp().unwrap().syn_flag() {
                                 seq += 1; // Receiver should expect data beginning at seq+1.
                             } else {
                                 println!("packet received for untracked flow did not have SYN flag, skipping.");
                             }
 
-                            let result = b.seq(seq, p.get_payload());
+                            let result = b.seq(seq, p.get_payload(2));
                             match result {
                                 InsertionResult::Inserted { available, .. } => {
-                                    read_payload(&mut b, available, *flow, &mut payload_cache);
+                                    read_payload(&mut b, available, flow, &mut payload_cache);
                                 }
                                 InsertionResult::OutOfMemory { .. } => {
                                     println!("Too big a packet?");

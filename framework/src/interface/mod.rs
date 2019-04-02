@@ -1,8 +1,6 @@
-pub use self::packet::*;
 pub use self::pdu::*;
 pub use self::port::*;
 pub mod dpdk;
-mod packet;
 mod pdu;
 mod port;
 use common::errors;

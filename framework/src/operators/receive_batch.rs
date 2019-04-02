@@ -3,8 +3,7 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use headers::NullHeader;
-use interface::{PacketRx, PacketTx};
+use interface::{PacketRx, PacketTx, Pdu};
 
 pub struct ReceiveBatch<T: PacketRx> {
     parent: PacketBatch,
@@ -63,15 +62,13 @@ impl<T: PacketRx> Batch for ReceiveBatch<T> {
 }
 
 impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
-    type Header = NullHeader;
-    type Metadata = EmptyMetadata;
     #[inline]
     fn start(&mut self) -> usize {
         self.parent.start()
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }
@@ -119,6 +116,11 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
     #[inline]
     fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize> {
         self.parent.drop_packets(idxes)
+    }
+
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.parent.drop_packets_all()
     }
 
     #[inline]

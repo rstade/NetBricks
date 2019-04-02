@@ -66,7 +66,7 @@ impl EndOffset for IpHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> HeaderKind {
+    fn header_kind(&self) -> HeaderKind {
         HeaderKind::Ip
     }
 }

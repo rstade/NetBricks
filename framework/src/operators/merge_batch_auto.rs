@@ -1,17 +1,17 @@
 use super::act::Act;
-use super::iterator::{BatchIterator, PacketDescriptor};
+use super::iterator::BatchIterator;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use super::SchedulingPolicy;
 
 use common::*;
-use interface::PacketTx;
+use interface::{PacketTx, Pdu};
 use scheduler::Executable;
 use std::cmp;
 
-pub struct MergeBatchAuto<T: Batch> {
+pub struct MergeBatchAuto {
     //queues
-    parents: Vec<T>,
+    parents: Vec<Box<Batch>>,
     //queue sizes
     state: Vec<usize>,
     //actually selected queue
@@ -21,18 +21,18 @@ pub struct MergeBatchAuto<T: Batch> {
     //size of longest queue
     queue_size: usize,
     //scheduler function pointer
-    select_queue: fn(&mut MergeBatchAuto<T>) -> usize,
+    select_queue: fn(&mut MergeBatchAuto) -> usize,
 }
 
-impl<T: Batch> MergeBatchAuto<T> {
-    pub fn new(parents: Vec<T>, policy: SchedulingPolicy) -> MergeBatchAuto<T> {
+impl MergeBatchAuto {
+    pub fn new(parents: Vec<Box<Batch>>, policy: SchedulingPolicy) -> MergeBatchAuto {
         let select_queue;
         match policy {
             SchedulingPolicy::LongestQueue => {
-                select_queue = MergeBatchAuto::longest_queue as fn(&mut MergeBatchAuto<T>) -> usize
+                select_queue = MergeBatchAuto::longest_queue as fn(&mut MergeBatchAuto) -> usize
             }
             SchedulingPolicy::RoundRobin => {
-                select_queue = MergeBatchAuto::round_robin as fn(&mut MergeBatchAuto<T>) -> usize
+                select_queue = MergeBatchAuto::round_robin as fn(&mut MergeBatchAuto) -> usize
             }
         }
         let len = parents.len();
@@ -82,16 +82,14 @@ impl<T: Batch> MergeBatchAuto<T> {
     }
 }
 
-impl<T: Batch> Batch for MergeBatchAuto<T> {
+impl Batch for MergeBatchAuto {
     #[inline]
     fn queued(&self) -> usize {
         self.queue_size
     }
 }
 
-impl<T: Batch> BatchIterator for MergeBatchAuto<T> {
-    type Header = T::Header;
-    type Metadata = T::Metadata;
+impl BatchIterator for MergeBatchAuto {
 
     #[inline]
     fn start(&mut self) -> usize {
@@ -99,13 +97,13 @@ impl<T: Batch> BatchIterator for MergeBatchAuto<T> {
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T::Header, T::Metadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parents[self.which].next_payload(idx)
     }
 }
 
 /// Internal interface for packets.
-impl<T: Batch> Act for MergeBatchAuto<T> {
+impl Act for MergeBatchAuto {
     #[inline]
     fn act(&mut self) -> (u32, i32) {
         self.update_state();
@@ -137,6 +135,11 @@ impl<T: Batch> Act for MergeBatchAuto<T> {
     }
 
     #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.parents[self.which].drop_packets_all()
+    }
+
+    #[inline]
     fn clear_packets(&mut self) {
         self.parents[self.which].clear_packets()
     }
@@ -147,7 +150,7 @@ impl<T: Batch> Act for MergeBatchAuto<T> {
     }
 }
 
-impl<T: Batch> Executable for MergeBatchAuto<T> {
+impl Executable for MergeBatchAuto {
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
         let count = self.act();

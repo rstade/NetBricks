@@ -4,8 +4,6 @@ extern crate getopts;
 extern crate rand;
 extern crate time;
 use e2d2::allocators::*;
-use e2d2::common::*;
-use e2d2::headers::*;
 use e2d2::interface::dpdk::*;
 use e2d2::interface::*;
 use e2d2::operators::*;
@@ -21,24 +19,21 @@ use std::time::Duration;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
-fn monitor<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>>(
+fn monitor<T: 'static + Batch>(
     parent: T,
     mut monitoring_cache: MergeableStoreDP<isize>,
-) -> CompositionBatch {
+) -> TransformBatch<TransformBatch<T>> {
     parent
-        .parse::<MacHeader>()
         .transform(box |pkt| {
-            let hdr = pkt.get_mut_header();
+            let hdr = pkt.get_header_mut(0).as_mac().unwrap();
             hdr.swap_addresses();
         })
-        .parse::<IpHeader>()
         .transform(box move |pkt| {
-            let hdr = pkt.get_mut_header();
+            let hdr = pkt.get_header_mut(1).as_ip().unwrap();
             let ttl = hdr.ttl();
             hdr.set_ttl(ttl + 1);
             monitoring_cache.update(hdr.flow().unwrap(), 1);
         })
-        .compose()
 }
 
 fn recv_thread(ports: Vec<CacheAligned<PortQueue>>, core: i32, counter: MergeableStoreDP<isize>) {
@@ -49,13 +44,12 @@ fn recv_thread(ports: Vec<CacheAligned<PortQueue>>, core: i32, counter: Mergeabl
         .iter()
         .map(|port| {
             let ctr = counter.clone();
-            monitor(ReceiveBatch::new(port.clone()), ctr)
-                .send(port.clone())
-                .compose()
+            box monitor(ReceiveBatch::new(port.clone()), ctr)
+                .send(port.clone()) as Box<Batch>
         })
         .collect();
     println!("Running {} pipelines", pipelines.len());
-    let mut combined = merge(pipelines);
+    let mut combined = merge_batches(pipelines);
     loop {
         combined.execute();
     }

@@ -1,5 +1,3 @@
-use e2d2::common::EmptyMetadata;
-use e2d2::headers::*;
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use fnv::FnvHasher;
@@ -100,7 +98,7 @@ impl IPLookup {
     }
 }
 
-pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S: Scheduler + Sized>(
+pub fn lpm<T: 'static + Batch, S: Scheduler + Sized>(
     parent: T,
     s: &mut S,
 ) -> CompositionBatch {
@@ -213,23 +211,21 @@ pub fn lpm<T: 'static + Batch<Header = NullHeader, Metadata = EmptyMetadata>, S:
     lpm_table.construct_table();
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .parse::<MacHeader>()
-        .transform(box |p| p.get_mut_header().swap_addresses())
-        .parse::<IpHeader>()
+        .transform(box |p| p.get_header_mut(0).as_mac().unwrap().swap_addresses())
         .group_by(
             3,
             box move |pkt| {
-                let hdr = pkt.get_header();
+                let hdr = pkt.get_header(1).as_ip().unwrap();
                 lpm_table.lookup_entry(hdr.src()) as usize
             },
             s,
             "lpm_groups".to_string(),
             uuid,
         );
-    let pipeline = merge(vec![
-        groups.get_group(0).unwrap(),
-        groups.get_group(1).unwrap(),
-        groups.get_group(2).unwrap(),
+    let pipeline = merge_batches(vec![
+        box groups.get_group(0).unwrap(),
+        box groups.get_group(1).unwrap(),
+        box groups.get_group(2).unwrap(),
     ])
     .compose();
     pipeline

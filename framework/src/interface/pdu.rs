@@ -1,25 +1,111 @@
 use std::cmp;
 use std::fmt;
 use std::ptr;
+use std::mem;
 use std::slice;
+use std::ops::Range;
 
 use common::errors;
 use common::errors::ErrorKind;
-use headers::{EndOffset, Header, IpHeader, MacHeader, NullHeader, TcpHeader};
-use native::zcsi::{validate_tx_offload, MBuf};
+use headers::{EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
+use native::zcsi::{validate_tx_offload, mbuf_alloc, mbuf_alloc_bulk, MBuf};
 use utils::ipv4_checksum;
 
+const MAX_HEADERS: usize = 5;
+pub const METADATA_SLOTS: u16 = 16;
+
+#[derive(Clone, Copy, Debug)]
+struct Stack {
+    stack: [Header; MAX_HEADERS],
+    /// header count
+    hc: usize,
+}
+
+/// there are no bound checks!
+impl Stack {
+    #[inline]
+    pub fn new() -> Stack {
+        Stack {
+            stack: [Header::Null; MAX_HEADERS],
+            hc: 0,
+        }
+    }
+
+    #[inline]
+    pub fn push(&mut self, h: Header) {
+        self.stack[self.hc] = h;
+        self.hc += 1;
+    }
+
+    #[inline]
+    pub fn count(&self) -> usize { self.hc }
+
+    #[inline]
+    pub fn get(&self, which: usize) -> &Header {
+        &self.stack[which]
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, which: usize) -> &mut Header {
+        &mut self.stack[which]
+    }
+
+    #[inline]
+    pub fn get_slice(&self, range: Range<usize>) -> &[Header] {
+        &self.stack[range]
+    }
+}
+
+impl fmt::Display for Stack {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut r = Ok(());
+        if self.hc == 0 {
+            r = write!(f, "<no headers>");
+        } else {
+            for i in 0..self.hc {
+                r = writeln!(f, "{:1}: {}", i, self.stack[i]);
+                r?
+            }
+        }
+        r
+    }
+}
+
+pub struct HeaderState<'a> {
+    pub mac: &'a mut MacHeader,
+    pub ip: &'a mut IpHeader,
+    pub tcp: &'a mut TcpHeader,
+}
+
+impl<'a> HeaderState<'a> {
+
+    #[inline]
+    pub fn set_dst_socket(&mut self, ip: u32, port: u16) {
+        self.ip.set_dst(ip);
+        self.tcp.set_dst_port(port);
+    }
+
+    #[inline]
+    pub fn tcp_payload_len(&self) -> usize {
+        self.ip.length() as usize - self.tcp.offset() - self.ip.ihl() as usize * 4
+    }
+}
+
+
+
+
+#[repr(align(32))]
 pub struct Pdu {
     mbuf: *mut MBuf,
-    headers: Vec<Header>,
+    headers: Stack,
 }
+
 
 impl fmt::Display for Pdu {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "(&mbuf={:p}, {}, data_len= {}), headers={:?}",
-            self.mbuf,
+            "({}, data_len= {}), headers=\n{ }",
             unsafe { &*self.mbuf },
             self.data_len(),
             self.headers,
@@ -27,7 +113,118 @@ impl fmt::Display for Pdu {
     }
 }
 
+
+/// Allocate an array of packets.
+pub fn new_pdu_array(pkts: &mut [*mut MBuf]) -> Option<Vec<Pdu>> {
+    unsafe {
+        let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
+        if alloc_ret == 0 {
+            Some(pkts.iter().map(|m| Pdu::pdu_from_mbuf_no_increment(*m)).collect())
+        } else {
+            None
+        }
+    }
+}
+
 impl Pdu {
+    /// Allocate a new pdu.
+    #[inline]
+    pub fn new_pdu() -> Option<Pdu> {
+        unsafe {
+            // This sets refcnt = 1
+            let mbuf = mbuf_alloc();
+            if mbuf.is_null() {
+                None
+            } else {
+                Some(Pdu {
+                    mbuf,
+                    headers: Stack::new(),
+                })
+            }
+        }
+    }
+
+    /// Allocate an array of pdus.
+    pub fn new_pdu_array(pkts: &mut [*mut MBuf]) -> Option<Vec<Pdu>> {
+        unsafe {
+            let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
+            if alloc_ret == 0 {
+                Some(pkts.iter().map(|m| Pdu::pdu_from_mbuf_no_increment(*m)).collect())
+            } else {
+                None
+            }
+        }
+    }
+
+    #[inline]
+    pub unsafe fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu {
+        // Need to up the refcnt, so that things don't drop.
+        reference_mbuf(mbuf);
+        Pdu::pdu_from_mbuf_no_increment(mbuf)
+    }
+
+    #[inline]
+    pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu {
+        let mut pdu = Pdu {
+            mbuf,
+            headers: Stack::new(),
+        };
+        pdu.parse();
+        pdu
+    }
+
+    /// clone has same mbuf as the original
+    #[inline]
+    pub fn clone(&mut self) -> Pdu {
+        reference_mbuf(self.mbuf);
+
+        Pdu {
+            mbuf: self.mbuf,
+            headers: self.headers.clone(),
+        }
+    }
+
+    /// same as clone, but without increment of mbuf ref count
+    #[inline]
+    pub fn clone_without_ref_counting(&mut self) -> Pdu {
+        Pdu {
+            mbuf: self.mbuf,
+            headers: self.headers.clone(),
+        }
+    }
+
+    #[inline]
+    pub fn refcnt(&self) -> u16 {
+        unsafe { (*self.mbuf).refcnt() }
+    }
+
+    pub fn dereference_mbuf(&mut self) -> u16 {
+        unsafe {
+            (*self.mbuf).dereference();
+        }
+        self.refcnt()
+    }
+
+    #[inline]
+    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu {
+        assert!(!mbuf.is_null());
+        (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
+        Pdu::pdu_from_mbuf_no_increment(mbuf)
+    }
+
+    /// copy gets us a new mbuf
+    #[inline]
+    pub unsafe fn copy(&self) -> Pdu {
+        // This sets refcnt = 1
+        let mbuf = mbuf_alloc();
+        self.copy_use_mbuf(mbuf)
+    }
+
+    #[inline]
+    pub fn add_padding(&mut self, nbytes: usize) -> usize {
+        self.increase_payload_size(nbytes)
+    }
+
     #[inline]
     fn parse_tcp(&mut self, offset: usize) {
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut TcpHeader };
@@ -75,7 +272,24 @@ impl Pdu {
             0x0806 => {} // ARP
             e => warn!("received Ethertype {:x}", e),
         }
-        self.headers.len()
+        self.headers.count()
+    }
+
+    /// Get the mbuf reference by this packet.
+    ///
+    /// # Safety
+    /// The reference held by this Packet is nulled out as a result of this code. The callee is responsible for
+    /// appropriately freeing this mbuf from here-on out.
+    #[inline]
+    pub unsafe fn get_mbuf(mut self) -> *mut MBuf {
+        self.get_mbuf_ref()
+    }
+
+    #[inline]
+    unsafe fn get_mbuf_ref(&mut self) -> *mut MBuf {
+        let mbuf = self.mbuf;
+        self.mbuf = ptr::null_mut();
+        mbuf
     }
 
     // this includes ethernet padding if it is present, sta
@@ -84,23 +298,98 @@ impl Pdu {
         unsafe { (*self.mbuf).data_len() }
     }
 
-    /// same as clone, but without increment of mbuf ref count
     #[inline]
-    pub fn clone_without_ref_counting(&mut self) -> Pdu {
-        Pdu {
-            mbuf: self.mbuf,
-            headers: self.headers.clone(),
-        }
+    pub fn get_tailroom(&self) -> usize {
+        unsafe { (*self.mbuf).pkt_tailroom() }
     }
 
     #[inline]
-    pub fn get_header(&self, which: usize) -> Option<&Header> {
+    pub fn get_header(&self, which: usize) -> &Header {
         self.headers.get(which)
     }
 
     #[inline]
-    pub fn get_header_mut(&mut self, which: usize) -> Option<&mut Header> {
+    pub fn get_headers(&self, range: Range<usize>) -> &[Header] {
+        self.headers.get_slice(range)
+    }
+
+    #[inline]
+    pub fn get_header_mut(&mut self, which: usize) -> &mut Header {
         self.headers.get_mut(which)
+    }
+
+    #[inline]
+    pub fn replace_header(&mut self, which: usize, hdr: &Header) {
+        unsafe {
+            let pdu_header=self.get_header_mut(which);
+            assert_eq!(hdr.kind(), pdu_header.kind());
+
+            match *pdu_header {
+                Header::Null => (),
+                Header::Mac(p) => ptr::copy_nonoverlapping(hdr.as_mac().unwrap() as *mut MacHeader, p, 1),
+                Header::Ip(p) => ptr::copy_nonoverlapping(hdr.as_ip().unwrap() as *mut IpHeader, p, 1),
+                Header::Tcp(p) => ptr::copy_nonoverlapping(hdr.as_tcp().unwrap() as *mut TcpHeader, p , 1),
+                Header::Udp(p) => ptr::copy_nonoverlapping(hdr.as_udp().unwrap() as *mut UdpHeader, p, 1),
+            };
+
+        }
+    }
+
+    pub unsafe fn replace(&mut self, other: Pdu) -> Pdu {
+        mem::replace(self, other)
+    }
+
+    /// only works for stack MAC-IP-TCP
+    #[inline]
+    pub fn header_state(&self) -> HeaderState {
+        HeaderState {
+            mac: self.get_header(0).as_mac().unwrap(),
+            ip: self.get_header(1).as_ip().unwrap(),
+            tcp: self.get_header(2).as_tcp().unwrap(),
+        }
+    }
+
+    /// Append a header to the header stack of a packet
+    #[inline]
+    pub fn push_header<T: EndOffset>(&mut self, header: &T) -> bool {
+        let size = header.offset();
+        let added = unsafe { (*self.mbuf).add_data_end(size) };
+        if added < size { return false; };
+        let hdr = header as *const T;
+        if self.headers.count() == 0 {
+            let payload_sz = self.data_len();
+            unsafe {
+                let dst = if payload_sz > 0 {
+                    // Need to move the payload down.
+                    let final_dst = (*self.mbuf).data_address(0);
+                    let move_loc = final_dst.offset(size as isize);
+                    ptr::copy_nonoverlapping(final_dst, move_loc, payload_sz);
+                    final_dst as *mut T
+                } else {
+                    (*self.mbuf).data_address(0) as *mut T
+                };
+                ptr::copy_nonoverlapping(hdr, dst, 1);
+                self.headers.push(Header::new(dst));
+                true
+            }
+        } else {
+            let last_header_ix = self.headers.count() - 1;
+            let payload_sz = self.payload_size(last_header_ix);
+            unsafe {
+                let dst = if payload_sz > 0 {
+                    // Need to move the payload down.
+                    let final_dst = self.payload(last_header_ix).unwrap();
+                    let move_loc = final_dst.offset(size as isize);
+                    ptr::copy_nonoverlapping(final_dst, move_loc, payload_sz);
+                    final_dst as *mut T
+                } else {
+                    self.payload(last_header_ix).unwrap() as *mut T
+                };
+                ptr::copy_nonoverlapping(hdr, dst, 1);
+                self.headers.push(Header::new(dst));
+                true
+            }
+        }
     }
 
     #[inline]
@@ -201,14 +490,14 @@ impl Pdu {
 
     #[inline]
     fn payload(&self, which: usize) -> Option<*mut u8> {
-        let headers = self.headers.len();
+        let headers = self.headers.count();
         match which {
-            x if x + 1 < headers => self.headers[x + 1].as_ptr_u8(),
+            x if x + 1 < headers => self.headers.get(x + 1).as_ptr_u8(),
             x if x == headers - 1 => Some(unsafe {
-                self.headers[x]
+                self.headers.get(x)
                     .as_ptr_u8()
                     .unwrap()
-                    .offset(self.headers[x].offset().unwrap() as isize)
+                    .offset(self.headers.get(x).offset().unwrap() as isize)
             }),
             _ => None,
         }
@@ -222,11 +511,19 @@ impl Pdu {
         }
     }
 
+    #[inline]
+    pub fn get_payload_mut(&mut self, which: usize) -> &mut [u8] {
+        unsafe {
+            let len = self.payload_size(which);
+            slice::from_raw_parts_mut(self.payload(which).unwrap(), len)
+        }
+    }
+
     /// may include padding
     #[inline]
     pub fn payload_size(&self, which: usize) -> usize {
         // sum up the header offsets
-        let sum = self.headers[0..which]
+        let sum = self.headers.get_slice(0 .. which+1)
             .iter()
             .fold(0, |sum, value| sum + value.offset().unwrap());
         self.data_len() - sum
@@ -257,11 +554,11 @@ impl Pdu {
     /// fills the end of the payload with <len> bytes of value <byte>
     #[inline]
     pub fn write_from_tail_down(&mut self, len: usize, byte: u8) -> usize {
-        let payload_size = self.payload_size(self.headers.len() - 1);
+        let payload_size = self.payload_size(self.headers.count() - 1);
         if payload_size > 0 {
             let count = cmp::min(payload_size, len);
             let dst = unsafe {
-                self.payload(self.headers.len() - 1)
+                self.payload(self.headers.count() - 1)
                     .unwrap()
                     .offset(payload_size as isize - count as isize)
             };
@@ -280,22 +577,6 @@ fn reference_mbuf(mbuf: *mut MBuf) {
     unsafe { (*mbuf).reference() };
 }
 
-#[inline]
-pub unsafe fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu {
-    // Need to up the refcnt, so that things don't drop.
-    reference_mbuf(mbuf);
-    pdu_from_mbuf_no_increment(mbuf)
-}
-
-#[inline]
-pub unsafe fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu {
-    let mut pdu = Pdu {
-        mbuf,
-        headers: Vec::with_capacity(5),
-    };
-    pdu.parse();
-    pdu
-}
 
 #[inline]
 pub fn update_tcp_checksum_(tcp_header: *mut TcpHeader, ip_payload_size: usize, ip_src: u32, ip_dst: u32) {
@@ -303,5 +584,6 @@ pub fn update_tcp_checksum_(tcp_header: *mut TcpHeader, ip_payload_size: usize, 
     {
         chk = ipv4_checksum(tcp_header as *mut u8, ip_payload_size, 8, &[], ip_src, ip_dst, 6u32);
     }
-    unsafe { *tcp_header }.set_checksum(chk);
+    // attention do not (!!) write: unsafe { (*tcp_header) }.set_checksum(chk) as this creates and operates on an intermediary TcpHeader struct on the stack!
+    unsafe { (*tcp_header).set_checksum(chk) };
 }

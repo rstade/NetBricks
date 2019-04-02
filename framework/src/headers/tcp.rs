@@ -87,7 +87,7 @@ impl EndOffset for TcpHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> HeaderKind {
+    fn header_kind(&self) -> HeaderKind {
         HeaderKind::Tcp
     }
 }
@@ -350,23 +350,27 @@ impl TcpHeader {
     // END FLAGS
 
     /// Receive window.
+    #[inline]
     pub fn window_size(&self) -> u16 {
         u16::from_be(self.window)
     }
 
+    #[inline]
     pub fn set_window_size(&mut self, wnd: u16) {
         self.window = u16::to_be(wnd);
     }
 
     /// Checksum
+    #[inline]
     pub fn checksum(&self) -> u16 {
         u16::from_be(self.csum)
     }
 
     // TODO: Validate checksum and update checksum
 
+    #[inline]
     pub fn set_checksum(&mut self, csum: u16) {
-        self.csum = u16::to_be(csum)
+        self.csum = u16::to_be(csum);
     }
 
     pub fn update_checksum_incremental(&mut self, old_word: u16, new_word: u16) {

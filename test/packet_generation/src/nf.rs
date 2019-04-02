@@ -1,4 +1,3 @@
-use e2d2::common::*;
 use e2d2::headers::*;
 use e2d2::interface::*;
 use e2d2::queues::*;
@@ -34,13 +33,15 @@ impl PacketCreator {
     }
 
     #[inline]
-    fn initialize_packet(&self, pkt: Packet<NullHeader, EmptyMetadata>) -> Packet<IpHeader, EmptyMetadata> {
-        pkt.push_header(&self.mac).unwrap().push_header(&self.ip).unwrap()
+    fn initialize_packet(&self, mut pkt: Pdu) -> Pdu {
+        pkt.push_header(&self.mac);
+        pkt.push_header(&self.ip);
+        pkt
     }
 
     #[inline]
-    pub fn create_packet(&self) -> Packet<IpHeader, EmptyMetadata> {
-        self.initialize_packet(new_packet().unwrap())
+    pub fn create_packet(&self) -> Pdu {
+        self.initialize_packet(Pdu::new_pdu().unwrap())
     }
 }
 

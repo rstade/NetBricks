@@ -38,10 +38,10 @@ pub trait EndOffset: Send {
 
     fn check_correct(&self, prev: &Self::PreviousHeader) -> bool;
 
-    fn is_header(&self) -> HeaderKind;
+    fn header_kind(&self) -> HeaderKind;
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Header {
     Null,
     Mac(*mut MacHeader),
@@ -51,6 +51,17 @@ pub enum Header {
 }
 
 impl Header {
+
+    pub fn new<T:EndOffset>(ptr: *mut T) -> Header {
+        match unsafe { (*ptr).header_kind() } {
+            HeaderKind::Null => Header::Null,
+            HeaderKind::Mac  => Header::Mac(ptr as *mut MacHeader),
+            HeaderKind::Ip   => Header::Ip(ptr as *mut IpHeader),
+            HeaderKind::Tcp  => Header::Tcp(ptr as *mut TcpHeader),
+            HeaderKind::Udp  => Header::Udp(ptr as *mut UdpHeader),
+        }
+    }
+
     pub fn as_mac(&self) -> Option<&mut MacHeader> {
         match &self {
             Header::Mac(p) => Some(unsafe { &mut **p }),
@@ -113,11 +124,11 @@ impl Header {
 impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            Header::Null => write!(f, "{:?}", &self),
-            Header::Mac(_) => write!(f, "{:?}", &self.as_mac().unwrap()),
-            Header::Ip(_) => write!(f, "{:?}", &self.as_ip().unwrap()),
-            Header::Tcp(_) => write!(f, "{:?}", &self.as_tcp().unwrap()),
-            Header::Udp(_) => write!(f, "{:?}", &self.as_udp().unwrap()),
+            Header::Null => write!(f, "{:?}", self),
+            Header::Mac(_) => write!(f, "{:?}", self.as_mac().unwrap()),
+            Header::Ip(_) => write!(f, "{ }", self.as_ip().unwrap()),
+            Header::Tcp(_) => write!(f, "{ }", self.as_tcp().unwrap()),
+            Header::Udp(_) => write!(f, "{:?}", self.as_udp().unwrap()),
         }
     }
 }

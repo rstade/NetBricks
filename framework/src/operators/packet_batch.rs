@@ -1,9 +1,8 @@
 use super::act::Act;
-use super::iterator::{BatchIterator, PacketDescriptor};
+use super::iterator::BatchIterator;
 use super::Batch;
 use common::errors::ErrorKind;
-use common::{errors, EmptyMetadata};
-use headers::NullHeader;
+use common::errors;
 use interface::*;
 use native::zcsi::*;
 use std::result;
@@ -191,7 +190,7 @@ impl PacketBatch {
     }
 
     #[inline]
-    fn free_packet_batch(&mut self) -> result::Result<i32, ()> {
+    fn free_packet_batch(&mut self) -> result::Result<usize, ()> {
         unsafe {
             if self.array.is_empty() || self.b_keep_mbuf {
                 Ok(0)
@@ -204,7 +203,7 @@ impl PacketBatch {
                 // If free fails, I am not sure we can do much to recover this batch.
                 self.array.set_len(0);
                 if ret >= 0 {
-                    Ok(ret)
+                    Ok(ret as usize)
                 } else {
                     Err(())
                 }
@@ -216,14 +215,9 @@ impl PacketBatch {
 // A packet batch is also a batch (just a special kind)
 impl BatchIterator for PacketBatch {
     /// The starting offset for packets in the current batch.
-    type Header = NullHeader;
-    type Metadata = EmptyMetadata;
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<NullHeader, EmptyMetadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         if idx < self.array.len() {
-            Some(PacketDescriptor {
-                packet: packet_from_mbuf_no_free::<NullHeader>(self.array[idx], 0),
-                pdu: pdu_from_mbuf_no_increment(self.array[idx]),
-            })
+            Some( Pdu::pdu_from_mbuf_no_increment(self.array[idx]) )
         } else {
             None
         }
@@ -269,6 +263,11 @@ impl Act for PacketBatch {
     #[inline]
     fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize> {
         self.drop_packets_stable(idxes)
+    }
+
+    #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.free_packet_batch().ok()
     }
 
     #[inline]

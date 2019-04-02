@@ -3,30 +3,27 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use headers::EndOffset;
-use interface::Packet;
+use interface::Pdu;
 use interface::PacketTx;
 
-pub type FilterFn<T, M> = Box<FnMut(&Packet<T, M>) -> bool + Send>;
+pub type FilterFn = Box<FnMut(&Pdu) -> bool + Send>;
 
-pub struct FilterBatch<T, V>
+pub struct FilterBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     parent: V,
-    filter: FilterFn<T, V::Metadata>,
+    filter: FilterFn,
     capacity: usize,
     remove: Vec<usize>,
 }
 
-impl<T, V> FilterBatch<T, V>
+impl<V> FilterBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     #[inline]
-    pub fn new(parent: V, filter: FilterFn<T, V::Metadata>) -> FilterBatch<T, V> {
+    pub fn new(parent: V, filter: FilterFn) -> FilterBatch<V> {
         let capacity = parent.capacity() as usize;
         FilterBatch {
             parent,
@@ -39,24 +36,22 @@ where
 
 batch_no_new! {FilterBatch}
 
-impl<T, V> Act for FilterBatch<T, V>
+impl<V> Act for FilterBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn act(&mut self) -> (u32, i32) {
         let mut count = 0;
         let pre = self.parent.act();
         // Filter during the act
-        let iter = PayloadEnumerator::<T, V::Metadata>::new(&mut self.parent);
+        let iter = PayloadEnumerator::new(&mut self.parent);
         while let Some(ParsedDescriptor {
-            mut packet,
             index: idx,
-            pdu,
+            mut pdu,
         }) = iter.next(&mut self.parent)
         {
-            if !(self.filter)(&mut packet) {
+            if !(self.filter)(&mut pdu) {
                 self.remove.push(idx)
             }
             count += 1;
@@ -91,6 +86,11 @@ where
     }
 
     #[inline]
+    fn drop_packets_all(&mut self) -> Option<usize> {
+        self.parent.drop_packets_all()
+    }
+
+    #[inline]
     fn clear_packets(&mut self) {
         self.parent.clear_packets()
     }
@@ -100,19 +100,12 @@ where
         self.parent.get_packet_batch()
     }
 
-    //    #[inline]
-    //    fn get_task_dependencies(&self) -> Vec<usize> {
-    //        self.parent.get_task_dependencies()
-    //    }
 }
 
-impl<T, V> BatchIterator for FilterBatch<T, V>
+impl<V> BatchIterator for FilterBatch<V>
 where
-    T: EndOffset,
-    V: Batch + BatchIterator<Header = T> + Act,
+    V: Batch + BatchIterator + Act,
 {
-    type Header = T;
-    type Metadata = <V as BatchIterator>::Metadata;
 
     #[inline]
     fn start(&mut self) -> usize {
@@ -120,7 +113,7 @@ where
     }
 
     #[inline]
-    unsafe fn next_payload(&mut self, idx: usize) -> Option<PacketDescriptor<T, Self::Metadata>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

@@ -35,7 +35,7 @@ impl EndOffset for NullHeader {
     }
 
     #[inline]
-    fn is_header(&self) -> HeaderKind {
+    fn header_kind(&self) -> HeaderKind {
         HeaderKind::Null
     }
 }
