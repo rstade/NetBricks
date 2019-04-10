@@ -12,7 +12,6 @@ use native::zcsi::{validate_tx_offload, mbuf_alloc, mbuf_alloc_bulk, MBuf};
 use utils::ipv4_checksum;
 
 const MAX_HEADERS: usize = 5;
-pub const METADATA_SLOTS: u16 = 16;
 
 #[derive(Clone, Debug)]
 pub struct HeaderStack<'a> {
@@ -101,10 +100,10 @@ impl<'a> fmt::Display for HeaderStack<'a> {
     }
 }
 
-#[repr(align(32))]
+#[repr(align(16))]
 pub struct Pdu<'a> {
-    mbuf: *mut MBuf,
     header_stack: HeaderStack<'a>,
+    mbuf: *mut MBuf,
 }
 
 
@@ -223,7 +222,7 @@ impl<'a> Pdu<'a> {
         unsafe { self.header_stack.push(Header::Tcp(&mut *hdr )); }
     }
 
-    //#[inline]
+    #[inline]
     fn parse_ipv4(&mut self, offset: usize) {
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut IpHeader };
         unsafe { self.header_stack.push(Header::Ip(&mut *hdr )); }
@@ -247,6 +246,7 @@ impl<'a> Pdu<'a> {
     }
 
     /// assumes an Ethernet frame and parses the frame up to Layer 4 if possible
+    #[inline]
     pub fn parse(&mut self) -> usize {
         let l = self.data_len();
         if l < MacHeader::size() {

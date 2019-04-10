@@ -1,9 +1,11 @@
-use super::METADATA_SLOTS;
 use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE};
 use native::libnuma;
 use native::zcsi;
 use std::cell::Cell;
 use std::ffi::CString;
+
+pub const METADATA_SLOTS: u16 = 16; // slot size is 8, see mempool.c
+
 
 /// Initialize the system, whitelisting some set of NICs and allocating mempool of given size.
 pub fn init_system_wl_with_mempool(
