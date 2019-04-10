@@ -1,5 +1,4 @@
 use super::{EndOffset, HeaderKind};
-use headers::IpHeader;
 use std::default::Default;
 use std::fmt;
 use utils::update_checksum_incremental;
@@ -64,7 +63,6 @@ impl fmt::Display for TcpHeader {
 }
 
 impl EndOffset for TcpHeader {
-    type PreviousHeader = IpHeader;
 
     #[inline]
     fn offset(&self) -> usize {
@@ -79,11 +77,6 @@ impl EndOffset for TcpHeader {
     #[inline] // I think this is not really the payload size, when we have Ethernet padding at the end of the frame, sta
     fn payload_size(&self, frame_size: usize) -> usize {
         frame_size - self.offset()
-    }
-
-    #[inline]
-    fn check_correct(&self, _prev: &IpHeader) -> bool {
-        true
     }
 
     #[inline]
@@ -373,22 +366,26 @@ impl TcpHeader {
         self.csum = u16::to_be(csum);
     }
 
+    #[inline]
     pub fn update_checksum_incremental(&mut self, old_word: u16, new_word: u16) {
-        trace!(
+        /*trace!(
             "previous checksum {:X}, old_word = {:X}, new:word = {:X}",
             u16::from_be(self.csum),
             old_word,
             new_word
         );
+        */
         self.csum = u16::to_be(update_checksum_incremental(u16::from_be(self.csum), old_word, new_word));
-        trace!("updated checksum {:X}", u16::from_be(self.csum));
+        //trace!("updated checksum {:X}", u16::from_be(self.csum));
     }
 
     /// Urgent pointer
+    #[inline]
     pub fn urgent(&self) -> u16 {
         u16::from_be(self.urgent)
     }
 
+    #[inline]
     pub fn set_urgent(&mut self, urgent: u16) {
         self.urgent = u16::to_be(urgent);
     }

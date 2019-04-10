@@ -1,5 +1,4 @@
 use super::{EndOffset, HeaderKind};
-use headers::IpHeader;
 use std::default::Default;
 use std::fmt;
 
@@ -28,7 +27,6 @@ impl fmt::Display for UdpHeader {
 }
 
 impl EndOffset for UdpHeader {
-    type PreviousHeader = IpHeader;
     #[inline]
     fn offset(&self) -> usize {
         8 // 8 bytes
@@ -42,11 +40,6 @@ impl EndOffset for UdpHeader {
     #[inline]
     fn payload_size(&self, _: usize) -> usize {
         self.length() as usize - self.offset()
-    }
-
-    #[inline]
-    fn check_correct(&self, _prev: &IpHeader) -> bool {
-        true
     }
 
     #[inline]

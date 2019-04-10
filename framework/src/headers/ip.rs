@@ -1,6 +1,5 @@
 use super::{EndOffset, HeaderKind};
 use byteorder::{BigEndian, ByteOrder};
-use headers::MacHeader;
 use std::convert::From;
 use std::default::Default;
 use std::fmt;
@@ -39,7 +38,6 @@ impl fmt::Display for IpHeader {
 }
 
 impl EndOffset for IpHeader {
-    type PreviousHeader = MacHeader;
     #[inline]
     fn offset(&self) -> usize {
         if cfg!(feature = "performance") {
@@ -58,11 +56,6 @@ impl EndOffset for IpHeader {
     #[inline]
     fn payload_size(&self, _: usize) -> usize {
         (self.length() as usize) - self.offset()
-    }
-
-    #[inline]
-    fn check_correct(&self, _prev: &MacHeader) -> bool {
-        true
     }
 
     #[inline]

@@ -214,6 +214,11 @@ impl PacketBatch {
 
 // A packet batch is also a batch (just a special kind)
 impl BatchIterator for PacketBatch {
+    #[inline]
+    fn start(&mut self) -> usize {
+        0
+    }
+
     /// The starting offset for packets in the current batch.
     fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         if idx < self.array.len() {
@@ -221,10 +226,6 @@ impl BatchIterator for PacketBatch {
         } else {
             None
         }
-    }
-    #[inline]
-    fn start(&mut self) -> usize {
-        0
     }
 }
 

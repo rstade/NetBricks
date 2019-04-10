@@ -22,11 +22,11 @@ pub trait BatchIterator {
 }
 
 /// A struct containing the parsed information returned by the `PayloadEnumerator`.
-pub struct ParsedDescriptor
+pub struct ParsedDescriptor<'a>
 where
 {
     pub index: usize,
-    pub pdu: Pdu,
+    pub pdu: Pdu<'a>,
 }
 
 /// An enumerator over both the header and the payload. The payload is represented as an appropriately sized slice of
@@ -40,7 +40,7 @@ pub struct PayloadEnumerator
     idx: Cell<usize>,
 }
 
-impl PayloadEnumerator
+impl<'a> PayloadEnumerator
 {
     /// Create a new iterator.
     #[inline]
@@ -54,7 +54,7 @@ impl PayloadEnumerator
     /// Used for looping over packets. Note this iterator is not safe if packets are added or dropped during iteration,
     /// so you should not do that if possible.
     #[inline]
-    pub fn next(&self, batch: &mut BatchIterator) -> Option<ParsedDescriptor> {
+    pub fn next(&self, batch: &'a mut BatchIterator) -> Option<ParsedDescriptor<'a>> {
         let original_idx = self.idx.get();
         let item = batch.next_payload(original_idx);
         match item {

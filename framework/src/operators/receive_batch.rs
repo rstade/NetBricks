@@ -81,16 +81,6 @@ impl<T: PacketRx> Act for ReceiveBatch<T> {
         self.parent
             .recv(&self.packet_rx)
             .and_then(|x| {
-                /*
-                                if x.0 > 0 && self.packet_rx.port_id().is_some() {
-                                    trace!(
-                                        "received batch with {} packets on port {}, Queue lenght= {}. ",
-                                        x.0,
-                                        self.packet_rx.port_id().unwrap(),
-                                        x.1
-                                    );
-                                }
-                */
                 self.received += x.0 as u64;
                 Ok(x)
             })

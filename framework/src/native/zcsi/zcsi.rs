@@ -271,7 +271,7 @@ impl fmt::Display for RteEthStats {
             "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors"
         )
         .unwrap();
-        for q in 0..8 {
+        for q in 0..4 {
             write!(
                 f,
                 "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | \n",

@@ -14,8 +14,6 @@ impl fmt::Display for NullHeader {
 }
 
 impl EndOffset for NullHeader {
-    type PreviousHeader = NullHeader;
-
     #[inline]
     fn offset(&self) -> usize {
         0
@@ -28,12 +26,6 @@ impl EndOffset for NullHeader {
     fn payload_size(&self, hint: usize) -> usize {
         hint
     }
-
-    #[inline]
-    fn check_correct(&self, _: &NullHeader) -> bool {
-        true
-    }
-
     #[inline]
     fn header_kind(&self) -> HeaderKind {
         HeaderKind::Null

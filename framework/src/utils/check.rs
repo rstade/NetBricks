@@ -104,7 +104,6 @@ pub fn finalize_checksum(mut sum: u32) -> u16be {
 }
 
 /// Calculate the checksum for a packet built on IPv4. Used by udp and tcp.
-#[inline]
 pub fn ipv4_checksum(
     data: *mut u8,
     len: usize,

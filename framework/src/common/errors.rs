@@ -92,6 +92,11 @@ error_chain! {
             description("Bad char")
             display("Bad char {} at index {}", c, index)
         }
+
+        HeaderMismatch {
+            description("Wrong header")
+            display("Wrong header")
+        }
     }
 
     foreign_links {

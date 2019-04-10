@@ -109,7 +109,6 @@ pub trait Batch: BatchIterator + Act {
     fn group_by<S: Scheduler + Sized>(
         self,
         groups: usize,
-        // group_f: GroupFn<Self::Header, Self::Metadata>,
         group_f: GroupFnPdu,
         sched: &mut S,
         name: String,

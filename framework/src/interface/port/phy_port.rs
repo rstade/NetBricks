@@ -420,6 +420,16 @@ impl PortQueueTxBuffered {
             Ok(to_send)
         }
     }
+
+    #[inline]
+    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.port_queue.stats_rx.clone()
+    }
+
+    #[inline]
+    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.port_queue.stats_tx.clone()
+    }
 }
 
 impl PacketTx for PortQueueTxBuffered {
