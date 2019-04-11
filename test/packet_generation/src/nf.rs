@@ -12,7 +12,7 @@ pub struct PacketCreator {
     producer: MpscProducer,
 }
 
-impl PacketCreator {
+impl<'a> PacketCreator {
     pub fn new(producer: MpscProducer) -> PacketCreator {
         let mut mac = MacHeader::new();
         mac.dst = MacAddress::new([0x68, 0x05, 0xca, 0x00, 0x00, 0xac]);
@@ -33,7 +33,7 @@ impl PacketCreator {
     }
 
     #[inline]
-    fn initialize_packet(&self, mut pkt: Pdu) -> Pdu {
+    fn initialize_packet(&self, mut pkt: Pdu<'a>) -> Pdu<'a> {
         pkt.push_header(&self.mac);
         pkt.push_header(&self.ip);
         pkt

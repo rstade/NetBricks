@@ -26,7 +26,7 @@ pub fn delay<T: 'static + Batch>(
 ) -> TransformBatch<T> {
     parent.transform(box move |pkt| {
         assert!(pkt.refcnt() == 1);
-        let hdr = pkt.get_header_mut(0).as_mac().unwrap();
+        let hdr = pkt.headers_mut().mac_mut(0);
         hdr.swap_addresses();
         delay_loop(delay);
     })

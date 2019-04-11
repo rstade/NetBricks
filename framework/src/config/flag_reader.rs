@@ -2,7 +2,7 @@ extern crate getopts;
 use self::getopts::{Matches, Options};
 
 use super::{read_configuration, NetbricksConfiguration, PortConfiguration};
-use common::print_error;
+//use common::print_error;
 use std::collections::HashMap;
 
 use std::env;
@@ -41,7 +41,7 @@ pub fn read_matches(matches: &Matches, opts: &Options) -> NetbricksConfiguration
             Ok(cfg) => cfg,
             Err(ref e) => {
                 debug!("error reading configuration");
-                print_error(e);
+                println!("{:?}", e);
                 process::exit(1);
             }
         }

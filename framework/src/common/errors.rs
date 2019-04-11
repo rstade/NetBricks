@@ -1,3 +1,5 @@
+use std::fmt::{ Display, Formatter};
+/*
 error_chain! {
     errors {
         FailedAllocation {
@@ -105,3 +107,42 @@ error_chain! {
         Toml(::toml::de::Error);
     }
 }
+*/
+
+#[derive(Debug)]
+pub enum ErrorKind {
+    FailedAllocation,
+    FailedDeallocation,
+    FailedToInitializePort(u16),
+    FailedToInitializeOvsPort(i32),
+    FailedToInitializeBessPort(i32),
+    FailedToInitializeKni(u16),
+    BadQueue,
+    CannotSend,
+    BadDev(std::string::String),
+    BadVdev(std::string::String),
+    BadTxQueue(u16, u16),
+    BadRxQueue(u16, u16),
+    BadOffset(usize),
+    MetadataTooLarge,
+    RingAllocationFailure,
+    InvalidRingSize(usize),
+    RingDuplicationFailure,
+    ConfigurationError(std::string::String),
+    NoRunningSchedulerOnCore(i32),
+    BadSize(usize, std::string::String),
+    BadCharAtIndex(char, usize),
+    HeaderMismatch,
+    FailedErrorFormat,
+}
+
+//TODO improve Display
+
+
+impl Display for ErrorKind {
+    fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, ErrorKind>;

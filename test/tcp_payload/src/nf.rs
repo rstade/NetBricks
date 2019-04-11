@@ -39,11 +39,11 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
     let uuid = Uuid::new_v4();
     let mut groups = parent
         .transform(box move |p| {
-            p.get_header_mut(0).as_mac().unwrap().swap_addresses();
+            p.headers_mut().mac_mut(0).swap_addresses();
         })
         .group_by(
             2,
-            box move |p| if p.get_header(1).as_ip().unwrap().protocol() == 6 { 0 } else { 1 },
+            box move |p| if p.headers().ip(1).protocol() == 6 { 0 } else { 1 },
             sched,
             "GroupByProtocol".to_string(),
             uuid,
@@ -52,8 +52,8 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
         .get_group(0)
         .unwrap()
         .transform(box move |p| {
-            let flow = p.get_header(1).as_ip().unwrap().flow().unwrap();
-            let mut seq = p.get_header(2).as_tcp().unwrap().seq_num();
+            let flow = p.headers().ip(1).flow().unwrap();
+            let mut seq = p.headers().tcp(2).seq_num();
             match rb_map.entry(flow) {
                 Entry::Occupied(mut e) => {
                     {
@@ -72,9 +72,9 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
                             }
                         }
                     }
-                    if p.get_header(2).as_tcp().unwrap().rst_flag() {
+                    if p.headers().tcp(2).rst_flag() {
                         e.remove_entry();
-                    } else if p.get_header(2).as_tcp().unwrap().fin_flag() {
+                    } else if p.headers().tcp(2).fin_flag() {
                         match payload_cache.entry(flow) {
                             Entry::Occupied(e) => {
                                 let (_, payload) = e.remove_entry();
@@ -90,7 +90,7 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
                 Entry::Vacant(e) => {
                     match ReorderedBuffer::new(BUFFER_SIZE) {
                         Ok(mut b) => {
-                            if p.get_header(2).as_tcp().unwrap().syn_flag() {
+                            if p.headers().tcp(2).syn_flag() {
                                 seq += 1; // Receiver should expect data beginning at seq+1.
                             } else {
                                 println!("packet received for untracked flow did not have SYN flag, skipping.");

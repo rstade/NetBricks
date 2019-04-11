@@ -25,11 +25,11 @@ fn monitor<T: 'static + Batch>(
 ) -> TransformBatch<TransformBatch<T>> {
     parent
         .transform(box |pkt| {
-            let hdr = pkt.get_header_mut(0).as_mac_mut().unwrap();
+            let hdr = pkt.headers_mut().mac_mut(0);
             hdr.swap_addresses();
         })
         .transform(box move |pkt| {
-            let hdr = pkt.get_header_mut(1).as_ip_mut().unwrap();
+            let hdr = pkt.headers_mut().ip_mut(1);
             let ttl = hdr.ttl();
             hdr.set_ttl(ttl + 1);
             monitoring_cache.update(hdr.flow().unwrap(), 1);

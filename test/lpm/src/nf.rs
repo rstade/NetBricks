@@ -211,11 +211,11 @@ pub fn lpm<T: 'static + Batch, S: Scheduler + Sized>(
     lpm_table.construct_table();
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .transform(box |p| p.get_header_mut(0).as_mac().unwrap().swap_addresses())
+        .transform(box |p| p.headers_mut().mac_mut(0).swap_addresses())
         .group_by(
             3,
             box move |pkt| {
-                let hdr = pkt.get_header(1).as_ip().unwrap();
+                let hdr = pkt.headers().ip(1);
                 lpm_table.lookup_entry(hdr.src()) as usize
             },
             s,

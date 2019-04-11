@@ -2,7 +2,7 @@ use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
 use common::errors;
-use common::errors::{ErrorKind, ResultExt};
+use common::errors::ErrorKind;
 use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
 use libc::if_indextoname;
@@ -981,7 +981,6 @@ impl PmdPort {
                 driver,
                 fdir_conf,
             )
-            .chain_err(|| ErrorKind::BadDev(String::from(spec)))
         } else {
             Err(ErrorKind::BadDev(String::from(spec)).into())
         }

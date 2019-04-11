@@ -43,8 +43,8 @@ extern crate uuid;
 // extern crate alloc;
 
 // Better error handling.
-#[macro_use]
-extern crate error_chain;
+//#[macro_use]
+//extern crate error_chain;
 
 // Logging
 #[macro_use]

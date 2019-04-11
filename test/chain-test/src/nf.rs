@@ -4,16 +4,16 @@ use e2d2::operators::*;
 pub fn chain_nf<T: 'static + Batch>(parent: T) ->  CompositionBatch {
     let next= parent
         .transform(box move |pkt| {
-            let hdr = pkt.get_header_mut(0).as_mac().unwrap();
+            let hdr = pkt.headers_mut().mac_mut(0);
             hdr.swap_addresses();
         })
         .transform(box |pkt| {
-            let h = pkt.get_header_mut(1).as_ip().unwrap();
+            let h = pkt.headers_mut().ip_mut(1);
             let ttl = h.ttl();
             h.set_ttl(ttl - 1);
         })
         .filter(box |pkt| {
-            let h = pkt.get_header(1).as_ip().unwrap();
+            let h = pkt.headers().ip(1);
             h.ttl() != 0
         });
     CompositionBatch::new(next)
@@ -32,7 +32,7 @@ pub fn chain<S: 'static + Batch>(
     let next= if len % 2 == 0 || pos % 2 == 1 {
         CompositionBatch::new(chained
             .transform(box move |pkt| {
-                let hdr = pkt.get_header_mut(0).as_mac().unwrap();
+                let hdr = pkt.headers_mut().mac_mut(0);
                 hdr.swap_addresses();
             }))
     } else {

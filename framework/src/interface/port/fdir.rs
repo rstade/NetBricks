@@ -3,7 +3,6 @@ use std::os::raw::c_void;
 use std::sync::Arc;
 
 use super::PmdPort;
-use common::errors;
 use config::DriverType;
 use native::zcsi::*;
 
@@ -30,7 +29,7 @@ impl FlowDirector {
         self.flows.get(&rxq).unwrap()
     }
 
-    pub fn add_fdir_filter(&mut self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
+    pub fn add_fdir_filter(&mut self, rxq: u16, dst_ip: u32, dst_port: u16) -> std::io::Result<i32> {
         self.flows.insert(
             rxq,
             L4Flow {
@@ -45,7 +44,7 @@ impl FlowDirector {
         }
     }
 
-    fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> errors::Result<i32> {
+    fn add_fdir_filter_ixgbe(&self, rxq: u16, dst_ip: u32, dst_port: u16) -> std::io::Result<i32> {
         // assumes that flows in Fdir are fully masked, except for the destination ip and port
 
         let action = RteEthFdirAction {
@@ -98,18 +97,15 @@ impl FlowDirector {
                 RteFilterOp::RteEthFilterAdd,
                 fdir_filter_ptr as *mut c_void,
             ))
-            .map_err(|e| e.into())
         }
     }
 
-    fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> errors::Result<i32> {
+    fn add_fdir_filter_i40e(&self, rxq: u16, dst_ip: u32, _dst_port: u16) -> std::io::Result<i32> {
         unsafe {
-            let result: errors::Result<i32> = check_os_error(rte_eth_dev_filter_supported(
+            check_os_error(rte_eth_dev_filter_supported(
                 self.pmd_port.port_id() as u16,
                 RteFilterType::RteEthFilterFdir,
-            ))
-            .map_err(|e| e.into());
-            result?;
+            ))?;
         }
 
         let mut filter_info = RteEthFdirFilterInfo {
@@ -125,14 +121,12 @@ impl FlowDirector {
         let fdir_filter_info: *mut RteEthFdirFilterInfo = &mut filter_info;
 
         unsafe {
-            let result: errors::Result<i32> = check_os_error(rte_eth_dev_filter_ctrl(
+            check_os_error(rte_eth_dev_filter_ctrl(
                 self.pmd_port.port_id() as u16,
                 RteFilterType::RteEthFilterFdir,
                 RteFilterOp::RteEthFilterSet,
                 fdir_filter_info as *mut c_void,
-            ))
-            .map_err(|e| e.into());
-            result?;
+            ))?;
         }
 
         let action = RteEthFdirAction {

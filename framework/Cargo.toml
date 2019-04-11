@@ -27,7 +27,7 @@ rust-sctp = { git="https://github.com/netsys/rust-sctp", optional = true}
 toml = "~0.4"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
-error-chain = ">=0.12"
+#error-chain = ">=0.12"
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
 eui48 = { version= ">=0.3" }

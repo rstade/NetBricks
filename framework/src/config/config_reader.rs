@@ -1,17 +1,18 @@
 use super::{DriverType, NetbricksConfiguration, PortConfiguration};
-use common::*;
 use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
 use std::clone::Clone;
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, AddrParseError};
 use std::option::Option::Some;
 use std::result::Result::Err;
 use std::str::FromStr;
 use std::string::String;
 use std::string::ToString;
 use toml::{self, Value};
+use common::errors::ErrorKind;
+use common::errors;
 
 /// Default configuration values
 pub const DEFAULT_MBUF_CNT: u32 = 65535;
@@ -107,11 +108,9 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 }
             }
 
-            fn read_ipv4(mask_def: &BTreeMap<String, Value>, key: String) -> errors::Result<u32> {
+            fn read_ipv4(mask_def: &BTreeMap<String, Value>, key: String) -> Result<u32, AddrParseError> {
                 match mask_def.get(&key) {
-                    Some(&Value::String(ref ipv4_string)) => Ipv4Addr::from_str(ipv4_string)
-                        .map_err(|e| e.into())
-                        .map(|ipv4| u32::from(ipv4)),
+                    Some(&Value::String(ref ipv4_string)) => Ok(u32::from(Ipv4Addr::from_str(ipv4_string)?)),
                     _ => Ok(0u32),
                 }
             }
@@ -171,11 +170,13 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 match *fdir_val {
                     Value::Table(ref fdir_def) => {
                         match fdir_def.get("pballoc") {
-                            Some(v) => fdir_conf.pballoc = v.clone().try_into::<RteFdirPballocType>()?,
+                            //TODO replace unwrap() with error conversion
+                            Some(v) => fdir_conf.pballoc = v.clone().try_into::<RteFdirPballocType>().unwrap(),
                             None => (), // X710 does not support pballoc
                         };
                         match fdir_def.get("mode") {
-                            Some(v) => fdir_conf.mode = v.clone().try_into::<RteFdirMode>()?,
+                            //TODO replace unwrap() with error conversion
+                            Some(v) => fdir_conf.mode = v.clone().try_into::<RteFdirMode>().unwrap(),
                             None => {
                                 return Err(ErrorKind::ConfigurationError("missing fdir mode spec".to_string()).into());
                             }
@@ -222,7 +223,8 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
             };
 
             let driver = match port_def.get("driver") {
-                Some(v) => v.clone().try_into::<DriverType>()?,
+                //TODO replace unwrap() with error conversion
+                Some(v) => v.clone().try_into::<DriverType>().unwrap(),
                 None => DriverType::Unknown,
             };
 
@@ -475,9 +477,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
 /// `filename` should be TOML formatted file.
 pub fn read_configuration(filename: &str) -> errors::Result<NetbricksConfiguration> {
     let mut toml_str = String::new();
-    let _ = File::open(filename)
-        .and_then(|mut f| f.read_to_string(&mut toml_str))
-        .chain_err(|| ErrorKind::ConfigurationError(String::from("Could not read file")))?;
-    //debug!("toml string is:\n {}", toml_str);
+    File::open(filename)
+        .and_then(|mut f| f.read_to_string(&mut toml_str)).unwrap();
     read_configuration_from_str(&toml_str[..], filename)
 }
