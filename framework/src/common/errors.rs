@@ -1,4 +1,9 @@
 use std::fmt::{ Display, Formatter};
+use std::net::AddrParseError;
+use std::string::String;
+use ipnet;
+
+
 /*
 error_chain! {
     errors {
@@ -119,8 +124,8 @@ pub enum ErrorKind {
     FailedToInitializeKni(u16),
     BadQueue,
     CannotSend,
-    BadDev(std::string::String),
-    BadVdev(std::string::String),
+    BadDev(String),
+    BadVdev(String),
     BadTxQueue(u16, u16),
     BadRxQueue(u16, u16),
     BadOffset(usize),
@@ -128,16 +133,42 @@ pub enum ErrorKind {
     RingAllocationFailure,
     InvalidRingSize(usize),
     RingDuplicationFailure,
-    ConfigurationError(std::string::String),
+    ConfigurationError(String),
     NoRunningSchedulerOnCore(i32),
-    BadSize(usize, std::string::String),
+    BadSize(usize, String),
     BadCharAtIndex(char, usize),
     HeaderMismatch,
     FailedErrorFormat,
+    ConfigParseError(String),
+}
+
+
+
+impl From<AddrParseError> for ErrorKind {
+    fn from(err: AddrParseError) -> Self {
+        ErrorKind::ConfigParseError(format!("{}", err))
+    }
+}
+
+impl From<toml::de::Error> for ErrorKind {
+    fn from(err: toml::de::Error) -> Self {
+        ErrorKind::ConfigParseError(format!("{}", err))
+    }
+}
+
+impl From<eui48::ParseError> for ErrorKind {
+    fn from(err: eui48::ParseError) -> Self {
+        ErrorKind::ConfigParseError(format!("{}", err))
+    }
+}
+
+impl From<ipnet::AddrParseError> for ErrorKind {
+    fn from(err: ipnet::AddrParseError) -> Self {
+        ErrorKind::ConfigParseError(format!("{}", err))
+    }
 }
 
 //TODO improve Display
-
 
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut Formatter) -> std::result::Result<(), std::fmt::Error> {

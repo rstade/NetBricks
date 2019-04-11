@@ -26,6 +26,8 @@ extern crate net2;
 extern crate regex;
 extern crate separator;
 extern crate twox_hash;
+extern crate ipnet;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
