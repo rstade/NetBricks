@@ -1132,6 +1132,8 @@ impl PmdPort {
             path: Option<String>,
             queue_size: Option<u32>,
             queues: Option<u32>,
+            rx_pcap: Option<String>,
+            tx_pcap: Option<String>,
         }
 
         fn parse_spec(spec: &str) -> DevSpec {
@@ -1139,10 +1141,13 @@ impl PmdPort {
             let mut path = None;
             let mut queue_size = None;
             let mut queues = None;
+            let mut rx_pcap = None;
+            let mut tx_pcap = None;
             let mut name = String::new();
 
             for (i, s) in spec.split_terminator(',').enumerate() {
                 if i == 0 {
+                    // we take as name key everything before the first ','
                     name = s.to_string();
                 } else {
                     let key_val: Vec<_> = s.split_terminator('=').collect();
@@ -1150,6 +1155,8 @@ impl PmdPort {
                         match key_val[0] {
                             "iface" => iface = Some(key_val[1].to_string()),
                             "path" => path = Some(key_val[1].to_string()),
+                            "rx_pcap" => rx_pcap = Some(key_val[1].to_string()),
+                            "tx_pcap" => tx_pcap = Some(key_val[1].to_string()),
                             "queue_size" => queue_size = key_val[1].parse::<u32>().ok(),
                             "queues" => queues = key_val[1].parse::<u32>().ok(),
                             _ => (),
@@ -1166,34 +1173,47 @@ impl PmdPort {
                 path,
                 queue_size,
                 queues,
+                rx_pcap,
+                tx_pcap,
             }
         }
 
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
             "ovs" => PmdPort::new_ovs_port(parts[1], rx_cores[0]),
-            "dpdk" => PmdPort::new_dpdk_port(
-                name,
-                kni,
-                None,
-                parts[1],
-                rx_cores,
-                tx_cores,
-                nrxd,
-                ntxd,
-                loopback,
-                tso,
-                csumoffload,
-                driver,
-                PortType::Physical,
-                fdir_conf,
-                port_config.flow_steering,
-                port_config.net_spec.clone(),
-                associated_port.map_or(None, |p| Some(p.port_id())),
-            ),
-            "virtio" => {
+            /*
+            "dpdk" => {
                 let dev_spec = parse_spec(name);
-                debug!("virtio with spec {} parsed as {:?}", parts[1], dev_spec);
+                debug!("dpdk with spec {} parsed as {:?}", parts[1], dev_spec);
+                PmdPort::new_dpdk_port(
+                    &dev_spec.name,
+                    kni,
+                    dev_spec.iface,
+                    parts[1],
+                    rx_cores,
+                    tx_cores,
+                    nrxd,
+                    ntxd,
+                    loopback,
+                    tso,
+                    csumoffload,
+                    driver,
+                    PortType::Physical,
+                    fdir_conf,
+                    port_config.flow_steering,
+                    port_config.net_spec.clone(),
+                    associated_port.map_or(None, |p| Some(p.port_id())),
+                )
+            }
+            */
+            "virtio" | "dpdk" => {
+                let port_type = match parts[0] {
+                    "dpdk" => PortType::Physical,
+                    "virtio" => PortType::Virtio,
+                    _ => PortType::Null,
+                };
+                let dev_spec = parse_spec(name);
+                debug!("spec {} parsed as {:?}", parts[1], dev_spec);
                 // we must have for each core of the associated port a queue on the virtio device
                 let modified_spec = if queues.is_some() {
                     parts[1].replace("queues={}", &("queues=".to_owned() + &format!("{}", queues.unwrap())))
@@ -1214,7 +1234,7 @@ impl PmdPort {
                     tso,
                     csumoffload,
                     driver,
-                    PortType::Virtio,
+                    port_type,
                     fdir_conf,
                     port_config.flow_steering,
                     port_config.net_spec.clone(),

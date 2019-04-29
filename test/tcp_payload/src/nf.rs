@@ -30,10 +30,7 @@ fn read_payload(
     }
 }
 
-pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
-    parent: T,
-    sched: &mut S,
-) -> CompositionBatch {
+pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched: &mut S) -> CompositionBatch {
     let mut rb_map = HashMap::<FiveTupleV4, ReorderedBuffer, FnvHash>::with_hasher(Default::default());
     let mut payload_cache = HashMap::<FiveTupleV4, Vec<u8>>::with_hasher(Default::default());
     let uuid = Uuid::new_v4();

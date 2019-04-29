@@ -207,6 +207,7 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
                 error!("Port {} appears twice in specification", p.name());
                 Err(ErrorKind::ConfigurationError(format!("Port {} appears twice in specification", p.name())).into())
             } else {
+                debug!("inserting port {} into context", p.name());
                 ctx.ports.insert(p.name().clone(), p.clone());
                 if !ctx.id_to_port.contains_key(&port_id) {
                     ctx.id_to_port.insert(port_id, p);
