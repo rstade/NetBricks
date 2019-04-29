@@ -1,6 +1,6 @@
 [package]
 name = "e2d2"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "rainer <rainer@spacebandit.de>"]
 build = "build.rs"
 
@@ -29,7 +29,7 @@ toml = "~0.4"
 uuid= { version = ">=0.7", features=["v4"] }
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
-eui48 = { version= ">=0.3" }
+eui48 = { version= ">=0.4" }
 separator =  ">= 0.3"
 serde_derive = "1.0"
 serde = "1.0"

@@ -1,5 +1,5 @@
 use common::*;
-use interface::{Pdu, PacketRx};
+use interface::{PacketRx, Pdu};
 use native::zcsi::MBuf;
 use operators::ReceiveBatch;
 use std::clone::Clone;

@@ -63,7 +63,6 @@ impl fmt::Display for TcpHeader {
 }
 
 impl EndOffset for TcpHeader {
-
     #[inline]
     fn offset(&self) -> usize {
         (self.data_offset() * 4) as usize

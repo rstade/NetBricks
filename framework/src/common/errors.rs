@@ -1,8 +1,7 @@
-use std::fmt::{ Display, Formatter};
+use ipnet;
+use std::fmt::{Display, Formatter};
 use std::net::AddrParseError;
 use std::string::String;
-use ipnet;
-
 
 /*
 error_chain! {
@@ -121,7 +120,7 @@ pub enum ErrorKind {
     FailedToInitializePort(u16),
     FailedToInitializeOvsPort(i32),
     FailedToInitializeBessPort(i32),
-    FailedToInitializeKni(u16),
+    FailedToInitializeKni(String),
     BadQueue,
     CannotSend,
     BadDev(String),
@@ -140,9 +139,8 @@ pub enum ErrorKind {
     HeaderMismatch,
     FailedErrorFormat,
     ConfigParseError(String),
+    TryFromNetSpecError,
 }
-
-
 
 impl From<AddrParseError> for ErrorKind {
     fn from(err: AddrParseError) -> Self {

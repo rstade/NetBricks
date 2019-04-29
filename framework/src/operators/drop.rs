@@ -5,28 +5,25 @@ use super::Batch;
 use common::*;
 use interface::{PacketTx, Pdu};
 
-
 pub struct DropBatch<V>
-    where
-        V: Batch + BatchIterator + Act,
+where
+    V: Batch + BatchIterator + Act,
 {
     parent: V,
 }
 
 impl<V> DropBatch<V>
-    where
-        V: Batch + BatchIterator + Act,
+where
+    V: Batch + BatchIterator + Act,
 {
     pub fn new(parent: V) -> DropBatch<V> {
-        DropBatch {
-            parent: parent,
-        }
+        DropBatch { parent: parent }
     }
 }
 
 impl<V> Batch for DropBatch<V>
-    where
-        V: Batch + BatchIterator + Act,
+where
+    V: Batch + BatchIterator + Act,
 {
     fn queued(&self) -> usize {
         self.parent.queued()
@@ -34,15 +31,18 @@ impl<V> Batch for DropBatch<V>
 }
 
 impl<V> Act for DropBatch<V>
-    where
-        V: Batch + BatchIterator + Act,
+where
+    V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn act(&mut self) -> (u32, i32) {
         let q_len = self.parent.act().1;
         match self.parent.drop_packets_all() {
             Some(dropped) => (dropped as u32, q_len),
-            None => { warn!("failed to drop packet batch"); (0,q_len) }
+            None => {
+                warn!("failed to drop packet batch");
+                (0, q_len)
+            }
         }
     }
 
@@ -80,12 +80,11 @@ impl<V> Act for DropBatch<V>
     fn get_packet_batch(&mut self) -> &mut PacketBatch {
         self.parent.get_packet_batch()
     }
-
 }
 
 impl<V> BatchIterator for DropBatch<V>
-    where
-        V: Batch + BatchIterator + Act,
+where
+    V: Batch + BatchIterator + Act,
 {
     #[inline]
     fn start(&mut self) -> usize {
@@ -93,7 +92,7 @@ impl<V> BatchIterator for DropBatch<V>
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu>{
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

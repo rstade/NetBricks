@@ -5,6 +5,8 @@ use common::errors;
 use common::errors::ErrorKind;
 use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
+use interface::port::fdir::FlowSteeringMode;
+use ipnet::Ipv4Net;
 use libc::if_indextoname;
 use native::zcsi::ethdev::{rss_flow_name, rte_eth_dev_info, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name};
 use native::zcsi::ethdev::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
@@ -16,9 +18,11 @@ use std::collections::VecDeque;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::net::Ipv4Addr;
 use std::ptr;
 use std::ptr::Unique;
 use std::rc::Rc;
+use std::string::ToString;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use utils::{rdtsc_unsafe, FiveTupleV4};
@@ -27,8 +31,9 @@ use utils::{rdtsc_unsafe, FiveTupleV4};
 /// structure instead.
 #[derive(Clone, Copy, PartialEq)]
 pub enum PortType {
-    Dpdk,
+    Physical,
     Kni,
+    Virtio,
     Bess,
     Ovs,
     Null,
@@ -38,7 +43,8 @@ impl fmt::Display for PortType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::PortType::*;
         let printable = match *self {
-            Dpdk => "DPDK",
+            Physical => "PHYSICAL",
+            Virtio => "VIRTIO",
             Kni => "KNI",
             Bess => "BESS",
             Ovs => "OVS",
@@ -48,12 +54,22 @@ impl fmt::Display for PortType {
     }
 }
 
+#[derive(Default, Clone)]
+pub struct NetSpec {
+    pub mac: Option<MacAddress>,
+    pub ip_net: Option<Ipv4Net>,
+    pub nsname: Option<String>,
+    pub port: Option<u16>,
+}
+
 pub struct PmdPort {
+    name: String,
+    kni_name: Option<String>,
     port_type: PortType,
-    connected: bool,
-    should_close: bool,
     csumoffload: bool,
     port: u16,
+    // id of an associated port, if any
+    associated_dpdk_port_id: Option<u16>,
     //must use Unique because raw ptr does not implement Send
     kni: Option<Unique<RteKni>>,
     // used for kni interfaces
@@ -68,11 +84,46 @@ pub struct PmdPort {
     stats_rx: Vec<Arc<CacheAligned<PortStats>>>,
     stats_tx: Vec<Arc<CacheAligned<PortStats>>>,
     fdir_conf: Option<RteFdirConf>,
+    flow_steering_mode: Option<FlowSteeringMode>,
+    net_spec: Option<NetSpec>,
 }
 
 impl fmt::Display for PmdPort {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.port_type, self.port)
+        write!(
+            f,
+            "{} ({}:{}, linux_if={:?})",
+            self.name, self.port_type, self.port, self.linux_if
+        )
+    }
+}
+
+impl Default for PmdPort {
+    fn default() -> PmdPort {
+        PmdPort {
+            name: String::new(),
+            kni_name: None,
+            port_type: PortType::Null,
+            csumoffload: false,
+            port: 0,
+            associated_dpdk_port_id: None,
+            //must use Unique because raw ptr does not implement Send
+            kni: None,
+            // used for kni interfaces
+            linux_if: None,
+            rxqs: 1,
+            txqs: 1,
+            rx_cores: None,
+            tx_cores: None,
+            n_rx_desc: 64,
+            n_tx_desc: 64,
+            driver: DriverType::Unknown,
+            stats_rx: vec![Arc::new(PortStats::new())],
+            stats_tx: vec![Arc::new(PortStats::new())],
+            fdir_conf: None,
+            flow_steering_mode: None,
+            net_spec: None,
+        }
     }
 }
 
@@ -96,7 +147,7 @@ impl PartialEq for CacheAligned<PortQueue> {
         self.port_id == other.port_id
             && self.txq == other.txq
             && self.rxq == other.rxq
-            && self.port.is_kni() == other.port.is_kni()
+            && self.port.is_native_kni() == other.port.is_native_kni()
     }
 }
 
@@ -107,7 +158,7 @@ impl Hash for CacheAligned<PortQueue> {
         self.port_id.hash(state);
         self.txq.hash(state);
         self.rxq.hash(state);
-        self.port.is_kni().hash(state);
+        self.port.is_native_kni().hash(state);
     }
 }
 
@@ -171,6 +222,8 @@ impl TxQueue {
     }
 }
 
+/*  cannot use Drop, as we want to use Default when creating PmdPort
+explicitly free PmdPorts if necessary
 impl Drop for PmdPort {
     fn drop(&mut self) {
         if self.connected && self.should_close {
@@ -180,7 +233,7 @@ impl Drop for PmdPort {
         }
     }
 }
-
+*/
 /// Print information about PortQueue
 impl fmt::Display for PortQueue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -201,7 +254,7 @@ impl fmt::Display for PortQueue {
 impl PortQueue {
     #[inline]
     fn try_send(&mut self, pkts: &mut [*mut MBuf], to_send: u32) -> u32 {
-        let sent = if self.port.is_kni() {
+        let sent = if self.port.is_native_kni() {
             unsafe { rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_send) }
         } else {
             if self.csum_offload() {
@@ -225,7 +278,7 @@ impl PortQueue {
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
         let start = rdtsc_unsafe();
         unsafe {
-            let (recv, q_count) = if self.port.is_kni() {
+            let (recv, q_count) = if self.port.is_native_kni() {
                 //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
                 (
                     rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32),
@@ -241,12 +294,17 @@ impl PortQueue {
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
-            self.stats_rx.set_q_len(q_count as usize);
+            let q_result = if q_count > 0 {
+                self.stats_rx.set_q_len(q_count as usize);
+                q_count
+            } else {
+                0
+            };
             if recv > 0 || q_count > 0 {
                 let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (rdtsc_unsafe() - start);
                 self.stats_rx.cycles.store(update, Ordering::Relaxed);
             }
-            Ok((recv, q_count))
+            Ok((recv, q_result))
         }
     }
 
@@ -477,6 +535,21 @@ impl PmdPort {
     }
 
     #[inline]
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    #[inline]
+    pub fn kni_name(&self) -> Option<&String> {
+        self.kni_name.as_ref()
+    }
+
+    #[inline]
+    pub fn associated_dpdk_port_id(&self) -> Option<u16> {
+        self.associated_dpdk_port_id
+    }
+
+    #[inline]
     pub fn linux_if(&self) -> Option<&String> {
         self.linux_if.as_ref()
     }
@@ -484,6 +557,30 @@ impl PmdPort {
     #[inline]
     pub fn port_type(&self) -> &PortType {
         &self.port_type
+    }
+
+    #[inline]
+    pub fn flow_steering_mode(&self) -> &Option<FlowSteeringMode> {
+        &self.flow_steering_mode
+    }
+
+    #[inline]
+    pub fn net_spec(&self) -> &Option<NetSpec> {
+        &self.net_spec
+    }
+
+    #[inline]
+    pub fn ip_addr(&self) -> Option<Ipv4Addr> {
+        if self.net_spec.is_some() {
+            let spec = self.net_spec.as_ref().unwrap();
+            if spec.ip_net.is_some() {
+                Some(spec.ip_net.unwrap().addr())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     #[inline]
@@ -518,12 +615,22 @@ impl PmdPort {
     }
 
     #[inline]
-    pub fn is_kni(&self) -> bool {
+    pub fn is_native_kni(&self) -> bool {
         self.kni.is_some()
     }
 
     #[inline]
-    pub fn get_kni(&self) -> *mut RteKni {
+    pub fn is_virtio(&self) -> bool {
+        *self.port_type() == PortType::Virtio
+    }
+
+    #[inline]
+    pub fn is_physical(&self) -> bool {
+        *self.port_type() == PortType::Physical
+    }
+
+    #[inline]
+    pub fn get_rte_kni(&self) -> *mut RteKni {
         self.kni.unwrap().as_ptr()
     }
 
@@ -660,7 +767,7 @@ impl PmdPort {
         );
     }
 
-    fn print_eth_dev_info(port: u16) {
+    pub fn print_eth_dev_info(port: u16) {
         let mut dev_info = rte_eth_dev_info::new_null();
         unsafe {
             rte_eth_dev_info_get(port, &mut dev_info as *mut rte_eth_dev_info);
@@ -749,9 +856,10 @@ impl PmdPort {
 
     /// Create a PMD port with a given number of RX and TXQs.
     fn init_dpdk_port(
+        name: &str,
+        kni: Option<String>,
+        linux_if: Option<String>,
         port: u16,
-        rxqs: u16,
-        txqs: u16,
         rx_cores: &[i32],
         tx_cores: &[i32],
         nrxd: u16,
@@ -760,7 +868,11 @@ impl PmdPort {
         tso: bool,
         csumoffload: bool,
         driver: DriverType,
+        port_type: PortType,
         fdir_conf: Option<&RteFdirConf>,
+        flow_steering_mode: Option<FlowSteeringMode>,
+        net_spec: Option<NetSpec>,
+        associated_dpdk_port_id: Option<u16>,
     ) -> errors::Result<Arc<PmdPort>> {
         let loopbackv = i32_from_bool(loopback);
         let tsov = i32_from_bool(tso);
@@ -769,6 +881,8 @@ impl PmdPort {
         let max_rxqs = unsafe { max_rxqs(port) };
         assert!(max_rxqs >= 0);
         assert!(max_txqs >= 0);
+        let rxqs = rx_cores.len() as u16;
+        let txqs = tx_cores.len() as u16;
         let actual_rxqs = min(max_rxqs as u16, rxqs);
         let actual_txqs = min(max_txqs as u16, txqs);
         if actual_rxqs < rxqs || actual_txqs < txqs {
@@ -777,12 +891,11 @@ impl PmdPort {
                 max_rxqs, max_txqs
             );
         }
-        if ((actual_txqs as usize) <= tx_cores.len())
-            && ((actual_rxqs as usize) <= rx_cores.len())
-            && (actual_rxqs > 0 && actual_txqs > 0)
-        {
-            PmdPort::print_eth_dev_info(port);
-            debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
+        if actual_rxqs > 0 && actual_txqs > 0 {
+            //PmdPort::print_eth_dev_info(port);
+            if fdir_conf.is_some() {
+                debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
+            }
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -804,27 +917,30 @@ impl PmdPort {
             };
             if ret == 0 {
                 Ok(Arc::new(PmdPort {
-                    port_type: PortType::Dpdk,
-                    connected: true,
+                    name: name.to_string(),
+                    kni_name: kni,
+                    port_type,
                     port,
                     kni: None,
-                    linux_if: None,
+                    linux_if,
                     rxqs: actual_rxqs as u16,
                     txqs: actual_txqs as u16,
                     rx_cores: Some(rx_cores.to_vec()),
                     tx_cores: Some(tx_cores.to_vec()),
                     n_rx_desc: nrxd,
                     n_tx_desc: ntxd,
-                    should_close: true,
                     csumoffload,
                     driver,
-                    stats_rx: (0..rxqs).map(|_| Arc::new(PortStats::new())).collect(),
-                    stats_tx: (0..txqs).map(|_| Arc::new(PortStats::new())).collect(),
+                    stats_rx: (0..actual_rxqs).map(|_| Arc::new(PortStats::new())).collect(),
+                    stats_tx: (0..actual_txqs).map(|_| Arc::new(PortStats::new())).collect(),
                     fdir_conf: if fdir_conf.is_some() {
                         Some(fdir_conf.unwrap().clone())
                     } else {
                         None
                     },
+                    flow_steering_mode,
+                    net_spec,
+                    associated_dpdk_port_id,
                 }))
             } else {
                 Err(ErrorKind::FailedToInitializePort(port).into())
@@ -845,23 +961,11 @@ impl PmdPort {
         // TODO: Can we really not close?
         if port >= 0 {
             Ok(Arc::new(PmdPort {
+                name: name.to_string(),
+                kni_name: None,
                 port_type: PortType::Bess,
-                connected: true,
                 port: port as u16,
-                kni: None,
-                linux_if: None,
-                rxqs: 1,
-                txqs: 1,
-                rx_cores: None,
-                tx_cores: None,
-                n_tx_desc: 1,
-                n_rx_desc: 1,
-                should_close: false,
-                csumoffload: false,
-                driver: DriverType::Unknown,
-                stats_rx: vec![Arc::new(PortStats::new())],
-                stats_tx: vec![Arc::new(PortStats::new())],
-                fdir_conf: None,
+                ..Default::default()
             }))
         } else {
             Err(ErrorKind::FailedToInitializeBessPort(port).into())
@@ -875,23 +979,11 @@ impl PmdPort {
                 let port = unsafe { init_ovs_eth_ring(iface, core) };
                 if port >= 0 {
                     Ok(Arc::new(PmdPort {
+                        name: name.to_string(),
+                        kni_name: None,
                         port_type: PortType::Ovs,
-                        connected: true,
                         port: port as u16,
-                        kni: None,
-                        linux_if: None,
-                        rxqs: 1,
-                        txqs: 1,
-                        rx_cores: None,
-                        tx_cores: None,
-                        n_tx_desc: 1,
-                        n_rx_desc: 1,
-                        should_close: false,
-                        csumoffload: false,
-                        driver: DriverType::Unknown,
-                        stats_rx: vec![Arc::new(PortStats::new())],
-                        stats_tx: vec![Arc::new(PortStats::new())],
-                        fdir_conf: None,
+                        ..Default::default()
                     }))
                 } else {
                     Err(ErrorKind::FailedToInitializeOvsPort(port).into())
@@ -902,45 +994,46 @@ impl PmdPort {
     }
 
     fn new_kni_port(
+        name: &str,
         kni_port_params: Box<KniPortParams>,
         rx_cores: &[i32],
         tx_cores: &[i32],
+        net_spec: Option<NetSpec>,
     ) -> errors::Result<Arc<PmdPort>> {
-        // This call returns a pointer to an opaque C struct
-        let port_id = kni_port_params.port_id;
+        let associated_dpdk_port_id = kni_port_params.associated_dpdk_port_id;
         let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
         unsafe {
-            let p_kni = kni_alloc(port_id, p_kni_port_params);
+            // This call returns a pointer to an opaque C struct
+            let p_kni = kni_alloc(associated_dpdk_port_id, p_kni_port_params);
             if !p_kni.is_null() {
                 Ok(Arc::new(PmdPort {
+                    name: name.to_string(),
+                    kni_name: None, // kni ports do not have an associated kni
                     port_type: PortType::Kni,
-                    connected: true,
-                    port: port_id,
+                    port: associated_dpdk_port_id,
                     kni: Some(Unique::new(p_kni).unwrap()),
                     linux_if: kni_get_name(p_kni),
-                    rxqs: 1,
-                    txqs: 1,
                     rx_cores: Some(rx_cores.to_vec()),
                     tx_cores: Some(tx_cores.to_vec()),
-                    n_tx_desc: 1,
-                    n_rx_desc: 1,
-                    should_close: true, // closes the eth device and frees all resources, when PmdPort is dropped
-                    csumoffload: false,
-                    driver: DriverType::Unknown,
-                    stats_rx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
-                    stats_tx: (0..1).map(|_| Arc::new(PortStats::new())).collect(),
-                    fdir_conf: None,
+                    stats_rx: (0..rx_cores.len()).map(|_| Arc::new(PortStats::new())).collect(),
+                    stats_tx: (0..tx_cores.len()).map(|_| Arc::new(PortStats::new())).collect(),
+                    rxqs: rx_cores.len() as u16,
+                    txqs: tx_cores.len() as u16,
+                    net_spec,
+                    associated_dpdk_port_id: Some(associated_dpdk_port_id),
+                    ..Default::default()
                 }))
             } else {
-                Err(ErrorKind::FailedToInitializeKni(port_id).into())
+                Err(ErrorKind::FailedToInitializeKni(name.to_string()).into())
             }
         }
     }
 
     fn new_dpdk_port(
+        name: &str,
+        kni: Option<String>,
+        linux_if: Option<String>,
         spec: &str,
-        rxqs: u16,
-        txqs: u16,
         rx_cores: &[i32],
         tx_cores: &[i32],
         nrxd: u16,
@@ -949,7 +1042,11 @@ impl PmdPort {
         tso: bool,
         csumoffload: bool,
         driver: DriverType,
+        port_type: PortType,
         fdir_conf: Option<&RteFdirConf>,
+        flow_steering_mode: Option<FlowSteeringMode>,
+        net_spec: Option<NetSpec>,
+        associated_dpdk_port_id: Option<u16>,
     ) -> errors::Result<Arc<PmdPort>> {
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         debug!("attach_pmd_device, port = {:?}", cannonical_spec);
@@ -968,9 +1065,10 @@ impl PmdPort {
             let port = ports[0];
             debug!("Going to initialize dpdk port {} ({})", port, spec);
             PmdPort::init_dpdk_port(
+                name,
+                kni,
+                linux_if,
                 port as u16,
-                rxqs,
-                txqs,
                 rx_cores,
                 tx_cores,
                 nrxd,
@@ -979,7 +1077,11 @@ impl PmdPort {
                 tso,
                 csumoffload,
                 driver,
+                port_type,
                 fdir_conf,
+                flow_steering_mode,
+                net_spec,
+                associated_dpdk_port_id,
             )
         } else {
             Err(ErrorKind::BadDev(String::from(spec)).into())
@@ -988,28 +1090,19 @@ impl PmdPort {
 
     fn null_port() -> errors::Result<Arc<PmdPort>> {
         Ok(Arc::new(PmdPort {
+            name: String::from("NullPort"),
+            kni_name: None,
             port_type: PortType::Null,
-            connected: false,
             port: 0,
-            kni: None,
-            linux_if: None,
-            rxqs: 0,
-            txqs: 0,
-            rx_cores: None,
-            tx_cores: None,
-            n_tx_desc: 0,
-            n_rx_desc: 0,
-            should_close: false,
-            csumoffload: false,
-            driver: DriverType::Unknown,
-            stats_rx: vec![Arc::new(PortStats::new())],
-            stats_tx: vec![Arc::new(PortStats::new())],
-            fdir_conf: None,
+            ..Default::default()
         }))
     }
 
     /// Create a new port from a `PortConfiguration`.
-    pub fn new_port_from_configuration(port_config: &PortConfiguration) -> errors::Result<Arc<PmdPort>> {
+    pub fn new_port_from_configuration(
+        port_config: &PortConfiguration,
+        associated_port: Option<&Arc<PmdPort>>,
+    ) -> errors::Result<Arc<PmdPort>> {
         /// Create a new port.
         ///
         /// Description
@@ -1019,8 +1112,6 @@ impl PmdPort {
         /// -   `tx_cores`, `rx_cores`: Core affinity of where the queues will be used.
         /// -   `nrxd`, `ntxd`: RX and TX descriptors.
         let name = &port_config.name[..];
-        let rxqs = port_config.rx_queues.len() as u16;
-        let txqs = port_config.tx_queues.len() as u16;
         let rx_cores = &port_config.rx_queues[..];
         let tx_cores = &port_config.tx_queues[..];
         let nrxd = port_config.rxd;
@@ -1030,15 +1121,62 @@ impl PmdPort {
         let csumoffload = port_config.csum;
         let driver = port_config.driver;
         let fdir_conf = port_config.fdir_conf.as_ref();
-
+        let kni = port_config.kni.clone();
         let parts: Vec<_> = name.splitn(2, ':').collect();
+        let queues = associated_port.map_or(Some(rx_cores.len()), |p| Some(p.rx_cores.as_ref().unwrap().len()));
+
+        #[derive(Debug)]
+        struct DevSpec {
+            name: String,
+            iface: Option<String>,
+            path: Option<String>,
+            queue_size: Option<u32>,
+            queues: Option<u32>,
+        }
+
+        fn parse_spec(spec: &str) -> DevSpec {
+            let mut iface = None;
+            let mut path = None;
+            let mut queue_size = None;
+            let mut queues = None;
+            let mut name = String::new();
+
+            for (i, s) in spec.split_terminator(',').enumerate() {
+                if i == 0 {
+                    name = s.to_string();
+                } else {
+                    let key_val: Vec<_> = s.split_terminator('=').collect();
+                    if key_val.len() == 2 {
+                        match key_val[0] {
+                            "iface" => iface = Some(key_val[1].to_string()),
+                            "path" => path = Some(key_val[1].to_string()),
+                            "queue_size" => queue_size = key_val[1].parse::<u32>().ok(),
+                            "queues" => queues = key_val[1].parse::<u32>().ok(),
+                            _ => (),
+                        }
+                    } else {
+                        debug!("ignoring attribute {} found in {}", s, spec);
+                    }
+                }
+            }
+
+            DevSpec {
+                name,
+                iface,
+                path,
+                queue_size,
+                queues,
+            }
+        }
+
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
             "ovs" => PmdPort::new_ovs_port(parts[1], rx_cores[0]),
             "dpdk" => PmdPort::new_dpdk_port(
+                name,
+                kni,
+                None,
                 parts[1],
-                rxqs,
-                txqs,
                 rx_cores,
                 tx_cores,
                 nrxd,
@@ -1047,29 +1185,71 @@ impl PmdPort {
                 tso,
                 csumoffload,
                 driver,
+                PortType::Physical,
                 fdir_conf,
+                port_config.flow_steering,
+                port_config.net_spec.clone(),
+                associated_port.map_or(None, |p| Some(p.port_id())),
             ),
-            "kni" => {
-                let port_id: u16 = parts[1]
-                    .parse::<u16>()
-                    .expect(&format!("cannot parse port_id from {} as an u16", name));
-
-                PmdPort::new_kni_port(
-                    Box::new(KniPortParams::new(
-                        port_id,
-                        rx_cores[0] as u32,
-                        tx_cores[0] as u32,
-                        &port_config.k_cores,
-                    )),
-                    rx_cores,
-                    tx_cores,
+            "virtio" => {
+                let dev_spec = parse_spec(name);
+                debug!("virtio with spec {} parsed as {:?}", parts[1], dev_spec);
+                // we must have for each core of the associated port a queue on the virtio device
+                let modified_spec = if queues.is_some() {
+                    parts[1].replace("queues={}", &("queues=".to_owned() + &format!("{}", queues.unwrap())))
+                } else {
+                    parts[1].to_string()
+                };
+                debug!("modified spec= {}", modified_spec);
+                PmdPort::new_dpdk_port(
+                    &dev_spec.name,
+                    kni,
+                    dev_spec.iface,
+                    &modified_spec,
+                    associated_port.map_or(rx_cores, |p| &p.rx_cores.as_ref().unwrap()[..]),
+                    associated_port.map_or(tx_cores, |p| &p.tx_cores.as_ref().unwrap()[..]),
+                    nrxd,
+                    ntxd,
+                    loopback,
+                    tso,
+                    csumoffload,
+                    driver,
+                    PortType::Virtio,
+                    fdir_conf,
+                    port_config.flow_steering,
+                    port_config.net_spec.clone(),
+                    associated_port.map_or(None, |p| Some(p.port_id())),
                 )
+            }
+            "kni" => {
+                if associated_port.is_none() {
+                    warn!("kni port {} has no associated dpdk port", name);
+                    Err(ErrorKind::FailedToInitializeKni(name.to_string()).into())
+                } else {
+                    let port_id = associated_port.unwrap().port_id();
+                    let rx_cores = associated_port.map_or(rx_cores, |p| &p.rx_cores.as_ref().unwrap()[..]);
+                    let tx_cores = associated_port.map_or(tx_cores, |p| &p.tx_cores.as_ref().unwrap()[..]);
+
+                    PmdPort::new_kni_port(
+                        name,
+                        Box::new(KniPortParams::new(
+                            port_id,
+                            rx_cores[0] as u32,
+                            tx_cores[0] as u32,
+                            &port_config.k_cores,
+                        )),
+                        rx_cores,
+                        tx_cores,
+                        port_config.net_spec.clone(),
+                    )
+                }
             }
             "null" => PmdPort::null_port(),
             _ => PmdPort::new_dpdk_port(
                 name,
-                rxqs,
-                txqs,
+                kni,
+                None,
+                name,
                 rx_cores,
                 tx_cores,
                 nrxd,
@@ -1078,7 +1258,11 @@ impl PmdPort {
                 tso,
                 csumoffload,
                 driver,
+                PortType::Physical,
                 fdir_conf,
+                port_config.flow_steering,
+                None,
+                associated_port.map_or(None, |p| Some(p.port_id())),
             ),
         }
     }
@@ -1101,9 +1285,12 @@ impl PmdPort {
             csum: false,
             k_cores: vec![],
             fdir_conf: None,
+            flow_steering: None,
+            kni: None,
             driver: DriverType::Unknown,
+            net_spec: None,
         };
-        PmdPort::new_port_from_configuration(&config)
+        PmdPort::new_port_from_configuration(&config, None)
     }
 
     pub fn new_with_cores(name: &str, rx_core: i32, tx_core: i32) -> errors::Result<Arc<PmdPort>> {

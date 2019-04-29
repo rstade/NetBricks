@@ -149,7 +149,7 @@ extern "C" {
 #include <rte_compat.h>
 #include <rte_log.h>
 #include <rte_interrupts.h>
-#include <rte_dev.h>
+
 #include <rte_devargs.h>
 #include <rte_errno.h>
 #include <rte_common.h>
@@ -161,6 +161,7 @@ extern "C" {
 */
 #include "rte_config.h"
 #include "rte_eth_ctrl.h"
+#include "rte_dev.h"
 
 extern int rte_eth_dev_logtype;
 
@@ -2503,5 +2504,284 @@ rte_eth_tx_buffer_count_callback(struct rte_mbuf **pkts, uint16_t unsent,
  */
 int
 rte_eth_tx_done_cleanup(uint16_t port_id, uint16_t queue_id, uint32_t free_cnt);
+
+
+/**
+ * Set the list of multicast addresses to filter on an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param mc_addr_set
+ *   The array of multicast addresses to set. Equal to NULL when the function
+ *   is invoked to flush the set of filtered addresses.
+ * @param nb_mc_addr
+ *   The number of multicast addresses in the *mc_addr_set* array. Equal to 0
+ *   when the function is invoked to flush the set of filtered addresses.
+ * @return
+ *   - (0) if successful.
+ *   - (-ENODEV) if *port_id* invalid.
+ *   - (-EIO) if device is removed.
+ *   - (-ENOTSUP) if PMD of *port_id* doesn't support multicast filtering.
+ *   - (-ENOSPC) if *port_id* has not enough multicast filtering resources.
+ */
+int rte_eth_dev_set_mc_addr_list(uint16_t port_id,
+                                 struct ether_addr *mc_addr_set,
+                                 uint32_t nb_mc_addr);
+
+/**
+ * Enable IEEE1588/802.1AS timestamping for an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_enable(uint16_t port_id);
+
+/**
+ * Disable IEEE1588/802.1AS timestamping for an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_disable(uint16_t port_id);
+
+/**
+ * Read an IEEE1588/802.1AS RX timestamp from an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param timestamp
+ *   Pointer to the timestamp struct.
+ * @param flags
+ *   Device specific flags. Used to pass the RX timesync register index to
+ *   i40e. Unused in igb/ixgbe, pass 0 instead.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -EINVAL: No timestamp is available.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_read_rx_timestamp(uint16_t port_id,
+                                       struct timespec *timestamp, uint32_t flags);
+
+/**
+ * Read an IEEE1588/802.1AS TX timestamp from an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param timestamp
+ *   Pointer to the timestamp struct.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -EINVAL: No timestamp is available.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_read_tx_timestamp(uint16_t port_id,
+                                       struct timespec *timestamp);
+
+/**
+ * Adjust the timesync clock on an Ethernet device.
+ *
+ * This is usually used in conjunction with other Ethdev timesync functions to
+ * synchronize the device time using the IEEE1588/802.1AS protocol.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param delta
+ *   The adjustment in nanoseconds.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_adjust_time(uint16_t port_id, int64_t delta);
+
+/**
+ * Read the time from the timesync clock on an Ethernet device.
+ *
+ * This is usually used in conjunction with other Ethdev timesync functions to
+ * synchronize the device time using the IEEE1588/802.1AS protocol.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param time
+ *   Pointer to the timespec struct that holds the time.
+ *
+ * @return
+ *   - 0: Success.
+ */
+int rte_eth_timesync_read_time(uint16_t port_id, struct timespec *time);
+
+/**
+ * Set the time of the timesync clock on an Ethernet device.
+ *
+ * This is usually used in conjunction with other Ethdev timesync functions to
+ * synchronize the device time using the IEEE1588/802.1AS protocol.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param time
+ *   Pointer to the timespec struct that holds the time.
+ *
+ * @return
+ *   - 0: Success.
+ *   - -EINVAL: No timestamp is available.
+ *   - -ENODEV: The port ID is invalid.
+ *   - -EIO: if device is removed.
+ *   - -ENOTSUP: The function is not supported by the Ethernet driver.
+ */
+int rte_eth_timesync_write_time(uint16_t port_id, const struct timespec *time);
+
+/**
+ * Config l2 tunnel ether type of an Ethernet device for filtering specific
+ * tunnel packets by ether type.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param l2_tunnel
+ *   l2 tunnel configuration.
+ *
+ * @return
+ *   - (0) if successful.
+ *   - (-ENODEV) if port identifier is invalid.
+ *   - (-EIO) if device is removed.
+ *   - (-ENOTSUP) if hardware doesn't support tunnel type.
+ */
+int
+rte_eth_dev_l2_tunnel_eth_type_conf(uint16_t port_id,
+                                    struct rte_eth_l2_tunnel_conf *l2_tunnel);
+
+/**
+ * Enable/disable l2 tunnel offload functions. Include,
+ * 1, The ability of parsing a type of l2 tunnel of an Ethernet device.
+ *    Filtering, forwarding and offloading this type of tunnel packets depend on
+ *    this ability.
+ * 2, Stripping the l2 tunnel tag.
+ * 3, Insertion of the l2 tunnel tag.
+ * 4, Forwarding the packets based on the l2 tunnel tag.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param l2_tunnel
+ *   l2 tunnel parameters.
+ * @param mask
+ *   Indicate the offload function.
+ * @param en
+ *   Enable or disable this function.
+ *
+ * @return
+ *   - (0) if successful.
+ *   - (-ENODEV) if port identifier is invalid.
+ *   - (-EIO) if device is removed.
+ *   - (-ENOTSUP) if hardware doesn't support tunnel type.
+ */
+int
+rte_eth_dev_l2_tunnel_offload_set(uint16_t port_id,
+                                  struct rte_eth_l2_tunnel_conf *l2_tunnel,
+                                  uint32_t mask,
+                                  uint8_t en);
+
+/**
+* Get the port id from device name. The device name should be specified
+* as below:
+* - PCIe address (Domain:Bus:Device.Function), for example- 0000:2:00.0
+* - SoC device name, for example- fsl-gmac0
+* - vdev dpdk name, for example- net_[pcap0|null0|tap0]
+*
+* @param name
+*  pci address or name of the device
+* @param port_id
+*   pointer to port identifier of the device
+* @return
+*   - (0) if successful and port_id is filled.
+*   - (-ENODEV or -EINVAL) on failure.
+*/
+int
+rte_eth_dev_get_port_by_name(const char *name, uint16_t *port_id);
+
+/**
+* Get the device name from port id. The device name is specified as below:
+* - PCIe address (Domain:Bus:Device.Function), for example- 0000:02:00.0
+* - SoC device name, for example- fsl-gmac0
+* - vdev dpdk name, for example- net_[pcap0|null0|tun0|tap0]
+*
+* @param port_id
+*   Port identifier of the device.
+* @param name
+*   Buffer of size RTE_ETH_NAME_MAX_LEN to store the name.
+* @return
+*   - (0) if successful.
+*   - (-EINVAL) on failure.
+*/
+int
+rte_eth_dev_get_name_by_port(uint16_t port_id, char *name);
+
+/**
+ * Check that numbers of Rx and Tx descriptors satisfy descriptors limits from
+ * the ethernet device information, otherwise adjust them to boundaries.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param nb_rx_desc
+ *   A pointer to a uint16_t where the number of receive
+ *   descriptors stored.
+ * @param nb_tx_desc
+ *   A pointer to a uint16_t where the number of transmit
+ *   descriptors stored.
+ * @return
+ *   - (0) if successful.
+ *   - (-ENOTSUP, -ENODEV or -EINVAL) on failure.
+ */
+int rte_eth_dev_adjust_nb_rx_tx_desc(uint16_t port_id,
+                                     uint16_t *nb_rx_desc,
+                                     uint16_t *nb_tx_desc);
+
+/**
+ * Test if a port supports specific mempool ops.
+ *
+ * @param port_id
+ *   Port identifier of the Ethernet device.
+ * @param [in] pool
+ *   The name of the pool operations to test.
+ * @return
+ *   - 0: best mempool ops choice for this port.
+ *   - 1: mempool ops are supported for this port.
+ *   - -ENOTSUP: mempool ops not supported for this port.
+ *   - -ENODEV: Invalid port Identifier.
+ *   - -EINVAL: Pool param is null.
+ */
+int
+rte_eth_dev_pool_ops_supported(uint16_t port_id, const char *pool);
+
+/**
+ * Get the security context for the Ethernet device.
+ *
+ * @param port_id
+ *   Port identifier of the Ethernet device
+ * @return
+ *   - NULL on error.
+ *   - pointer to security context on success.
+ */
+void *
+rte_eth_dev_get_sec_ctx(uint16_t port_id);
+
 
 #endif /* _RTE_ETHDEV_H_ */

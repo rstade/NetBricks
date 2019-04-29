@@ -3,8 +3,8 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use interface::Pdu;
 use interface::PacketTx;
+use interface::Pdu;
 
 pub type TransformFn = Box<FnMut(&mut Pdu) + Send>;
 

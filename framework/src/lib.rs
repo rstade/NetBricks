@@ -5,7 +5,6 @@
 #![feature(specialization)]
 #![feature(slice_concat_ext)]
 #![feature(fnbox)]
-#![feature(alloc)]
 #![feature(ptr_internals)]
 #![feature(rustc_private)]
 #![feature(ptr_offset_from)]
@@ -21,12 +20,12 @@
 #![cfg_attr(feature = "dev", deny(warnings))]
 extern crate byteorder;
 extern crate fnv;
+extern crate ipnet;
 extern crate libc;
 extern crate net2;
 extern crate regex;
 extern crate separator;
 extern crate twox_hash;
-extern crate ipnet;
 
 #[macro_use]
 extern crate serde_derive;

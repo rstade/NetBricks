@@ -6,7 +6,6 @@ use std::ffi::CString;
 
 pub const METADATA_SLOTS: u16 = 16; // slot size is 8, see mempool.c
 
-
 /// Initialize the system, whitelisting some set of NICs and allocating mempool of given size.
 pub fn init_system_wl_with_mempool(
     name: &str,

@@ -39,10 +39,7 @@ where
         let pre = self.parent.act(); // Let the parent get some packets.
         {
             let iter = PayloadEnumerator::new(&mut self.parent);
-            while let Some(ParsedDescriptor {
-                mut pdu, ..
-            }) = iter.next(&mut self.parent)
-            {
+            while let Some(ParsedDescriptor { mut pdu, .. }) = iter.next(&mut self.parent) {
                 //let group = (self.group_fn)(&mut packet);
                 let group = (self.group_fn)(&mut pdu);
                 if !self.producers[group].enqueue_one(pdu) {
@@ -103,5 +100,4 @@ where
     pub fn get_group(&mut self, group: usize) -> Option<ReceiveBatch<MpscConsumer>> {
         self.consumers.remove(&group)
     }
-
 }

@@ -1,20 +1,20 @@
-pub use self::filter_batch::FilterBatch;
+pub use self::act::Act;
+pub use self::composition_batch::CompositionBatch;
 pub use self::drop::DropBatch;
+pub use self::filter_batch::FilterBatch;
+use self::filter_batch::FilterFn;
 pub use self::group_by::*;
+pub use self::iterator::BatchIterator;
 pub use self::map_batch::MapBatch;
-pub use self::merge_batch::MergeBatchTraitObj;
+use self::map_batch::MapFn;
 pub use self::merge_batch::MergeBatch;
+pub use self::merge_batch::MergeBatchTraitObj;
 pub use self::merge_batch_auto::MergeBatchAuto;
+pub use self::packet_batch::PacketBatch;
 pub use self::receive_batch::ReceiveBatch;
 pub use self::send_batch::SendBatch;
 pub use self::transform_batch::TransformBatch;
-pub use self::iterator::BatchIterator;
-pub use self::act::Act;
-pub use self::packet_batch::PacketBatch;
-pub use self::composition_batch::CompositionBatch;
 use self::transform_batch::TransformFn;
-use self::map_batch::MapFn;
-use self::filter_batch::FilterFn;
 
 use interface::*;
 use scheduler::Scheduler;
@@ -23,6 +23,8 @@ use uuid::Uuid;
 #[macro_use]
 mod macros;
 mod act;
+mod composition_batch;
+mod drop;
 mod filter_batch;
 mod group_by;
 mod iterator;
@@ -33,8 +35,6 @@ mod packet_batch;
 mod receive_batch;
 mod send_batch;
 mod transform_batch;
-mod drop;
-mod composition_batch;
 
 /// Merge a vector of batches into one batch. Currently this just round-robins between merged batches, but in the future
 /// the precise batch being processed will be determined by the scheduling policy used.
@@ -104,7 +104,11 @@ pub trait Batch: BatchIterator + Act {
     }
 
     fn drop(self) -> DropBatch<Self>
-    where Self: Sized, {  DropBatch::<Self>::new(self) }
+    where
+        Self: Sized,
+    {
+        DropBatch::<Self>::new(self)
+    }
 
     fn group_by<S: Scheduler + Sized>(
         self,
@@ -121,8 +125,8 @@ pub trait Batch: BatchIterator + Act {
     }
 
     fn compose(self) -> CompositionBatch
-        where
-            Self: Sized + 'static,
+    where
+        Self: Sized + 'static,
     {
         CompositionBatch::new(self)
     }

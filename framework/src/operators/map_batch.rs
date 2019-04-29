@@ -3,8 +3,8 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use interface::Pdu;
 use interface::PacketTx;
+use interface::Pdu;
 
 pub type MapFn = Box<FnMut(&Pdu) + Send>;
 
@@ -96,7 +96,6 @@ where
     fn get_packet_batch(&mut self) -> &mut PacketBatch {
         self.parent.get_packet_batch()
     }
-
 }
 
 impl<V> BatchIterator for MapBatch<V>
@@ -109,7 +108,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu>{
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

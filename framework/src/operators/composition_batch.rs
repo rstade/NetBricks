@@ -1,6 +1,6 @@
-use super::{Batch, BatchIterator, PacketBatch, Act};
-use super::super::interface::{Pdu, PacketTx };
 use super::super::common::errors;
+use super::super::interface::{PacketTx, Pdu};
+use super::{Act, Batch, BatchIterator, PacketBatch};
 use scheduler::Executable;
 
 /// `CompositionBatch` allows multiple NFs to be combined.
@@ -10,21 +10,18 @@ pub struct CompositionBatch {
 }
 
 impl CompositionBatch {
-    pub fn new<V: 'static + Batch>(
-        parent: V,
-    ) -> CompositionBatch {
-        CompositionBatch {
-            parent: box parent,
-        }
+    pub fn new<V: 'static + Batch>(parent: V) -> CompositionBatch {
+        CompositionBatch { parent: box parent }
     }
 }
 
 impl Batch for CompositionBatch {
-    fn queued(&self) -> usize { self.parent.queued() }
+    fn queued(&self) -> usize {
+        self.parent.queued()
+    }
 }
 
 impl BatchIterator for CompositionBatch {
-
     #[inline]
     fn start(&mut self) -> usize {
         self.parent.start()
@@ -82,9 +79,8 @@ impl Act for CompositionBatch {
 impl Executable for CompositionBatch {
     #[inline]
     fn execute(&mut self) -> (u32, i32) {
-        let count= self.act();
+        let count = self.act();
         self.done();
         count
     }
-
 }

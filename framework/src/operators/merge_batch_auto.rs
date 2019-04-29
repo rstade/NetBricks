@@ -90,7 +90,6 @@ impl Batch for MergeBatchAuto {
 }
 
 impl BatchIterator for MergeBatchAuto {
-
     #[inline]
     fn start(&mut self) -> usize {
         self.parents[self.which].start()

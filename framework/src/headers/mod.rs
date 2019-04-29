@@ -46,31 +46,31 @@ pub enum Header<'a> {
     Udp(&'a mut UdpHeader),
 }
 
-
 ///as Header contains mutable references, we can only clone Header::Null
 ///we need this for initialization of arrays
-impl<'a> Clone for Header<'a>{
+impl<'a> Clone for Header<'a> {
     fn clone(&self) -> Self {
         Header::Null
     }
 }
 
 impl<'a> Header<'a> {
-
-    pub fn new<T:EndOffset>(ptr: *mut T) -> Header<'a> {
-        unsafe { match (*ptr).header_kind()  {
-            HeaderKind::Null => Header::Null,
-            HeaderKind::Mac  => Header::Mac(& mut *(ptr as *mut MacHeader)),
-            HeaderKind::Ip   => Header::Ip(& mut *(ptr as *mut IpHeader)),
-            HeaderKind::Tcp  => Header::Tcp(& mut *(ptr as *mut TcpHeader)),
-            HeaderKind::Udp  => Header::Udp(& mut *(ptr as *mut UdpHeader)),
-        } }
+    pub fn new<T: EndOffset>(ptr: *mut T) -> Header<'a> {
+        unsafe {
+            match (*ptr).header_kind() {
+                HeaderKind::Null => Header::Null,
+                HeaderKind::Mac => Header::Mac(&mut *(ptr as *mut MacHeader)),
+                HeaderKind::Ip => Header::Ip(&mut *(ptr as *mut IpHeader)),
+                HeaderKind::Tcp => Header::Tcp(&mut *(ptr as *mut TcpHeader)),
+                HeaderKind::Udp => Header::Udp(&mut *(ptr as *mut UdpHeader)),
+            }
+        }
     }
 
     #[inline]
     pub fn as_mac_mut(&mut self) -> Option<&mut MacHeader> {
         match self {
-            Header::Mac(p) => Some( &mut **p ),
+            Header::Mac(p) => Some(&mut **p),
             _ => None,
         }
     }
@@ -78,7 +78,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_ip_mut(&mut self) -> Option<&mut IpHeader> {
         match self {
-            Header::Ip(p) => Some( &mut **p ),
+            Header::Ip(p) => Some(&mut **p),
             _ => None,
         }
     }
@@ -86,7 +86,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_tcp_mut(&mut self) -> Option<&mut TcpHeader> {
         match self {
-            Header::Tcp(p) => Some( &mut **p ),
+            Header::Tcp(p) => Some(&mut **p),
             _ => None,
         }
     }
@@ -94,7 +94,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_udp_mut(&mut self) -> Option<&mut UdpHeader> {
         match self {
-            Header::Udp(p) => Some( &mut **p ),
+            Header::Udp(p) => Some(&mut **p),
             _ => None,
         }
     }
@@ -102,7 +102,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_mac(&self) -> Option<&MacHeader> {
         match self {
-            Header::Mac(p) => Some( & **p ),
+            Header::Mac(p) => Some(&**p),
             _ => None,
         }
     }
@@ -110,7 +110,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_ip(&self) -> Option<&IpHeader> {
         match self {
-            Header::Ip(p) => Some( & **p ),
+            Header::Ip(p) => Some(&**p),
             _ => None,
         }
     }
@@ -118,7 +118,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_tcp(&self) -> Option<&TcpHeader> {
         match self {
-            Header::Tcp(p) => Some( & **p ),
+            Header::Tcp(p) => Some(&**p),
             _ => None,
         }
     }
@@ -126,7 +126,7 @@ impl<'a> Header<'a> {
     #[inline]
     pub fn as_udp(&self) -> Option<&UdpHeader> {
         match self {
-            Header::Udp(p) => Some( & **p ),
+            Header::Udp(p) => Some(&**p),
             _ => None,
         }
     }

@@ -3,13 +3,14 @@ use super::ethdev::rte_eth_dev_info;
 use super::MBuf;
 use eui48::MacAddress;
 use std::convert;
-use std::ffi::CStr;
+use std::ffi::{CStr};
 use std::fmt;
 use std::io;
 use std::net::Ipv4Addr;
 use std::os::raw::{c_char, c_void};
 use std::ptr;
 use std::str::Utf8Error;
+use native::zcsi::ethdev::{RTE_ETH_NAME_MAX_LEN, rte_eth_dev_get_name_by_port};
 
 pub enum RteKni {}
 pub enum RteFlow {}
@@ -158,22 +159,12 @@ pub enum RteFilterOp {
     RteEthFilterOpMax,
 }
 
-/* see kni.c
-struct kni_port_params {
-        uint16_t port_id; // Port ID
-        unsigned lcore_rx; // lcore ID for RX
-        unsigned lcore_tx; // lcore ID for TX
-        uint32_t nb_lcore_k; // Number of lcores for KNI multi kernel threads
-        uint32_t nb_kni; // Number of KNI devices to be created
-        unsigned lcore_k[KNI_MAX_KTHREAD]; // lcore ID list for kthreads
-        struct rte_kni *kni[KNI_MAX_KTHREAD]; // KNI context pointers
-} __rte_cache_aligned;
-*/
+
 pub const KNI_MAX_KTHREAD: usize = 32;
 
 #[repr(C)]
 pub struct KniPortParams {
-    pub port_id: u16,
+    pub associated_dpdk_port_id: u16,
     // Port ID
     pub lcore_rx: u32,
     // lcore ID for RX
@@ -191,7 +182,7 @@ pub struct KniPortParams {
 impl KniPortParams {
     pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
         let mut params = KniPortParams {
-            port_id,                          // Port ID
+            associated_dpdk_port_id: port_id,                          // Port ID
             lcore_rx,                         // lcore ID for RX
             lcore_tx,                         // lcore ID for TX
             nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
@@ -220,6 +211,20 @@ pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> {
         Ok(slice) => Some(String::from(slice)),
         Err(_) => None,
     }
+}
+
+pub fn eth_dev_get_name_by_port(port_id: u16) -> Option<String> {
+    let mut name = vec![' ' as u8; RTE_ETH_NAME_MAX_LEN as usize];
+    let c_ptr= name.as_mut_ptr() as *mut c_char;
+
+    let ret_val= unsafe { rte_eth_dev_get_name_by_port(port_id, c_ptr) };
+    if ret_val == 0 {
+        let slice=unsafe { CStr::from_ptr(c_ptr).to_str() };
+        match slice {
+            Ok(slice) => Some(String::from(slice)),
+            Err(_) => None,
+        }
+    } else { None }
 }
 
 const RTE_ETHDEV_QUEUE_STAT_CNTRS: usize = 16;
@@ -899,7 +904,7 @@ extern "C" {
 
     //usually called already by rte_eal_init when e.g. --vdev netkni0:
     pub fn rte_kni_init(max_kni_ifaces: u32);
-    pub fn kni_alloc(port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
+    pub fn kni_alloc(associated_dpdk_port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
     pub fn rte_kni_release(kni: *mut RteKni) -> i32;
     pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32;
     pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32;

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/test/shutdown-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/shutdown-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/shutdown-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/shutdown-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/sctp-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/sctp-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/sctp-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/sctp-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/chain-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/chain-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/chain-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/chain-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_payload/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_payload/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_payload/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_payload/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/delay-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/delay-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/delay-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/delay-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/lpm/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/lpm/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/lpm/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/lpm/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_reconstruction/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_reconstruction/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_reconstruction/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_reconstruction/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/nat/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/nat/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/nat/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/nat/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_generation/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_generation/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_generation/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_generation/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/framework/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/framework/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/framework/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/framework/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/maglev/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/maglev/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/maglev/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/maglev/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/macswap/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/macswap/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/macswap/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/macswap/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/framework/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/framework/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/framework/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/framework/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/config-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/config-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/config-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/config-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/acl-fw/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/acl-fw/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/acl-fw/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/acl-fw/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/framework/target" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/acl-fw/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/chain-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/config-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/delay-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/framework/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/lpm/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/macswap/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/maglev/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/nat/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/packet_generation/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/packet_test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/sctp-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/shutdown-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/tcp_check/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/tcp_payload/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test/tcp_reconstruction/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

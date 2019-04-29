@@ -3,8 +3,8 @@ use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
 use common::*;
-use interface::Pdu;
 use interface::PacketTx;
+use interface::Pdu;
 
 pub type FilterFn = Box<FnMut(&Pdu) -> bool + Send>;
 
@@ -46,11 +46,7 @@ where
         let pre = self.parent.act();
         // Filter during the act
         let iter = PayloadEnumerator::new(&mut self.parent);
-        while let Some(ParsedDescriptor {
-            index: idx,
-            mut pdu,
-        }) = iter.next(&mut self.parent)
-        {
+        while let Some(ParsedDescriptor { index: idx, mut pdu }) = iter.next(&mut self.parent) {
             if !(self.filter)(&mut pdu) {
                 self.remove.push(idx)
             }
@@ -99,14 +95,12 @@ where
     fn get_packet_batch(&mut self) -> &mut PacketBatch {
         self.parent.get_packet_batch()
     }
-
 }
 
 impl<V> BatchIterator for FilterBatch<V>
 where
     V: Batch + BatchIterator + Act,
 {
-
     #[inline]
     fn start(&mut self) -> usize {
         self.parent.start()

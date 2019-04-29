@@ -12,6 +12,15 @@ pub struct L4Flow {
     pub port: u16,
 }
 
+
+#[derive(Deserialize, Clone, Copy, PartialEq)]
+pub enum FlowSteeringMode {
+    // Port is default
+    Port,
+    Ip,
+}
+
+
 pub struct FlowDirector {
     pmd_port: Arc<PmdPort>,
     flows: HashMap<u16, L4Flow>,

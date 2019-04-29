@@ -2,6 +2,8 @@ pub use self::config_reader::*;
 pub use self::flag_reader::*;
 use native::zcsi::RteFdirConf;
 use std::fmt;
+use interface::{FlowSteeringMode, NetSpec};
+
 mod config_reader;
 mod flag_reader;
 
@@ -121,10 +123,14 @@ pub struct PortConfiguration {
     pub loopback: bool,
     pub tso: bool,
     pub csum: bool,
+    /// name of associated kernel network interface (may also be virtio i/f)
+    pub kni: Option<String>,
     /// cores on which kni kernel threads should run (in case of multi-threading kni kernel module)
     pub k_cores: Vec<i32>,
     pub fdir_conf: Option<RteFdirConf>,
+    pub flow_steering: Option<FlowSteeringMode>,
     pub driver: DriverType,
+    pub net_spec: Option<NetSpec>,
 }
 
 impl Default for PortConfiguration {
@@ -139,8 +145,11 @@ impl Default for PortConfiguration {
             tso: false,
             csum: false,
             k_cores: vec![],
+            kni: None,
             fdir_conf: None,
+            flow_steering: None,
             driver: DriverType::Unknown,
+            net_spec: None,
         }
     }
 }
