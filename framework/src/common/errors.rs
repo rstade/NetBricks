@@ -133,6 +133,7 @@ pub enum ErrorKind {
     InvalidRingSize(usize),
     RingDuplicationFailure,
     ConfigurationError(String),
+    RunTimeError(String),
     NoRunningSchedulerOnCore(i32),
     BadSize(usize, String),
     BadCharAtIndex(char, usize),

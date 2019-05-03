@@ -193,7 +193,7 @@ fn is_port_type_kni_or_virtio(name: &str) -> bool {
 }
 
 /// Initialize the system from a configuration.
-pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::Result<NetBricksContext> {
+pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Result<NetBricksContext> {
     init_system(configuration);
     let mut ctx: NetBricksContext = Default::default();
     let mut cores: HashSet<_> = configuration.cores.iter().cloned().collect();
@@ -220,7 +220,7 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
 
         // first we parse all ports which have a kni (either native Kni or Virtio) associated
 
-        for port in &mut configuration.ports.iter_mut().filter(|p| p.kni.is_some()) {
+        for port in configuration.ports.iter().filter(|p| p.kni.is_some()) {
             if is_port_type_kni_or_virtio(&port.name[..]) {
                 error!(
                     "Port {} : native kni and virtio ports must not define an associated kni port",
@@ -254,7 +254,7 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
         // now we parse all other ports like kni ports, which may be associated with one of the above ports
         // we must do this in this sequence as kni ports need for initialization the port_id of the associated port
 
-        for port in &mut configuration.ports.iter_mut().filter(|p| p.kni.is_none()) {
+        for port in configuration.ports.iter().filter(|p| p.kni.is_none()) {
             let parts: Vec<_> = port.name.splitn(2, ',').collect();
             let associated_port = kni2pci.get(&parts[0][..]);
             debug!("initialize: {} - {}", port, parts[0]);
@@ -276,15 +276,17 @@ pub fn initialize_system(configuration: &mut NetbricksConfiguration) -> errors::
     }
 
     // as update_context is dropped, we can mutably borrow ctx again:
-    for port in &mut configuration.ports {
+    for port in &configuration.ports {
         let parts: Vec<_> = port.name.splitn(2, ',').collect();
         if ctx.ports.contains_key(&parts[0][..]) {
             let port_instance = &ctx.ports[&parts[0][..]];
-            // number of queues configured, may be larger than possible by driver, therefore correct this now
-            port.rx_queues.truncate(port_instance.rxqs() as usize);
-            port.tx_queues.truncate(port_instance.txqs() as usize);
-
-            for (rx_q, core) in port.rx_queues.iter().enumerate() {
+            // number of queues configured, may be larger than possible by driver:
+            for (rx_q, core) in port
+                .rx_queues
+                .iter()
+                .enumerate()
+                .filter(|(i, _q)| *i < port_instance.rxqs() as usize)
+            {
                 let rx_q = rx_q as u16;
                 match PmdPort::new_queue_pair(port_instance, rx_q, rx_q) {
                     Ok(q) => {
