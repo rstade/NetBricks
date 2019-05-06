@@ -141,6 +141,7 @@ pub enum ErrorKind {
     FailedErrorFormat,
     ConfigParseError(String),
     TryFromNetSpecError,
+    IoError(String),
 }
 
 impl From<AddrParseError> for ErrorKind {
@@ -164,6 +165,12 @@ impl From<eui48::ParseError> for ErrorKind {
 impl From<ipnet::AddrParseError> for ErrorKind {
     fn from(err: ipnet::AddrParseError) -> Self {
         ErrorKind::ConfigParseError(format!("{}", err))
+    }
+}
+
+impl From<std::io::Error> for ErrorKind {
+    fn from(err: std::io::Error) -> Self {
+        ErrorKind::IoError(format!("{}", err))
     }
 }
 

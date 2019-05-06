@@ -1,7 +1,9 @@
-use super::{DriverType, NetbricksConfiguration, PortConfiguration};
 use super::super::interface::{FlowSteeringMode, NetSpec};
+use super::{DriverType, NetbricksConfiguration, PortConfiguration};
 use common::errors;
 use common::errors::ErrorKind;
+use eui48::MacAddress;
+use ipnet::Ipv4Net;
 use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
 use std::clone::Clone;
 use std::collections::BTreeMap;
@@ -13,8 +15,6 @@ use std::result::Result::Err;
 use std::str::FromStr;
 use std::string::String;
 use std::string::ToString;
-use ipnet::Ipv4Net;
-use eui48::MacAddress;
 use toml::{self, Value};
 
 /// Default configuration values
@@ -95,28 +95,26 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     "Ip" => Some(FlowSteeringMode::Ip),
                     "Port" => Some(FlowSteeringMode::Port),
                     _ => None,
-                }
+                },
                 None => None,
                 _ => {
                     error!("Could not parse flow steering mode");
-                    return Err(ErrorKind::ConfigurationError(String::from("Could not parse flow steering mode")).into());
+                    return Err(
+                        ErrorKind::ConfigurationError(String::from("Could not parse flow steering mode")).into(),
+                    );
                 }
             };
 
             let ip_net = match port_def.get("ipnet") {
                 Some(&Value::String(ref s_ipnet)) => s_ipnet.parse::<Ipv4Net>().ok(),
                 None => None,
-                v => {
-                    return Err(ErrorKind::ConfigurationError(format!("Could not parse ipnet spec {:?}", v)).into())
-                }
+                v => return Err(ErrorKind::ConfigurationError(format!("Could not parse ipnet spec {:?}", v)).into()),
             };
 
             let mac = match port_def.get("mac") {
                 Some(&Value::String(ref s_mac)) => s_mac.parse::<MacAddress>().ok(),
                 None => None,
-                v => {
-                    return Err(ErrorKind::ConfigurationError(format!("Could not parse mac address {:?}", v)).into())
-                }
+                v => return Err(ErrorKind::ConfigurationError(format!("Could not parse mac address {:?}", v)).into()),
             };
 
             let nsname = match port_def.get("namespace") {
@@ -128,9 +126,6 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     )
                 }
             };
-
-
-
 
             let symmetric_queue = port_def.contains_key("cores");
             if symmetric_queue && (port_def.contains_key("rx_cores") || port_def.contains_key("tx_cores")) {
@@ -285,15 +280,17 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 None => DriverType::Unknown,
             };
 
-            let net_spec=NetSpec{
+            let net_spec = NetSpec {
                 ip_net,
                 mac,
                 nsname,
                 ..Default::default()
-
             };
 
-            let has_netspec= net_spec.mac.is_some() || net_spec.ip_net.is_some() || net_spec.port.is_some() || net_spec.nsname.is_some();
+            let has_netspec = net_spec.mac.is_some()
+                || net_spec.ip_net.is_some()
+                || net_spec.port.is_some()
+                || net_spec.nsname.is_some();
 
             Ok(PortConfiguration {
                 name,
@@ -440,7 +437,6 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
         }
     };
 
-
     let ports = match toml.get("ports") {
         Some(&Value::Array(ref ports)) => {
             let mut pouts = Vec::with_capacity(ports.len());
@@ -491,8 +487,6 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
 /// `filename` should be TOML formatted file.
 pub fn read_configuration(filename: &str) -> errors::Result<NetbricksConfiguration> {
     let mut toml_str = String::new();
-    File::open(filename)
-        .and_then(|mut f| f.read_to_string(&mut toml_str))
-        .unwrap();
+    File::open(filename).and_then(|mut f| f.read_to_string(&mut toml_str))?;
     read_configuration_from_str(&toml_str[..], filename)
 }
