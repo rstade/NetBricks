@@ -1,8 +1,10 @@
 ## Remarks to Branch e2d2-rs-v1
 
-This branch is a major change to the original NetBricks code. The code of packet.rs was replaced by pdu.rs. Pdu stands for "protocol data unit". Objective was to allow for a more arbitrary protocol stacking and header parsing. In the original code the protocol stacks must follow a tree topology, which is fixed at compile time through type parameters (e.g. PreviousHeader). The Pdu struct has no longer type parameters but includes a stack of Rust enumeration values (enum Header) which can abstract any arbitrary sequence of protocol encapsulations. The protocol sequence is determined at run time by the pdu parser and not limited at compile time, except through the capabilities of the parser. 
+This branch is a major change to the original NetBricks code. The code of packet.rs was replaced by pdu.rs. Pdu stands for "protocol data unit". Objective was to allow for a more arbitrary protocol stacking and header parsing. In the original code the protocol stacks must follow a tree topology, which is fixed at compile time through type parameters (e.g. PreviousHeader). The Pdu struct has no longer type parameters but includes a stack of Rust enumeration values (enum Header) which can abstract any arbitrary sequence of protocol encapsulations. The protocol sequence is determined at run time by the pdu parser and not limited at compile time, except through the capabilities of the parser.
 
-As a positive side effect the code becomes more comprehensive as a lot of type parameters can be removed. This makes also the code easier to understand. Also we found no negative impact on the performance.
+This allows for instance to encapsulate IP packets using the same header type not only into Ethernet frames but also e.g. into PPP frames or other IP frames, like GRE or GTP tunnels. With the original Netbricks code it is necessary to define for each encapsulation variant an own IP header type, as the type parameter PreviousHeader must be set accordingly. 
+
+As a positive side effect the code becomes more compact as a lot of type parameters can be removed. This makes also the code easier to understand. Also we found no negative impact on the performance.
  
 After parsing we specialize the parsed generic Header type to a specific Rust struct type, e.g. a struct IpHeader. Therefore we still utilize the full type checking capabilities of Rust at compile time and we lose nothing compared to the original code. 
 
