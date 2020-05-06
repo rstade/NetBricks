@@ -6,7 +6,7 @@ use scheduler::Executable;
 /// `CompositionBatch` allows multiple NFs to be combined.
 ///
 pub struct CompositionBatch {
-    parent: Box<Batch>,
+    parent: Box<dyn Batch>,
 }
 
 impl CompositionBatch {
@@ -16,6 +16,7 @@ impl CompositionBatch {
 }
 
 impl Batch for CompositionBatch {
+    #[inline]
     fn queued(&self) -> usize {
         self.parent.queued()
     }
@@ -46,7 +47,7 @@ impl Act for CompositionBatch {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

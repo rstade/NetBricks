@@ -247,15 +247,15 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
             }
 
             let k_cores = match port_def.get("k_cores") {
-                Some(v) => try!(read_queue(v)),
+                Some(v) => read_queue(v)?,
                 None => Vec::with_capacity(0),
             };
 
             let rx_queues = if symmetric_queue {
-                try!(read_queue(port_def.get("cores").unwrap()))
+                read_queue(port_def.get("cores").unwrap())?
             } else {
                 match port_def.get("rx_cores") {
-                    Some(v) => try!(read_queue(v)),
+                    Some(v) => read_queue(v)?,
                     None => Vec::with_capacity(0),
                 }
             };
@@ -441,7 +441,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
         Some(&Value::Array(ref ports)) => {
             let mut pouts = Vec::with_capacity(ports.len());
             for port in ports {
-                let p = try!(read_port(port));
+                let p = read_port(port)?;
                 pouts.push(p);
                 // match read_port(port) {
             }

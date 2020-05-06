@@ -6,7 +6,7 @@ use common::*;
 use interface::PacketTx;
 use interface::Pdu;
 
-pub type FilterFn = Box<FnMut(&Pdu) -> bool + Send>;
+pub type FilterFn = Box<dyn FnMut(&Pdu) -> bool + Send>;
 
 pub struct FilterBatch<V>
 where
@@ -67,7 +67,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

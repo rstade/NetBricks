@@ -23,11 +23,13 @@ pub struct PortStats {
 
 impl PortStats {
     pub fn new() -> CacheAligned<PortStats> {
+        // virtual ports do often not support reading the queue length,
+        // for those we need to initialize with a q_len > 0, e.g. 1
         CacheAligned::allocate(PortStats {
             stats: AtomicUsize::new(0),
             queued: AtomicUsize::new(0),
-            q_len: AtomicUsize::new(0),
-            max_q_len: AtomicUsize::new(0),
+            q_len: AtomicUsize::new(1),
+            max_q_len: AtomicUsize::new(1),
             cycles: AtomicU64::new(0),
         })
     }
@@ -55,6 +57,11 @@ impl<T: PacketRx> PacketRx for CacheAligned<T> {
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         T::recv(&*self, pkts)
+    }
+
+    #[inline]
+    fn queued(&self) -> usize {
+        T::queued(&self)
     }
 }
 

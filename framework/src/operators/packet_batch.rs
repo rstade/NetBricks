@@ -240,7 +240,7 @@ impl Act for PacketBatch {
     fn done(&mut self) {}
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         let mut total_sent = 0;
         if self.available() > 0 {
             unsafe {

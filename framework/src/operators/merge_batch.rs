@@ -8,14 +8,14 @@ use scheduler::Executable;
 use std::cmp;
 
 pub struct MergeBatchTraitObj {
-    parents: Vec<Box<Batch>>,
+    parents: Vec<Box<dyn Batch>>,
     which: usize,
     slot: usize, // index into selector
     selector: Vec<usize>,
 }
 
 impl MergeBatchTraitObj {
-    pub fn new(parents: Vec<Box<Batch>>) -> MergeBatchTraitObj {
+    pub fn new(parents: Vec<Box<dyn Batch>>) -> MergeBatchTraitObj {
         let selector: Vec<usize> = (0..parents.len()).collect();
         MergeBatchTraitObj {
             parents,
@@ -24,7 +24,7 @@ impl MergeBatchTraitObj {
             selector,
         }
     }
-    pub fn new_with_selector(parents: Vec<Box<Batch>>, selector: Vec<usize>) -> MergeBatchTraitObj {
+    pub fn new_with_selector(parents: Vec<Box<dyn Batch>>, selector: Vec<usize>) -> MergeBatchTraitObj {
         MergeBatchTraitObj {
             parents,
             which: selector[0],
@@ -35,6 +35,7 @@ impl MergeBatchTraitObj {
 }
 
 impl Batch for MergeBatchTraitObj {
+    #[inline]
     fn queued(&self) -> usize {
         let mut result = 0;
         for parent in &self.parents {
@@ -79,7 +80,7 @@ impl Act for MergeBatchTraitObj {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parents[self.which].send_q(port)
     }
 
@@ -146,8 +147,10 @@ impl<T: Batch> MergeBatch<T> {
 }
 
 impl<T: Batch> Batch for MergeBatch<T> {
+    #[inline]
     fn queued(&self) -> usize {
         let mut result = 0;
+        // TODO check if we should take the max length queue, or do we only go with MergeBatchAuto?
         for parent in &self.parents {
             result = parent.queued();
             if result > 0 {
@@ -190,7 +193,7 @@ impl<T: Batch> Act for MergeBatch<T> {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parents[self.which].send_q(port)
     }
 

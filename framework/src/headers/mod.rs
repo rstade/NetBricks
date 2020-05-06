@@ -1,11 +1,13 @@
 use std::fmt;
 
+pub use self::arp::*;
 pub use self::ip::*;
 pub use self::mac::*;
 pub use self::null_header::*;
 pub use self::tcp::*;
 pub use self::udp::*;
 
+mod arp;
 mod ip;
 mod mac;
 mod null_header;
@@ -16,6 +18,7 @@ mod udp;
 pub enum HeaderKind {
     Null,
     Mac,
+    ArpIpv4,
     Ip,
     Tcp,
     Udp,
@@ -41,6 +44,7 @@ pub trait EndOffset: Send {
 pub enum Header<'a> {
     Null,
     Mac(&'a mut MacHeader),
+    ArpIpv4(&'a mut ArpIpv4Header),
     Ip(&'a mut IpHeader),
     Tcp(&'a mut TcpHeader),
     Udp(&'a mut UdpHeader),
@@ -63,6 +67,7 @@ impl<'a> Header<'a> {
                 HeaderKind::Ip => Header::Ip(&mut *(ptr as *mut IpHeader)),
                 HeaderKind::Tcp => Header::Tcp(&mut *(ptr as *mut TcpHeader)),
                 HeaderKind::Udp => Header::Udp(&mut *(ptr as *mut UdpHeader)),
+                HeaderKind::ArpIpv4 => Header::ArpIpv4(&mut *(ptr as *mut ArpIpv4Header)),
             }
         }
     }
@@ -71,6 +76,14 @@ impl<'a> Header<'a> {
     pub fn as_mac_mut(&mut self) -> Option<&mut MacHeader> {
         match self {
             Header::Mac(p) => Some(&mut **p),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub fn as_arpipv4_mut(&mut self) -> Option<&mut ArpIpv4Header> {
+        match self {
+            Header::ArpIpv4(p) => Some(&mut **p),
             _ => None,
         }
     }
@@ -108,6 +121,14 @@ impl<'a> Header<'a> {
     }
 
     #[inline]
+    pub fn as_arpipv4(&self) -> Option<&ArpIpv4Header> {
+        match self {
+            Header::ArpIpv4(p) => Some(&**p),
+            _ => None,
+        }
+    }
+
+    #[inline]
     pub fn as_ip(&self) -> Option<&IpHeader> {
         match self {
             Header::Ip(p) => Some(&**p),
@@ -139,6 +160,7 @@ impl<'a> Header<'a> {
             Header::Ip(_) => HeaderKind::Ip,
             Header::Tcp(_) => HeaderKind::Tcp,
             Header::Udp(_) => HeaderKind::Udp,
+            Header::ArpIpv4(_) => HeaderKind::ArpIpv4,
         }
     }
 
@@ -150,6 +172,7 @@ impl<'a> Header<'a> {
             Header::Ip(_) => Some(self.as_ip().unwrap().offset()),
             Header::Tcp(_) => Some(self.as_tcp().unwrap().offset()),
             Header::Udp(_) => Some(self.as_udp().unwrap().offset()),
+            Header::ArpIpv4(_) => Some(self.as_arpipv4().unwrap().offset()),
         }
     }
 
@@ -161,6 +184,7 @@ impl<'a> Header<'a> {
             Header::Ip(p) => Some(*p as *mut IpHeader as *mut u8),
             Header::Tcp(p) => Some(*p as *mut TcpHeader as *mut u8),
             Header::Udp(p) => Some(*p as *mut UdpHeader as *mut u8),
+            Header::ArpIpv4(p) => Some(*p as *mut ArpIpv4Header as *mut u8),
         }
     }
 
@@ -172,6 +196,7 @@ impl<'a> Header<'a> {
             Header::Ip(p) => Some(*p as *const IpHeader as *const u8),
             Header::Tcp(p) => Some(*p as *const TcpHeader as *const u8),
             Header::Udp(p) => Some(*p as *const UdpHeader as *const u8),
+            Header::ArpIpv4(p) => Some(*p as *const ArpIpv4Header as *const u8),
         }
     }
 }
@@ -184,6 +209,7 @@ impl<'a> fmt::Display for Header<'a> {
             Header::Ip(_) => write!(f, "{ }", self.as_ip().unwrap()),
             Header::Tcp(_) => write!(f, "{ }", self.as_tcp().unwrap()),
             Header::Udp(_) => write!(f, "{:?}", self.as_udp().unwrap()),
+            Header::ArpIpv4(_) => write!(f, "{:?}", self.as_arpipv4().unwrap()),
         }
     }
 }

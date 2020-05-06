@@ -6,7 +6,7 @@ use common::*;
 use interface::PacketTx;
 use interface::Pdu;
 
-pub type TransformFn = Box<FnMut(&mut Pdu) + Send>;
+pub type TransformFn = Box<dyn FnMut(&mut Pdu) + Send>;
 
 pub struct TransformBatch<V>
 where
@@ -34,6 +34,7 @@ impl<V> Batch for TransformBatch<V>
 where
     V: Batch + BatchIterator + Act,
 {
+    #[inline]
     fn queued(&self) -> usize {
         self.parent.queued()
     }
@@ -83,7 +84,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parent.send_q(port)
     }
 

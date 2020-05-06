@@ -38,7 +38,7 @@ pub struct PayloadEnumerator {
 impl<'a> PayloadEnumerator {
     /// Create a new iterator.
     #[inline]
-    pub fn new(batch: &mut BatchIterator) -> PayloadEnumerator {
+    pub fn new(batch: &mut dyn BatchIterator) -> PayloadEnumerator {
         let start = batch.start();
         PayloadEnumerator { idx: Cell::new(start) }
     }
@@ -46,7 +46,7 @@ impl<'a> PayloadEnumerator {
     /// Used for looping over packets. Note this iterator is not safe if packets are added or dropped during iteration,
     /// so you should not do that if possible.
     #[inline]
-    pub fn next(&self, batch: &'a mut BatchIterator) -> Option<ParsedDescriptor<'a>> {
+    pub fn next(&self, batch: &'a mut dyn BatchIterator) -> Option<ParsedDescriptor<'a>> {
         let original_idx = self.idx.get();
         let item = batch.next_payload(original_idx);
         match item {

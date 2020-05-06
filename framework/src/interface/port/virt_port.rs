@@ -49,6 +49,11 @@ impl PacketRx for VirtualQueue {
         self.stats_rx.stats.store(update, Ordering::Relaxed);
         Ok((alloced as u32, 0))
     }
+
+    #[inline]
+    fn queued(&self) -> usize {
+        1
+    }
 }
 
 impl VirtualPort {

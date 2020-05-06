@@ -1,4 +1,4 @@
-use std::alloc::{self, Alloc, Layout};
+use std::alloc::{self, alloc_zeroed, Layout};
 use std::fmt;
 use std::mem::size_of;
 use std::ops::{Deref, DerefMut};
@@ -6,10 +6,7 @@ use std::ptr::{self, Unique};
 
 const CACHE_LINE_SIZE: usize = 64;
 unsafe fn allocate_cache_line(size: usize) -> *mut u8 {
-    alloc::Global
-        .alloc_zeroed(Layout::from_size_align(size, CACHE_LINE_SIZE).unwrap())
-        .unwrap()
-        .as_ptr() as *mut u8
+    alloc_zeroed(Layout::from_size_align(size, CACHE_LINE_SIZE).unwrap())
 }
 
 #[derive(Debug)]

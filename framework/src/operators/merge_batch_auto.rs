@@ -11,7 +11,7 @@ use std::cmp;
 
 pub struct MergeBatchAuto {
     //queues
-    parents: Vec<Box<Batch>>,
+    parents: Vec<Box<dyn Batch>>,
     //queue sizes
     state: Vec<usize>,
     //actually selected queue
@@ -25,7 +25,7 @@ pub struct MergeBatchAuto {
 }
 
 impl MergeBatchAuto {
-    pub fn new(parents: Vec<Box<Batch>>, policy: SchedulingPolicy) -> MergeBatchAuto {
+    pub fn new(parents: Vec<Box<dyn Batch>>, policy: SchedulingPolicy) -> MergeBatchAuto {
         let select_queue;
         match policy {
             SchedulingPolicy::LongestQueue => {
@@ -49,16 +49,34 @@ impl MergeBatchAuto {
     #[inline]
     fn update_state(&mut self) {
         let state = &mut self.state;
-        let mut max_queue: (usize, usize) = (0, 0);
+        let previous_selection = self.which;
+        let mut max_queue: (usize, usize) = (0, previous_selection);
+        let mut first_equal_sized_queue = None;
+        // we must make sure that we round robin through equally sized queues, otherwise we may get stuck on a single queue
+        // is there an easier but still efficient algorithm ?
         self.parents.iter().enumerate().for_each(|(i, batch)| {
             let q = batch.queued();
             state[i] = q;
             if q > max_queue.0 {
                 max_queue = (q, i);
+                first_equal_sized_queue = None;
+            } else if q == max_queue.0 && (max_queue.1 == previous_selection || max_queue.1 == 0) {
+                if i > previous_selection {
+                    max_queue = (q, i);
+                } else {
+                    if first_equal_sized_queue.is_none() {
+                        first_equal_sized_queue = Some((q, if i == previous_selection { max_queue.1 } else { i }));
+                    }
+                }
             }
         });
+        if max_queue.1 == previous_selection && first_equal_sized_queue.is_some() {
+            // there are at least two equally sized queues, therefore we can wrap around
+            max_queue = first_equal_sized_queue.unwrap();
+        }
         self.queue_max = max_queue.1;
         self.queue_size = max_queue.0;
+        //trace!("{:?} -> {}", self.state, self.queue_max);
     }
 
     // selects next ready parent and returns queue length if a ready parent found
@@ -119,7 +137,7 @@ impl Act for MergeBatchAuto {
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32> {
         self.parents[self.which].send_q(port)
     }
 

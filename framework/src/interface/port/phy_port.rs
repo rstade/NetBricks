@@ -275,36 +275,23 @@ impl PortQueue {
     }
 
     #[inline]
-    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<(u32, i32)> {
+    fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
         let start = rdtsc_unsafe();
         unsafe {
-            let (recv, q_count) = if self.port.is_native_kni() {
-                //debug!("calling rte_kni_rx_burst for {}.{}", self.port, self.rxq);
-                (
-                    rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32),
-                    0,
-                )
+            let recv = if self.port.is_native_kni() {
+                rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32)
             } else {
-                //debug!("calling eth_rx_burst for {}.{}", self.port, self.rxq);
-                (
-                    eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv),
-                    eth_rx_queue_count(self.port_id as u16, self.rxq as u16),
-                )
+                eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
             };
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
-            let q_result = if q_count > 0 {
-                self.stats_rx.set_q_len(q_count as usize);
-                q_count
-            } else {
-                0
-            };
-            if recv > 0 || q_count > 0 {
+
+            if recv > 0 {
                 let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (rdtsc_unsafe() - start);
                 self.stats_rx.cycles.store(update, Ordering::Relaxed);
             }
-            Ok((recv, q_result))
+            Ok(recv)
         }
     }
 
@@ -365,11 +352,25 @@ impl PacketRx for PortQueue {
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         let len = pkts.len() as u16;
-        self.recv_queue(pkts, len)
+        Ok((self.recv_queue(pkts, len)?, self.stats_rx.get_q_len() as i32))
     }
 
+    #[inline]
     fn queued(&self) -> usize {
-        self.stats_rx.get_q_len()
+        let q_count = if self.port.is_physical() {
+            unsafe { eth_rx_queue_count(self.port_id as u16, self.rxq as u16) }
+        } else {
+            1
+        };
+        if q_count < 0 {
+            panic!(
+                "eth_rx_queue_count failed for port_id= {} and rxq= {}",
+                self.port_id, self.rxq
+            );
+            //q_count = 1;
+        }
+        self.stats_rx.set_q_len(q_count as usize);
+        q_count as usize
     }
 }
 
@@ -505,12 +506,18 @@ impl PacketRx for PortQueueTxBuffered {
     /// called).
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
-        let len = pkts.len() as u16;
-        self.port_queue.recv_queue(pkts, len)
+        self.port_queue.recv(pkts)
     }
 
+    #[inline]
     fn queued(&self) -> usize {
-        self.port_queue.stats_rx.get_q_len()
+        self.port_queue.queued()
+    }
+}
+
+impl fmt::Display for PortQueueTxBuffered {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.port_queue.fmt(f)
     }
 }
 
@@ -1181,31 +1188,6 @@ impl PmdPort {
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
             "ovs" => PmdPort::new_ovs_port(parts[1], rx_cores[0]),
-            /*
-            "dpdk" => {
-                let dev_spec = parse_spec(name);
-                debug!("dpdk with spec {} parsed as {:?}", parts[1], dev_spec);
-                PmdPort::new_dpdk_port(
-                    &dev_spec.name,
-                    kni,
-                    dev_spec.iface,
-                    parts[1],
-                    rx_cores,
-                    tx_cores,
-                    nrxd,
-                    ntxd,
-                    loopback,
-                    tso,
-                    csumoffload,
-                    driver,
-                    PortType::Physical,
-                    fdir_conf,
-                    port_config.flow_steering,
-                    port_config.net_spec.clone(),
-                    associated_port.map_or(None, |p| Some(p.port_id())),
-                )
-            }
-            */
             "virtio" | "dpdk" => {
                 let port_type = match parts[0] {
                     "dpdk" => PortType::Physical,

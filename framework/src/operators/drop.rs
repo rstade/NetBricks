@@ -25,6 +25,7 @@ impl<V> Batch for DropBatch<V>
 where
     V: Batch + BatchIterator + Act,
 {
+    #[inline]
     fn queued(&self) -> usize {
         self.parent.queued()
     }
@@ -52,7 +53,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> Result<u32> {
         self.parent.send_q(port)
     }
 

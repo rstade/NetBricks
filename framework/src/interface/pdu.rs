@@ -7,7 +7,7 @@ use std::slice;
 
 use common::errors;
 use common::errors::ErrorKind;
-use headers::{EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
+use headers::{ArpIpv4Header, EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
 use native::zcsi::{mbuf_alloc, mbuf_alloc_bulk, validate_tx_offload, MBuf};
 use utils::ipv4_checksum;
 
@@ -72,6 +72,11 @@ impl<'a> HeaderStack<'a> {
     }
 
     #[inline]
+    pub fn arp_mut(&mut self, which: usize) -> &mut ArpIpv4Header {
+        self.stack[which].as_arpipv4_mut().unwrap()
+    }
+
+    #[inline]
     pub fn tcp(&self, which: usize) -> &TcpHeader {
         self.stack[which].as_tcp().unwrap()
     }
@@ -84,6 +89,11 @@ impl<'a> HeaderStack<'a> {
     #[inline]
     pub fn mac(&self, which: usize) -> &MacHeader {
         self.stack[which].as_mac().unwrap()
+    }
+
+    #[inline]
+    pub fn arp(&self, which: usize) -> &ArpIpv4Header {
+        self.stack[which].as_arpipv4().unwrap()
     }
 }
 
@@ -247,6 +257,19 @@ impl<'a> Pdu<'a> {
         }
     }
 
+    #[inline]
+    fn parse_arp(&mut self, offset: usize) {
+        //TODO generalize for any protocol type, not only Ipv4
+        let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut ArpIpv4Header };
+
+        unsafe {
+            let arp = &mut *hdr;
+            if arp.hw_type() == 1 && arp.proto_etype() == 0x0800 {
+                self.header_stack.push(Header::ArpIpv4(&mut *hdr));
+            }
+        }
+    }
+
     /// assumes an Ethernet frame and parses the frame up to Layer 4 if possible
     #[inline]
     pub fn parse(&mut self) -> usize {
@@ -273,7 +296,11 @@ impl<'a> Pdu<'a> {
                 }
             }
             0x86DD => {} // IPv6
-            0x0806 => {} // ARP
+            0x0806 => {
+                if l >= mac.offset() + ArpIpv4Header::size() {
+                    self.parse_arp(mac.offset());
+                }
+            } // ARP
             e => warn!("received Ethertype {:x}", e),
         }
         self.header_stack.count()
@@ -329,6 +356,9 @@ impl<'a> Pdu<'a> {
                 Header::Ip(ref mut p) => ptr::copy_nonoverlapping(hdr.as_ip().unwrap() as *const IpHeader, *p, 1),
                 Header::Tcp(ref mut p) => ptr::copy_nonoverlapping(hdr.as_tcp().unwrap() as *const TcpHeader, *p, 1),
                 Header::Udp(ref mut p) => ptr::copy_nonoverlapping(hdr.as_udp().unwrap() as *const UdpHeader, *p, 1),
+                Header::ArpIpv4(ref mut p) => {
+                    ptr::copy_nonoverlapping(hdr.as_arpipv4().unwrap() as *const ArpIpv4Header, *p, 1)
+                }
             };
         }
     }
@@ -578,6 +608,11 @@ impl<'a> Pdu<'a> {
         } else {
             0
         }
+    }
+
+    #[inline]
+    pub fn port_id(&self) -> u16 {
+        unsafe { (*self.mbuf).port }
     }
 }
 

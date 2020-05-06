@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 /// Used to keep stats about each pipeline and eventually grant tokens, etc.
 pub struct Runnable {
-    pub task: Box<Executable>,
+    pub task: Box<dyn Executable>,
     pub uuid: Uuid,
     pub name: String,
     pub cycles: u64,    // cycles used while doing some work (i.e. increasing 'count' metric)
@@ -35,7 +35,7 @@ impl Runnable {
             is_ready: Arc::new(AtomicBool::new(false)),
         }
     }
-    pub fn from_boxed_task(uuid: Uuid, name: String, task: Box<Executable>) -> Runnable {
+    pub fn from_boxed_task(uuid: Uuid, name: String, task: Box<dyn Executable>) -> Runnable {
         Runnable {
             task,
             uuid,
@@ -105,8 +105,8 @@ pub struct StandaloneScheduler {
 
 /// Messages that can be sent on the scheduler channel to add or remove tasks.
 pub enum SchedulerCommand {
-    Add((Uuid, String, Box<Executable + Send>)),
-    Run(Box<Fn(&mut StandaloneScheduler) + Send>),
+    Add((Uuid, String, Box<dyn Executable + Send>)),
+    Run(Box<dyn Fn(&mut StandaloneScheduler) + Send>),
     SetTaskState(Uuid, bool),
     SetTaskStateAll(bool),
     Execute,
@@ -164,6 +164,12 @@ impl StandaloneScheduler {
             execute_loop: false,
             shutdown: true,
         }
+    }
+
+    pub fn install_task<T: Executable + 'static>(&mut self, task_name: &str, task: T) -> Uuid {
+        let uuid = Uuid::new_v4();
+        self.add_runnable(Runnable::from_task(uuid, task_name.to_string(), task).move_unready());
+        uuid
     }
 
     #[inline]

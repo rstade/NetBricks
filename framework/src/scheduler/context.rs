@@ -200,7 +200,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
     //maps kni name to port_id of associated port
     let mut kni2pci: HashMap<String, Arc<PmdPort>> = HashMap::with_capacity(configuration.ports.len());
     {
-        let mut update_context: Box<FnMut(Arc<PmdPort>) -> Result<(), ErrorKind>> = Box::new(|p: Arc<PmdPort>| {
+        let mut update_context: Box<dyn FnMut(Arc<PmdPort>) -> Result<(), ErrorKind>> = Box::new(|p: Arc<PmdPort>| {
             info!("initialized {}", p);
             let port_id = p.port_id();
             if ctx.ports.contains_key(p.name()) {

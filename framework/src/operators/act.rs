@@ -4,32 +4,24 @@ use interface::PacketTx;
 
 pub trait Act {
     /// Actually perform whatever needs to be done by this processing node.
-    #[inline]
     fn act(&mut self) -> (u32, i32); // returns (processed packets, queue length (if >= 0)
 
     /// Notification indicating we are done processing the current batch of packets
-    #[inline]
     fn done(&mut self);
 
-    #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> errors::Result<u32>;
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> errors::Result<u32>;
 
-    #[inline]
     fn capacity(&self) -> i32;
 
-    #[inline]
     fn drop_packets(&mut self, idxes: &[usize]) -> Option<usize>;
 
-    #[inline]
     fn drop_packets_all(&mut self) -> Option<usize>;
 
     /// Remove all packets from the batch (without actually freeing them).
-    #[inline]
     fn clear_packets(&mut self) {
         self.get_packet_batch().clear_packets();
     }
 
-    #[inline]
     fn get_packet_batch(&mut self) -> &mut PacketBatch;
 
     //    /// Get tasks that feed produce packets for this batch. We use this in the embedded scheduler.

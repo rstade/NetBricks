@@ -4,7 +4,6 @@
 #![feature(box_syntax)]
 #![feature(specialization)]
 #![feature(slice_concat_ext)]
-#![feature(fnbox)]
 #![feature(ptr_internals)]
 #![feature(rustc_private)]
 #![feature(ptr_offset_from)]
@@ -12,6 +11,7 @@
 #![feature(allocator_api)]
 #![allow(unused_features)]
 #![feature(integer_atomics)]
+#![feature(llvm_asm)]
 #![allow(unused_doc_comments)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 // Need this since PMD port construction triggers too many arguments.

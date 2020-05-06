@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
-pub type GroupFnPdu = Box<FnMut(&mut Pdu) -> usize>;
+pub type GroupFnPdu = Box<dyn FnMut(&mut Pdu) -> usize>;
 
 pub struct GroupBy<V>
 where

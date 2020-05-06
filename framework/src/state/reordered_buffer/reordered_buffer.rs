@@ -31,11 +31,11 @@ struct Segment {
 impl Segment {
     pub fn new(idx: isize, seq: u32, length: u16) -> Segment {
         Segment {
-            idx: idx,
+            idx,
             prev: -1,
             next: -1,
-            seq: seq,
-            length: length,
+            seq,
+            length,
         }
     }
 }
@@ -325,7 +325,7 @@ impl ReorderedBuffer {
     /// latter should be adjusted to reflect the expected number of out-of-order segments at a time.
     pub fn new_with_segments(buffer_size: usize, segment_size: usize) -> Result<ReorderedBuffer> {
         let rounded_bytes = round_to_power_of_2(buffer_size);
-        let ring_buffer = try! {RingBuffer::new(rounded_bytes)};
+        let ring_buffer = RingBuffer::new(rounded_bytes)?;
         Ok(ReorderedBuffer {
             data: ring_buffer,
             buffer_size: rounded_bytes,
@@ -486,7 +486,7 @@ impl ReorderedBuffer {
             }
 
             InsertionResult::Inserted {
-                written: written,
+                written,
                 available: self.available(),
             }
         } else if self.tail_seq >= seq {

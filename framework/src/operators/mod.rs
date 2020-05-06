@@ -45,7 +45,7 @@ pub enum SchedulingPolicy {
 }
 
 #[inline]
-pub fn merge_batches(batches: Vec<Box<Batch>>) -> MergeBatchTraitObj {
+pub fn merge_batches(batches: Vec<Box<dyn Batch>>) -> MergeBatchTraitObj {
     MergeBatchTraitObj::new(batches)
 }
 
@@ -55,12 +55,12 @@ pub fn merge<T: Batch>(batches: Vec<T>) -> MergeBatch<T> {
 }
 
 #[inline]
-pub fn merge_with_selector(batches: Vec<Box<Batch>>, selector: Vec<usize>) -> MergeBatchTraitObj {
+pub fn merge_with_selector(batches: Vec<Box<dyn Batch>>, selector: Vec<usize>) -> MergeBatchTraitObj {
     MergeBatchTraitObj::new_with_selector(batches, selector)
 }
 
 #[inline]
-pub fn merge_auto(batches: Vec<Box<Batch>>, policy: SchedulingPolicy) -> MergeBatchAuto {
+pub fn merge_auto(batches: Vec<Box<dyn Batch>>, policy: SchedulingPolicy) -> MergeBatchAuto {
     MergeBatchAuto::new(batches, policy)
 }
 

@@ -33,6 +33,7 @@ where
     Port: PacketTx,
     V: Batch + BatchIterator + Act,
 {
+    #[inline]
     fn queued(&self) -> usize {
         self.parent.queued()
     }
@@ -81,7 +82,7 @@ where
 
     fn done(&mut self) {}
 
-    fn send_q(&mut self, _: &mut PacketTx) -> errors::Result<u32> {
+    fn send_q(&mut self, _: &mut dyn PacketTx) -> errors::Result<u32> {
         panic!("Cannot send a sent packet batch")
     }
 

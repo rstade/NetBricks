@@ -6,7 +6,7 @@ use common::*;
 use interface::PacketTx;
 use interface::Pdu;
 
-pub type MapFn = Box<FnMut(&Pdu) + Send>;
+pub type MapFn = Box<dyn FnMut(&Pdu) + Send>;
 
 pub struct MapBatch<V>
 where
@@ -34,6 +34,7 @@ impl<V> Batch for MapBatch<V>
 where
     V: Batch + BatchIterator + Act,
 {
+    #[inline]
     fn queued(&self) -> usize {
         self.parent.queued()
     }
@@ -68,7 +69,7 @@ where
     }
 
     #[inline]
-    fn send_q(&mut self, port: &mut PacketTx) -> Result<u32> {
+    fn send_q(&mut self, port: &mut dyn PacketTx) -> Result<u32> {
         self.parent.send_q(port)
     }
 
