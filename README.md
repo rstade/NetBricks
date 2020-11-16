@@ -8,6 +8,11 @@ As a positive side effect the code becomes more compact as a lot of type paramet
  
 After parsing we specialize the parsed generic Header type to a specific Rust struct type, e.g. a struct IpHeader. Therefore we still utilize the full type checking capabilities of Rust at compile time and we lose nothing compared to the original code. 
 
+## following additional packages are needed to build NetBricks:
+
+dnf install numactl-devel
+dnf install libpcap-devel
+dnf install kernel-devel
 
 ## The original NetBricks ReadMe:
 

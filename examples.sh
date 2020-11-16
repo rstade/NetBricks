@@ -9,7 +9,6 @@ export examples=(
         test/nat
         test/maglev
         test/tcp_check
-        test/sctp-test
         test/config-test
         test/tcp_reconstruction
         test/acl-fw

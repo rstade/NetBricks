@@ -1,5 +1,6 @@
 #![feature(box_syntax)]
 #![feature(asm)]
+#![feature(llvm_asm)]
 extern crate e2d2;
 extern crate fnv;
 extern crate getopts;

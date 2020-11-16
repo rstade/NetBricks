@@ -44,8 +44,7 @@ fn recv_thread(ports: Vec<CacheAligned<PortQueue>>, core: i32, counter: Mergeabl
         .iter()
         .map(|port| {
             let ctr = counter.clone();
-            box monitor(ReceiveBatch::new(port.clone()), ctr)
-                .send(port.clone()) as Box<Batch>
+            box monitor(ReceiveBatch::new(port.clone()), ctr).send(port.clone()) as Box<dyn Batch>
         })
         .collect();
     println!("Running {} pipelines", pipelines.len());

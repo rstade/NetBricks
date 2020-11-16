@@ -12,7 +12,7 @@ members=["framework",
         "test/packet_test",
         "test/tcp_check",
         "test/tcp_payload",
-        "test/sctp-test",
+#        "test/sctp-test",
         "test/config-test",
         "test/tcp_reconstruction",
         "test/acl-fw",]
@@ -22,6 +22,3 @@ lto = true
 rpath = true
 debug = true
 debug-assertions = false
-
-#[patch.crates-io]
-#eui48 = { version= "0.3", git="https://github.com/rstade/eui48" }

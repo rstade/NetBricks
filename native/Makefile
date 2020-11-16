@@ -17,19 +17,18 @@ else
 	DPDK_LIB_DIR = $(RTE_SDK)/build/lib
 endif
 
-LDFLAGS += -L$(DPDK_LIB_DIR)
-LIBS += -Wl,--whole-archive -ldpdk -Wl,--no-whole-archive -Wl,-rpath=$(DPDK_LIB_DIR)
-#LIBS += -ldpdk -Wl,-rpath=$(DPDK_LIB_DIR)
-LIBS += -lm -lpthread -ldl -lpcap -lnuma
+LDFLAGS_SHARED = $(shell pkg-config --libs libdpdk)
+LIBS += $(LDFLAGS_SHARED)
+LIBS += -lm -lpthread -ldl -lpcap -lnuma -lrte_net_i40e -lrte_net_ixgbe -lrte_net_ring
 
 # change fpic to fPIC if something fails
-CFLAGS = -std=gnu99 -g3 -ggdb3 -O3 -Wall -Werror -m64 -march=native \
-	 -Wno-unused-function -Wno-unused-but-set-variable \
-	 -I$(DPDK_INC_DIR) -Iinclude/\
-	 -D_GNU_SOURCE \
-	 -fPIC
+CFLAGS = $(shell pkg-config --cflags libdpdk)
+CFLAGS += -std=gnu99 -g3 -ggdb3 -O3 -Wall -Werror -Wno-error=deprecated-declarations   -m64 \
+	  -Wno-unused-function -Wno-unused-but-set-variable \
+	  -Iinclude/\
+	  -D_GNU_SOURCE \
+	  -fPIC
 
-DPDKLIBS= $(wildcard $(DPDK_LIB_DIR)/*.a)
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 HEADERS = $(wildcard include/*.h)

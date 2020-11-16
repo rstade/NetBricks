@@ -2,7 +2,7 @@ use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
 use common::*;
-use native::zcsi::*;
+use native::zcsi::{mbuf_alloc_bulk, mbuf_free_bulk, MBuf};
 use std::fmt;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;

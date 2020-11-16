@@ -1,16 +1,14 @@
 use super::super::super::headers::IpHeader;
-use super::ethdev::rte_eth_dev_info;
-use super::MBuf;
-use eui48::MacAddress;
+use native::zcsi::rte_ethdev_api::{rte_eth_dev_get_name_by_port, RTE_ETH_FLOW_MAX, RTE_ETH_NAME_MAX_LEN};
+use native::zcsi::rte_mbuf_api::*;
 use std::convert;
-use std::ffi::{CStr};
+use std::ffi::CStr;
 use std::fmt;
 use std::io;
 use std::net::Ipv4Addr;
 use std::os::raw::{c_char, c_void};
 use std::ptr;
 use std::str::Utf8Error;
-use native::zcsi::ethdev::{RTE_ETH_NAME_MAX_LEN, rte_eth_dev_get_name_by_port};
 
 pub enum RteKni {}
 pub enum RteFlow {}
@@ -25,30 +23,7 @@ pub enum RteFlow {}
  * Note that the flow types are used to define RSS offload types in
  * rte_ethdev.h.
  *
-#define RTE_ETH_FLOW_UNKNOWN             0
-#define RTE_ETH_FLOW_RAW                 1
-#define RTE_ETH_FLOW_IPV4                2
-#define RTE_ETH_FLOW_FRAG_IPV4           3
-#define RTE_ETH_FLOW_NONFRAG_IPV4_TCP    4
-#define RTE_ETH_FLOW_NONFRAG_IPV4_UDP    5
-#define RTE_ETH_FLOW_NONFRAG_IPV4_SCTP   6
-#define RTE_ETH_FLOW_NONFRAG_IPV4_OTHER  7
-#define RTE_ETH_FLOW_IPV6                8
-#define RTE_ETH_FLOW_FRAG_IPV6           9
-#define RTE_ETH_FLOW_NONFRAG_IPV6_TCP   10
-#define RTE_ETH_FLOW_NONFRAG_IPV6_UDP   11
-#define RTE_ETH_FLOW_NONFRAG_IPV6_SCTP  12
-#define RTE_ETH_FLOW_NONFRAG_IPV6_OTHER 13
-#define RTE_ETH_FLOW_L2_PAYLOAD         14
-#define RTE_ETH_FLOW_IPV6_EX            15
-#define RTE_ETH_FLOW_IPV6_TCP_EX        16
-#define RTE_ETH_FLOW_IPV6_UDP_EX        17
-#define RTE_ETH_FLOW_PORT               18
-/**< Consider device port number as a flow differentiator */
-#define RTE_ETH_FLOW_VXLAN              19 /**< VXLAN protocol based flow */
-#define RTE_ETH_FLOW_GENEVE             20 /**< GENEVE protocol based flow */
-#define RTE_ETH_FLOW_NVGRE              21 /**< NVGRE protocol based flow */
-#define RTE_ETH_FLOW_MAX                22
+
 */
 
 pub const RTE_ETH_FLOW_NONFRAG_IPV4_TCP: u16 = 4;
@@ -159,7 +134,6 @@ pub enum RteFilterOp {
     RteEthFilterOpMax,
 }
 
-
 pub const KNI_MAX_KTHREAD: usize = 32;
 
 #[repr(C)]
@@ -182,7 +156,7 @@ pub struct KniPortParams {
 impl KniPortParams {
     pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
         let mut params = KniPortParams {
-            associated_dpdk_port_id: port_id,                          // Port ID
+            associated_dpdk_port_id: port_id, // Port ID
             lcore_rx,                         // lcore ID for RX
             lcore_tx,                         // lcore ID for TX
             nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
@@ -215,16 +189,18 @@ pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> {
 
 pub fn eth_dev_get_name_by_port(port_id: u16) -> Option<String> {
     let mut name = vec![' ' as u8; RTE_ETH_NAME_MAX_LEN as usize];
-    let c_ptr= name.as_mut_ptr() as *mut c_char;
+    let c_ptr = name.as_mut_ptr() as *mut c_char;
 
-    let ret_val= unsafe { rte_eth_dev_get_name_by_port(port_id, c_ptr) };
+    let ret_val = unsafe { rte_eth_dev_get_name_by_port(port_id, c_ptr) };
     if ret_val == 0 {
-        let slice=unsafe { CStr::from_ptr(c_ptr).to_str() };
+        let slice = unsafe { CStr::from_ptr(c_ptr).to_str() };
         match slice {
             Ok(slice) => Some(String::from(slice)),
             Err(_) => None,
         }
-    } else { None }
+    } else {
+        None
+    }
 }
 
 const RTE_ETHDEV_QUEUE_STAT_CNTRS: usize = 16;
@@ -712,7 +688,6 @@ impl convert::From<i32> for RteFdirStatusMode {
  */
 
 const RTE_ETH_FDIR_MAX_FLEXLEN: usize = 16;
-const RTE_ETH_FLOW_MAX: usize = 22;
 
 #[derive(Deserialize, Clone, Copy)]
 #[repr(C)]
@@ -749,7 +724,7 @@ pub struct RteEthFdirFlexConf {
     nb_flexmasks: u16, // The number of following mask */
     flex_set: [RteEthFlexPayloadCfg; RteEthPayloadType::RteEthPayloadMax as usize],
     // Flex payload configuration for each payload type
-    flex_mask: [RteEthFdirFlexMask; RTE_ETH_FLOW_MAX],
+    flex_mask: [RteEthFdirFlexMask; RTE_ETH_FLOW_MAX as usize],
     // Flex mask configuration for each flow type
 }
 
@@ -806,7 +781,7 @@ impl RteFdirConf {
                 flex_mask: [RteEthFdirFlexMask {
                     flow_type: 0,
                     mask: [0u8; RTE_ETH_FDIR_MAX_FLEXLEN],
-                }; RTE_ETH_FLOW_MAX],
+                }; RTE_ETH_FLOW_MAX as usize],
             },
         }
     }
@@ -835,6 +810,8 @@ pub fn check_os_error(code: i32) -> io::Result<i32> {
 }
 
 #[link(name = "zcsi")]
+#[link(name = "rte_kni")]
+#[link(name = "rte_ethdev")]
 extern "C" {
     pub fn init_system_whitelisted(
         name: *const c_char,
@@ -874,15 +851,14 @@ extern "C" {
     ) -> i32;
     pub fn free_pmd_port(port: u16) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
-    pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u32;
+    pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut rte_mbuf, len: u16) -> u32;
     pub fn eth_rx_queue_count(port_id: u16, queue_id: u16) -> i32;
     // rte_eth_tx_burst is inline C, we cannot directly use it here:
-    pub fn eth_tx_burst(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
+    pub fn eth_tx_burst(port: u16, qid: u16, pkts: *mut *mut rte_mbuf, len: u16) -> u16;
     pub fn eth_tx_descriptor_status(port: u16, qid: u16, offset: u16) -> i32;
     pub fn eth_rx_descriptor_status(port: u16, qid: u16, offset: u16) -> i32;
-    pub fn eth_tx_prepare(port: u16, qid: u16, pkts: *mut *mut MBuf, len: u16) -> u16;
+    pub fn eth_tx_prepare(port: u16, qid: u16, pkts: *mut *mut rte_mbuf, len: u16) -> u16;
     pub fn num_pmd_ports() -> i32;
-    pub fn rte_eth_macaddr_get(port: u16, address: *mut MacAddress);
     pub fn init_bess_eth_ring(ifname: *const c_char, core: i32) -> i32;
     pub fn init_ovs_eth_ring(iface: i32, core: i32) -> i32;
     //pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
@@ -892,30 +868,28 @@ extern "C" {
     // TODO: Generic PMD info
     pub fn max_rxqs(port: u16) -> i32;
     pub fn max_txqs(port: u16) -> i32;
-    pub fn mbuf_alloc() -> *mut MBuf;
-    pub fn mbuf_free(buf: *mut MBuf);
-    pub fn mbuf_alloc_bulk(array: *mut *mut MBuf, cnt: u32) -> i32;
-    pub fn mbuf_free_bulk(array: *mut *mut MBuf, cnt: i32) -> i32;
+    pub fn mbuf_alloc() -> *mut rte_mbuf;
+    pub fn mbuf_free(buf: *mut rte_mbuf);
+    pub fn mbuf_alloc_bulk(array: *mut *mut rte_mbuf, cnt: u32) -> i32;
+    pub fn mbuf_free_bulk(array: *mut *mut rte_mbuf, cnt: i32) -> i32;
     pub fn mbuf_avail_count() -> u32;
     pub fn crc_hash_native(to_hash: *const u8, size: u32, iv: u32) -> u32;
     pub fn ipv4_cksum(payload: *const u8) -> u16;
     pub fn ipv4_phdr_chksum(ipv4_hdr: *const IpHeader, ol_flags: u64) -> u16;
-    pub fn validate_tx_offload(m: *const MBuf) -> i32;
+    pub fn validate_tx_offload(m: *const rte_mbuf) -> i32;
 
     //usually called already by rte_eal_init when e.g. --vdev netkni0:
     pub fn rte_kni_init(max_kni_ifaces: u32);
     pub fn kni_alloc(associated_dpdk_port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
     pub fn rte_kni_release(kni: *mut RteKni) -> i32;
     pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32;
-    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32;
-    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut MBuf, len: u32) -> u32;
+    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
+    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
     pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
     pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
 
-    pub fn rte_log_set_global_level(level: RteLogLevel);
     pub fn rte_log_get_global_level() -> u32;
-    pub fn rte_log_set_level(logtype: RteLogtype, level: RteLogLevel) -> i32;
-    pub fn rte_log_get_level(logtype: RteLogtype) -> i32;
+
     pub fn add_tcp_flow(
         port_id: u16,
         rx_q: u16,
@@ -929,7 +903,6 @@ extern "C" {
         dst_port_mask: u16,
         error: *const RteFlowError,
     ) -> *mut RteFlow;
-    pub fn rte_eth_dev_info_get(port_id: u16, dev_info: *mut rte_eth_dev_info);
     pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
     pub fn rte_eth_dev_filter_ctrl(
         port_id: u16,
@@ -938,16 +911,6 @@ extern "C" {
         arg: *mut c_void,
     ) -> i32;
 
-    pub fn rte_eth_xstats_get_names_by_id(
-        port_id: u16,
-        xstats_names: *const RteEthXstatName,
-        size: u32,
-        ids: *const u64,
-    ) -> i32;
-    pub fn rte_eth_xstats_get_by_id(port_id: u16, ids: *const u64, values: *const u64, size: u32) -> i32;
-    pub fn rte_eth_xstats_get_id_by_name(port_id: u16, xstat_name: *const c_char, id: *const u64) -> i32;
-
-    pub fn rte_eth_stats_get(port_id: u16, stats: *const RteEthStats) -> i32;
     pub fn rte_eth_stats_reset(port_id: u16) -> i32;
 
 }

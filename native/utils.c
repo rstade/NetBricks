@@ -9,10 +9,10 @@ uint32_t crc_hash_native(const void* data, uint32_t len, uint32_t initial) {
 }
 
 uint16_t ipv4_cksum(const void* iphdr) {
-    return rte_ipv4_cksum((const struct ipv4_hdr*)iphdr);
+    return rte_ipv4_cksum((const struct rte_ipv4_hdr*)iphdr);
 }
 
-uint16_t ipv4_phdr_chksum(const struct ipv4_hdr* ipv4_hdr, uint64_t ol_flags)
+uint16_t ipv4_phdr_chksum(const struct rte_ipv4_hdr* ipv4_hdr, uint64_t ol_flags)
 {
     return rte_ipv4_phdr_cksum(ipv4_hdr, ol_flags);
 }

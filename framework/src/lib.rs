@@ -2,11 +2,9 @@
 #![feature(asm)]
 #![feature(log_syntax)]
 #![feature(box_syntax)]
-#![feature(specialization)]
+#![feature(min_specialization)]
 #![feature(slice_concat_ext)]
 #![feature(ptr_internals)]
-#![feature(rustc_private)]
-#![feature(ptr_offset_from)]
 // Used for cache alignment.
 #![feature(allocator_api)]
 #![allow(unused_features)]

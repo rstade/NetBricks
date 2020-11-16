@@ -4,6 +4,7 @@ use super::Batch;
 use common::errors;
 use common::errors::ErrorKind;
 use interface::*;
+use native::zcsi::MBuf;
 use native::zcsi::*;
 use std::result;
 

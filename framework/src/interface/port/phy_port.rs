@@ -8,9 +8,16 @@ use eui48::MacAddress;
 use interface::port::fdir::FlowSteeringMode;
 use ipnet::Ipv4Net;
 use libc::if_indextoname;
-use native::zcsi::ethdev::{rss_flow_name, rte_eth_dev_info, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name};
-use native::zcsi::ethdev::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
-use native::zcsi::*;
+use native::zcsi::rte_ethdev_api::{
+    rte_eth_dev_info, rte_eth_dev_info_get, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name,
+    rte_eth_macaddr_get, rte_ether_addr,
+};
+use native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
+use native::zcsi::{
+    add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring,
+    init_ovs_eth_ring, init_pmd_port, kni_alloc, kni_get_name, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
+    rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlow, RteFlowError, RteKni,
+};
 use regex::Regex;
 use std::cell::RefCell;
 use std::cmp::min;
@@ -1318,10 +1325,10 @@ impl PmdPort {
 
     #[inline]
     pub fn mac_address(&self) -> MacAddress {
-        let mut address = MacAddress::nil();
+        let mut address: rte_ether_addr = rte_ether_addr { addr_bytes: [0u8; 6] };
         unsafe {
-            rte_eth_macaddr_get(self.port, &mut address as *mut MacAddress);
-            address
+            rte_eth_macaddr_get(self.port, &mut address);
         }
+        MacAddress::new(address.addr_bytes)
     }
 }

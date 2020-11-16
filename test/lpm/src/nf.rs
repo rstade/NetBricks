@@ -16,7 +16,7 @@ pub struct IPLookup {
     raw_entries: Vec<HashMap<u32, u16, FnvHash>>,
 }
 
-const TBL24_SIZE: usize = ((1 << 24) + 1);
+const TBL24_SIZE: usize = (1 << 24) + 1;
 const RAW_SIZE: usize = 33;
 const OVERFLOW_MASK: u16 = 0x8000;
 #[derive(Default, Clone)]
@@ -98,10 +98,7 @@ impl IPLookup {
     }
 }
 
-pub fn lpm<T: 'static + Batch, S: Scheduler + Sized>(
-    parent: T,
-    s: &mut S,
-) -> CompositionBatch {
+pub fn lpm<T: 'static + Batch, S: Scheduler + Sized>(parent: T, s: &mut S) -> CompositionBatch {
     let mut lpm_table = IPLookup::new();
     lpm_table.insert_ipv4(&Ipv4Addr::new(188, 19, 50, 135), 32, 1);
     lpm_table.insert_ipv4(&Ipv4Addr::new(123, 19, 205, 58), 32, 1);

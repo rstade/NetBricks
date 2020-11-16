@@ -17,11 +17,7 @@ struct FlowUsed {
 }
 
 type FnvHash = BuildHasherDefault<FnvHasher>;
-pub fn nat<T: 'static + Batch>(
-    parent: T,
-    _s: &mut Scheduler,
-    nat_ip: &Ipv4Addr,
-) -> CompositionBatch {
+pub fn nat<T: 'static + Batch>(parent: T, _s: &mut dyn Scheduler, nat_ip: &Ipv4Addr) -> CompositionBatch {
     let ip = u32::from(*nat_ip);
     let mut port_hash =
         HashMap::<FiveTupleV4, FiveTupleV4, FnvHash>::with_capacity_and_hasher(65536, Default::default());
