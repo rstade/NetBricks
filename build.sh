@@ -25,66 +25,6 @@ source ${BASE_DIR}/examples.sh
 REQUIRE_RUSTFMT=0
 export RUSTFLAGS="-C target-cpu=native"
 
-rust_build_static() {
-    if [ ! -d ${RUST_DOWNLOAD_PATH} ]; then
-        git clone https://github.com/rust-lang/rust.git \
-            ${RUST_DOWNLOAD_PATH}
-    else
-        pushd ${RUST_DOWNLOAD_PATH}
-        git pull
-        popd
-    fi
-    pushd ${RUST_DOWNLOAD_PATH}
-    ./configure --target=x86_64-unknown-linux-musl \
-        --musl-root=${TOOLS_BASE} --prefix=${TOOLS_BASE} \
-        --enable-optimize --disable-valgrind \
-        --disable-docs
-    popd
-    make -j -C ${RUST_DOWNLOAD_PATH}
-    make -j -C ${RUST_DOWNLOAD_PATH} install
-}
-
-rust_static() {
-    echo "Running rust_static"
-    if [ ! -e ${MUSL_TEST} ] || [ ! -z ${_BUILD_UPDATE_} ]; then
-        musl
-    else
-        echo "Musl found, not building"
-    fi
-
-    if [ ! -e ${UNWIND_RESULT} ] || [ ! -z ${_BUILD_UPDATE_} ]; then
-        libunwind
-    else
-        echo "libunwind found, not building"
-    fi
-
-    if [ ! -e ${RUST_TEST} ] || [ ! -z ${_BUILD_UPDATE_} ]; then
-        rust_build_static
-    else
-        echo "Rust found not building"
-    fi
-    export RUSTC="${TOOLS_BASE}/bin/rustc"
-}
-
-rust () {
-    echo "Building rust"
-    if [ ! -z ${RUST_STATIC} ]; then
-        rust_static
-    fi
-    if [ ! -d ${BIN_DIR} ]; then
-        mkdir -p ${BIN_DIR}
-    fi
-    cp ${SCRIPTS_DIR}/rust*.sh ${BIN_DIR}/
-}
-
-toggle_symbols () {
-    if [ ! -z ${NETBRICKS_SYMBOLS} ]; then
-        find ${BASE_DIR}/test -name Cargo.toml -exec sed -i 's/debug = false/debug = true/g' {} \;
-    else
-        find ${BASE_DIR}/test -name Cargo.toml -exec sed -i 's/debug = true/debug = false/g' {} \;
-    fi
-}
-
 native () {
     make -j $proc -C $BASE_DIR/native
 #    make -C $BASE_DIR/native install
@@ -140,14 +80,6 @@ else
 fi
 
 case $TASK in
-    enable_symbols)
-        export NETBRICKS_SYMBOLS=1
-        toggle_symbols
-        ;;
-    disable_symbols)
-        unset NETBRICKS_SYMBOLS || true
-        toggle_symbols
-        ;;
     build_test)
         shift
         if [ $# -lt 1 ]; then

@@ -17,7 +17,6 @@
 
 #define MAX_ARGS 128
 
-
 static inline void bind_to_domain(int socket_id) {
     struct bitmask* numa_bitmask = numa_bitmask_setbit(
         numa_bitmask_clearall(numa_bitmask_alloc(numa_num_possible_nodes())), socket_id);
@@ -59,7 +58,7 @@ static void add_arg(int* rte_argc, char** rte_argv, char* s) {
     rte_argv[(*rte_argc)++] = s;
 }
 
-static int init_eal(char* name, int secondary, unsigned long long lcore_mask, int core, int mempool_size, char* whitelist[],
+static int init_eal(char* name, int secondary, unsigned long long lcore_mask, int main_lcore, int mempool_size, char* whitelist[],
                     int wl_count, char* vdevs[], int vdev_count) {
     /* As opposed to SoftNIC, this call only initializes the master thread.
      * We cannot rely on threads launched by DPDK within ZCSI, the threads
@@ -68,7 +67,7 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
 
     char* rte_argv[MAX_ARGS];
 
-    char opt_master_lcore[1024];
+    char opt_main_lcore[1024];
     char opt_lcore_bitmap[1024];
     char opt_socket_mem[1024];
 
@@ -77,21 +76,15 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
 
     int ret;
     int i;
-    int tid = core;
+    int tid = main_lcore;
 
-    if (core > RTE_MAX_LCORE || tid > RTE_MAX_LCORE) {
+    if (main_lcore > RTE_MAX_LCORE || tid > RTE_MAX_LCORE) {
         return -1;
     }
 
-    sprintf(opt_master_lcore, "%d", tid);
+    sprintf(opt_main_lcore, "%d", tid);
 
-    /* We need to tell rte_eal_init that it should use all possible lcores.
-     * If not, it does an insane thing and 0s out the cpusets for any unused
-     * physical cores and will not work when new threads are allocated. We
-     * could hack around this another way, but this seems more reasonable.*/
-//    sprintf(opt_lcore_bitmap, "0x%x", (1u << core));
-
-    sprintf(opt_lcore_bitmap, "0x%llx", lcore_mask);  // the previous statement supports only a single lcore = master core !?
+    sprintf(opt_lcore_bitmap, "0x%llx", lcore_mask);
     sprintf(opt_socket_mem, "%d", mempool_size);
     for (i = 1; i < numa_count; i++)
         sprintf(opt_socket_mem + strlen(opt_socket_mem), ",%d", mempool_size);
@@ -109,7 +102,7 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     add_arg(&rte_argc, rte_argv, opt_lcore_bitmap);
 
     for (int i = 0; i < wl_count; i++) {
-        add_arg(&rte_argc, rte_argv, "-w");
+        add_arg(&rte_argc, rte_argv, "-a");
         add_arg(&rte_argc, rte_argv, whitelist[i]);
     }
 
@@ -119,11 +112,11 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     }
 
     /* This just makes sure that by default everything is blacklisted */
-    add_arg(&rte_argc, rte_argv, "-w");
+    add_arg(&rte_argc, rte_argv, "-a");
     add_arg(&rte_argc, rte_argv, "99:99.0");
 
-    add_arg(&rte_argc, rte_argv, "--master-lcore");
-    add_arg(&rte_argc, rte_argv, opt_master_lcore);
+    add_arg(&rte_argc, rte_argv, "--main-lcore");
+    add_arg(&rte_argc, rte_argv, opt_main_lcore);
 
     add_arg(&rte_argc, rte_argv, "-n");
 
@@ -144,7 +137,6 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
     	RTE_LOG(DEBUG, EAL, "%s : %s\n", rte_argv[i], rte_argv[i+1]);
     }
 
-
     ret = rte_eal_init(rte_argc, rte_argv);
     if (secondary && rte_eal_process_type() != RTE_PROC_SECONDARY) {
         rte_panic("Not a secondary process");
@@ -152,8 +144,8 @@ static int init_eal(char* name, int secondary, unsigned long long lcore_mask, in
 
     /* Change lcore ID */
     RTE_PER_LCORE(_lcore_id)     = tid;
-    RTE_PER_LCORE(_mempool_core) = core;
-    socket_id                    = rte_lcore_to_socket_id(core);
+    RTE_PER_LCORE(_mempool_core) = main_lcore;
+    socket_id                    = rte_lcore_to_socket_id(main_lcore);
     if (numa_available() != -1) {
         bind_to_domain(socket_id);
     }
@@ -182,7 +174,7 @@ int init_secondary(const char* name, int nlen, unsigned long long lcore_mask, in
     return find_secondary_mempool();
 }
 
-int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore_mask, int core, char* whitelist[], int wlcount,
+int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore_mask, int main_lcore, char* whitelist[], int wlcount,
                             unsigned int mempool_size, unsigned int mcache_size, unsigned int mbuf_cnt, int slots, char* vdevs[], int vdevcount ) {
     int ret = 0;
     if (name == NULL || nlen >= MAX_NAME_LEN) {
@@ -193,11 +185,10 @@ int init_system_whitelisted(const char* name, int nlen, unsigned long long lcore
     clean_name[nlen] = '\0';
 
     init_timer();
-    if ((ret = init_eal(clean_name, 0, lcore_mask, core, mempool_size, whitelist, wlcount, vdevs, vdevcount)) < 0) {
+    if ((ret = init_eal(clean_name, 0, lcore_mask, main_lcore, mempool_size, whitelist, wlcount, vdevs, vdevcount)) < 0) {
         return ret;
     }
-
-    return init_mempool(core, mbuf_cnt, mcache_size, slots); // we request here #mbufs, not MB as in rte_eal_init !
+    return init_mempool(main_lcore, mbuf_cnt, mcache_size, slots); // we request here #mbufs, not MB as in rte_eal_init !
 }
 
 /* Call this from the main thread on ZCSI to initialize things. This initializes

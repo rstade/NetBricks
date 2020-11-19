@@ -817,7 +817,7 @@ extern "C" {
         name: *const c_char,
         nlen: i32,
         lcore_mask: u64,
-        core: i32,
+        main_lcore: i32,
         whitelist: *mut *const c_char,
         wlcount: i32,
         pool_size: u32,
@@ -832,7 +832,7 @@ extern "C" {
         name: *const c_char,
         nlen: i32,
         lcore_mask: u64,
-        core: i32,
+        main_lcore: i32,
         vdevs: *mut *const c_char,
         vdev_count: i32,
     ) -> i32;
