@@ -38,7 +38,7 @@ static const struct rte_eth_conf default_eth_conf = {
         .lpbk_mode = 0, /* Loopback operation mode. By default the value is 0, meaning the loopback mode is disabled. */
         .rxmode =
                 {
-                        .mq_mode        = ETH_MQ_RX_RSS, /* Use RSS without DCB or VMDQ */
+                        .mq_mode        = ETH_MQ_RX_RSS, /* Use RSS without DCB or VMDQ, reset to RTH_MQ_RX_NONE on virtio dev! */
                         .max_rx_pkt_len = 0,             /* valid only if jumbo is on */
                         .split_hdr_size = 0,             /* valid only if HS is on */
                         .offloads       = 0,
@@ -57,7 +57,7 @@ static const struct rte_eth_conf default_eth_conf = {
                         .rss_hf = ETH_RSS_IP | ETH_RSS_UDP | ETH_RSS_TCP | ETH_RSS_SCTP,
                         .rss_key = NULL,
                 },
-        /* we need the flow director feature*/
+        /* we need the flow director feature, further configuration is set via rte_flow */
         .fdir_conf =
                 {
                         .mode = RTE_FDIR_MODE_PERFECT,
@@ -68,7 +68,7 @@ static const struct rte_eth_conf default_eth_conf = {
                                 .vlan_tci_mask=0,
                                 .ipv4_mask= {
                                         .src_ip =0,
-                                        .dst_ip =0xFFFFFFFF,
+                                        .dst_ip =0,
                                         .tos    =0,
                                         .ttl    =0,
                                         .proto  =0,
@@ -76,7 +76,7 @@ static const struct rte_eth_conf default_eth_conf = {
                                 .ipv6_mask= {
                                 },
                                 .src_port_mask=0x0000,
-                                .dst_port_mask=0x00FC,
+                                .dst_port_mask=0x0000,
                                 .mac_addr_byte_mask=0,
                                 .tunnel_id_mask=0,
                                 .tunnel_type_mask=0,
@@ -231,7 +231,7 @@ assert_link_status(int port_id) {
 
 
 int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], int txq_core[], uint16_t nrxd, uint16_t ntxd,
-                  int loopback, int tso, int csumoffload, struct rte_fdir_conf const *p_fdir_conf) {
+                  int loopback, int tso, int csumoffload, enum rte_eth_rx_mq_mode rx_mq_mode) {
     struct rte_eth_dev_info dev_info = {};
     struct rte_eth_conf eth_conf;
     struct rte_eth_rxconf eth_rxconf;
@@ -248,7 +248,6 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
 
     eth_conf = default_eth_conf;
     eth_conf.lpbk_mode = !(!loopback);
-    if (p_fdir_conf) eth_conf.fdir_conf = *p_fdir_conf;
 
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
@@ -270,6 +269,7 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     eth_txconf = dev_info.default_txconf;
     tso = !(!tso);
     csumoffload = !(!csumoffload);
+    eth_conf.rxmode.mq_mode=rx_mq_mode;
     /* removed in 18.08
     eth_txconf.txq_flags = ETH_TXQ_FLAGS_NOVLANOFFL | ETH_TXQ_FLAGS_NOMULTSEGS * (1 - tso) |
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);

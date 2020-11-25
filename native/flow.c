@@ -39,8 +39,13 @@
 
 #define MAX_PATTERN_NUM		4
 
+static struct rte_flow_item  eth_item = { RTE_FLOW_ITEM_TYPE_ETH,
+                                          0, 0, 0 };
+static struct rte_flow_item  end_item = { RTE_FLOW_ITEM_TYPE_END,
+                                          0, 0, 0 };
+
 struct rte_flow *
-generate_tcp_flow       (uint16_t port_id, uint16_t rx_q,
+add_tcp_flow       (uint16_t port_id, uint16_t rx_q,
                          uint32_t src_ip, uint32_t src_mask,
                          uint32_t dest_ip, uint32_t dest_mask,
                          uint16_t src_port, uint16_t src_port_mask,
@@ -83,10 +88,6 @@ add_tcp_flow ( uint16_t port_id, uint16_t rx_q,
     struct rte_flow_action action[MAX_PATTERN_NUM];
     struct rte_flow *flow = NULL;
     struct rte_flow_action_queue queue = { .index = rx_q };
-//    struct rte_flow_item_eth eth_spec;
-//    struct rte_flow_item_eth eth_mask;
-//    struct rte_flow_item_vlan vlan_spec;
-//    struct rte_flow_item_vlan vlan_mask;
     struct rte_flow_item_ipv4 ip_spec;
     struct rte_flow_item_ipv4 ip_mask;
     struct rte_flow_item_tcp tcp_spec;
@@ -117,33 +118,9 @@ add_tcp_flow ( uint16_t port_id, uint16_t rx_q,
      * since in this example we just want to get the
      * ipv4 we set this level to allow all.
      */
-//    memset(&eth_spec, 0, sizeof(struct rte_flow_item_eth));
-//    memset(&eth_mask, 0, sizeof(struct rte_flow_item_eth));
-//    eth_spec.type = 0;
-//    eth_mask.type = 0;
-//    pattern[0].type = RTE_FLOW_ITEM_TYPE_ETH;
-//    pattern[0].spec = &eth_spec;
-//    pattern[0].mask = &eth_mask;
 
-    /*
-     * setting the second level of the pattern (vlan).
-     * since in this example we just want to get the
-     * ipv4 we also set this level to allow all.
-     */
- //   memset(&vlan_spec, 0, sizeof(struct rte_flow_item_vlan));
- //   memset(&vlan_mask, 0, sizeof(struct rte_flow_item_vlan));
- //   pattern[1].type = RTE_FLOW_ITEM_TYPE_VLAN;
- //   pattern[1].spec = &vlan_spec;
- //   pattern[1].mask = &vlan_mask;
+    pattern[0]= eth_item;
 
-    /*
-     * setting the third level of the pattern (ip).
-     * in this example this is the level we care about
-     * so we set it according to the parameters.
-     */
-//    int debug_level= rte_log_get_level(RTE_LOGTYPE_PMD);
-//    printf("**************  debug level: %d\n", debug_level);
-//    RTE_LOG(ERR, PMD, "*****************   test log message\n");
 
     memset(&ip_spec, 0, sizeof(struct rte_flow_item_ipv4));
     memset(&ip_mask, 0, sizeof(struct rte_flow_item_ipv4));
@@ -153,9 +130,9 @@ add_tcp_flow ( uint16_t port_id, uint16_t rx_q,
     ip_mask.hdr.src_addr = htonl(src_mask);
     ip_spec.hdr.next_proto_id = 0x06;
     //ip_mask.hdr.next_proto_id = 0xff;  no mask for proto possible for fdir filter on x520
-    pattern[0].type = RTE_FLOW_ITEM_TYPE_IPV4;
-    pattern[0].spec = &ip_spec;
-    pattern[0].mask = &ip_mask;
+    pattern[1].type = RTE_FLOW_ITEM_TYPE_IPV4;
+    pattern[1].spec = &ip_spec;
+    pattern[1].mask = &ip_mask;
 
     RTE_LOG(DEBUG, PMD, "dst ip %08x, mask: %08x\n", ip_spec.hdr.dst_addr, ip_mask.hdr.dst_addr);
     RTE_LOG(DEBUG, PMD, "src ip %08x, mask: %08x\n", ip_spec.hdr.src_addr, ip_mask.hdr.src_addr);
@@ -171,19 +148,23 @@ add_tcp_flow ( uint16_t port_id, uint16_t rx_q,
 
     RTE_LOG(DEBUG, PMD, "dst port %04x, mask: %04x\n", tcp_spec.hdr.dst_port, tcp_mask.hdr.dst_port);
     RTE_LOG(DEBUG, PMD, "src port %04x, mask: %04x\n", tcp_spec.hdr.src_port, tcp_mask.hdr.src_port);
-    pattern[1].type = RTE_FLOW_ITEM_TYPE_TCP;
-    pattern[1].spec = &tcp_spec;
-    pattern[1].mask = &tcp_mask;
-    pattern[1].last = NULL;
+    pattern[2].type = RTE_FLOW_ITEM_TYPE_TCP;
+    pattern[2].spec = &tcp_spec;
+    pattern[2].mask = &tcp_mask;
+    pattern[2].last = NULL;
 
 
     /* the final level must be always type end */
-    pattern[2].type = RTE_FLOW_ITEM_TYPE_END;
+    pattern[3] = end_item;
 
     res = rte_flow_validate(port_id, &attr, pattern, action, error);
     if (!res)
-        RTE_LOG(DEBUG, PMD, "flow validation succeeded\n");
-        flow = rte_flow_create(port_id, &attr, pattern, action, error);
+        RTE_LOG(INFO, PMD, "flow validation succeeded\n");
+    else
+        RTE_LOG(ERR, PMD, "flow validation failed, rte_flow_validate return code = %d\n", res);
+
+    flow = rte_flow_create(port_id, &attr, pattern, action, error);
+
 
     return flow;
 }

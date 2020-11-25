@@ -2,12 +2,11 @@ use native::zcsi::rte_mbuf_api::{rte_mbuf, PKT_TX_IPV4, PKT_TX_IP_CKSUM, PKT_TX_
 use std::fmt;
 use std::ptr;
 
-pub(crate) type MBuf = rte_mbuf;
+pub type MBuf = rte_mbuf;
 
 /* this must be adapted when new RX offloads are added */
 pub const PKT_RX_OFFLOAD_MASK: u32 = (1 << 20) - 1;
 
-// TODO: Remove this once we start using these functions correctly
 #[allow(dead_code)]
 impl MBuf {
     #[inline]
@@ -176,42 +175,41 @@ impl MBuf {
     pub fn tcp_checksum_tx_offload(&mut self) -> bool {
         self.ol_flags & PKT_TX_TCP_CKSUM != 0
     }
-    /*
-       #[inline]
-       pub fn l2_len(&self) -> u64 {
-           unsafe { self.__bindgen_anon_3.tx_offload.l234len.l2_len() }
-       }
-       #[inline]
-       pub fn set_l2_len(&mut self, val: u64) {
-           unsafe {
-               self.__bindgen_anon_3.tx_offload.l234len.set_l2_len(val);
-           }
-       }
 
-       #[inline]
-       pub fn l3_len(&self) -> u64 {
-           unsafe { self.tx_offload.l234len.l3_len() }
-       }
+    #[inline]
+    pub fn l2_len(&self) -> u64 {
+        unsafe { self.__bindgen_anon_3.__bindgen_anon_1.l2_len() }
+    }
+    #[inline]
+    pub fn set_l2_len(&mut self, val: u64) {
+        unsafe {
+            self.__bindgen_anon_3.__bindgen_anon_1.set_l2_len(val);
+        }
+    }
 
-       #[inline]
-       pub fn set_l3_len(&mut self, val: u64) {
-           unsafe {
-               self.tx_offload.l234len.set_l3_len(val);
-           }
-       }
+    #[inline]
+    pub fn l3_len(&self) -> u64 {
+        unsafe { self.__bindgen_anon_3.__bindgen_anon_1.l3_len() }
+    }
 
-       #[inline]
-       pub fn l4_len(&self) -> u64 {
-           unsafe { self.tx_offload.l234len.l4_len() }
-       }
+    #[inline]
+    pub fn set_l3_len(&mut self, val: u64) {
+        unsafe {
+            self.__bindgen_anon_3.__bindgen_anon_1.set_l3_len(val);
+        }
+    }
 
-       #[inline]
-       pub fn set_l4_len(&mut self, val: u64) {
-           unsafe {
-               self.tx_offload.l234len.set_l4_len(val);
-           }
-       }
-    */
+    #[inline]
+    pub fn l4_len(&self) -> u64 {
+        unsafe { self.__bindgen_anon_3.__bindgen_anon_1.l4_len() }
+    }
+
+    #[inline]
+    pub fn set_l4_len(&mut self, val: u64) {
+        unsafe {
+            self.__bindgen_anon_3.__bindgen_anon_1.set_l4_len(val);
+        }
+    }
 }
 
 impl fmt::Display for MBuf {

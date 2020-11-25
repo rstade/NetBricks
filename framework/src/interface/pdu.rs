@@ -428,44 +428,44 @@ impl<'a> Pdu<'a> {
     pub fn tcp_checksum_tx_offload(&self) -> bool {
         unsafe { (*self.mbuf).tcp_checksum_tx_offload() }
     }
-    /*
-        /// functions for tx offload
-        #[inline]
-        pub fn l2_len(&self) -> u64 {
-            unsafe { (*self.mbuf).l2_len() }
-        }
 
-        #[inline]
-        pub fn set_l2_len(&mut self, val: u64) {
-            unsafe {
-                (*self.mbuf).set_l2_len(val);
-            }
-        }
+    /// functions for tx offload
+    #[inline]
+    pub fn l2_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l2_len() }
+    }
 
-        #[inline]
-        pub fn l3_len(&self) -> u64 {
-            unsafe { (*self.mbuf).l3_len() }
+    #[inline]
+    pub fn set_l2_len(&mut self, val: u64) {
+        unsafe {
+            (*self.mbuf).set_l2_len(val);
         }
+    }
 
-        #[inline]
-        pub fn set_l3_len(&mut self, val: u64) {
-            unsafe {
-                (*self.mbuf).set_l3_len(val);
-            }
-        }
+    #[inline]
+    pub fn l3_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l3_len() }
+    }
 
-        #[inline]
-        pub fn l4_len(&self) -> u64 {
-            unsafe { (*self.mbuf).l4_len() }
+    #[inline]
+    pub fn set_l3_len(&mut self, val: u64) {
+        unsafe {
+            (*self.mbuf).set_l3_len(val);
         }
+    }
 
-        #[inline]
-        pub fn set_l4_len(&mut self, val: u64) {
-            unsafe {
-                (*self.mbuf).set_l4_len(val);
-            }
+    #[inline]
+    pub fn l4_len(&self) -> u64 {
+        unsafe { (*self.mbuf).l4_len() }
+    }
+
+    #[inline]
+    pub fn set_l4_len(&mut self, val: u64) {
+        unsafe {
+            (*self.mbuf).set_l4_len(val);
         }
-    */
+    }
+
     #[inline]
     pub fn ol_flags(&self) -> u64 {
         unsafe { (*self.mbuf).ol_flags }

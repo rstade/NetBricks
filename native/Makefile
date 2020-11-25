@@ -1,9 +1,7 @@
 CC = gcc
 
-RTE_SDK = $(abspath ../3rdparty/dpdk/)
-#ifndef RTE_SDK
-#$(error RTE_SDK is undefined)
-#endif
+RTE_SDK = $(abspath ../../dpdk/)
+
 
 ifndef RTE_TARGET
 	RTE_TARGET="build"
@@ -53,12 +51,13 @@ INSTALL_PATH = $(abspath ../target/native)
 
 .PHONY: all clean tags cscope all-static
 
-all: $(DEPS) $(PROD) install
+all: $(DEPS) $(PROD)
 
 all-static: $(DEPS) $(PROD_STATIC)
 
 install: $(DEPS) $(PROD) | $(INSTALL_PATH)
 	cp $(PROD) $(INSTALL_PATH)
+	sudo cp $(PROD) /usr/local/lib64
 
 $(INSTALL_PATH):
 	mkdir -p $(INSTALL_PATH)

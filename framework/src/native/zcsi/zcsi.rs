@@ -1,6 +1,9 @@
 use super::super::super::headers::IpHeader;
-use native::zcsi::rte_ethdev_api::{rte_eth_dev_get_name_by_port, RTE_ETH_FLOW_MAX, RTE_ETH_NAME_MAX_LEN};
-use native::zcsi::rte_mbuf_api::*;
+use native::zcsi::rte_ethdev_api::{
+    rte_eth_dev_get_name_by_port, rte_eth_rx_mq_mode, rte_eth_stats, rte_eth_xstat_name, rte_flow, RTE_ETH_FLOW_MAX,
+    RTE_ETH_NAME_MAX_LEN,
+};
+use native::zcsi::rte_mbuf_api::rte_mbuf;
 use std::convert;
 use std::ffi::CStr;
 use std::fmt;
@@ -8,10 +11,10 @@ use std::io;
 use std::net::Ipv4Addr;
 use std::os::raw::{c_char, c_void};
 use std::ptr;
+use std::ptr::null_mut;
 use std::str::Utf8Error;
 
 pub enum RteKni {}
-pub enum RteFlow {}
 
 /*
  * A packet can be identified by hardware as different flow types. Different
@@ -178,6 +181,16 @@ pub struct RteFlowError {
     pub message: *mut c_char,
 }
 
+impl RteFlowError {
+    pub fn new() -> RteFlowError {
+        RteFlowError {
+            err_type: 0,
+            cause: null_mut(),
+            message: null_mut(),
+        }
+    }
+}
+
 pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> {
     let kni_if_raw: *const c_char = rte_kni_get_name(p_kni);
     let slice = CStr::from_ptr(kni_if_raw).to_str();
@@ -205,27 +218,9 @@ pub fn eth_dev_get_name_by_port(port_id: u16) -> Option<String> {
 
 const RTE_ETHDEV_QUEUE_STAT_CNTRS: usize = 16;
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct RteEthStats {
-    pub ipackets: u64,
-    pub opackets: u64,
-    pub ibytes: u64,
-    pub obytes: u64,
-    pub imissed: u64,
-    pub ierrors: u64,
-    pub oerrors: u64,
-    pub rx_nombuf: u64,
-    pub q_ipackets: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_opackets: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_ibytes: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_obytes: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
-    pub q_errors: [u64; RTE_ETHDEV_QUEUE_STAT_CNTRS],
-}
-
-impl RteEthStats {
-    pub fn new() -> RteEthStats {
-        RteEthStats {
+impl rte_eth_stats {
+    pub fn new() -> rte_eth_stats {
+        rte_eth_stats {
             ipackets: 0u64,
             opackets: 0u64,
             ibytes: 0u64,
@@ -243,7 +238,7 @@ impl RteEthStats {
     }
 }
 
-impl fmt::Display for RteEthStats {
+impl fmt::Display for rte_eth_stats {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "imissed= {}, rx_no_mbuf= {}\n", self.imissed, self.rx_nombuf).unwrap();
         write!(
@@ -272,13 +267,7 @@ impl fmt::Display for RteEthStats {
 
 pub const RTE_ETH_XSTATS_NAME_SIZE: usize = 64;
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct RteEthXstatName {
-    pub name: [c_char; RTE_ETH_XSTATS_NAME_SIZE],
-}
-
-impl RteEthXstatName {
+impl rte_eth_xstat_name {
     pub fn to_str(&self) -> Result<&str, Utf8Error> {
         unsafe { CStr::from_ptr(&self.name[0] as *const c_char).to_str() }
     }
@@ -812,6 +801,7 @@ pub fn check_os_error(code: i32) -> io::Result<i32> {
 #[link(name = "zcsi")]
 #[link(name = "rte_kni")]
 #[link(name = "rte_ethdev")]
+#[link(name = "rte_eal")]
 extern "C" {
     pub fn init_system_whitelisted(
         name: *const c_char,
@@ -847,7 +837,7 @@ extern "C" {
         loopback: i32,
         tso: i32,
         csumoffload: i32,
-        fdir_conf_ptr: *const RteFdirConf,
+        rx_mq_mode: rte_eth_rx_mq_mode,
     ) -> i32;
     pub fn free_pmd_port(port: u16) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
@@ -888,29 +878,29 @@ extern "C" {
     pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
     pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
 
-    pub fn rte_log_get_global_level() -> u32;
-
     pub fn add_tcp_flow(
         port_id: u16,
         rx_q: u16,
         src_ip: u32,
         src_mask: u32,
-        dest_ip: u32,
-        dest_mask: u32,
+        dst_ip: u32,
+        dst_mask: u32,
         src_port: u16,
         src_port_mask: u16,
         dst_port: u16,
         dst_port_mask: u16,
         error: *const RteFlowError,
-    ) -> *mut RteFlow;
-    pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
-    pub fn rte_eth_dev_filter_ctrl(
-        port_id: u16,
-        filter_type: RteFilterType,
-        filter_op: RteFilterOp,
-        arg: *mut c_void,
-    ) -> i32;
+    ) -> *mut rte_flow;
 
+    /* gone in 20.11
+        pub fn rte_eth_dev_filter_supported(port_id: u16, filter_type: RteFilterType) -> i32;
+        pub fn rte_eth_dev_filter_ctrl(
+            port_id: u16,
+            filter_type: RteFilterType,
+            filter_op: RteFilterOp,
+            arg: *mut c_void,
+        ) -> i32;
+    */
     pub fn rte_eth_stats_reset(port_id: u16) -> i32;
 
 }

@@ -6,17 +6,18 @@ use common::errors::ErrorKind;
 use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
 use interface::port::fdir::FlowSteeringMode;
+use interface::PortType::Physical;
 use ipnet::Ipv4Net;
 use libc::if_indextoname;
 use native::zcsi::rte_ethdev_api::{
     rte_eth_dev_info, rte_eth_dev_info_get, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name,
-    rte_eth_macaddr_get, rte_ether_addr,
+    rte_eth_macaddr_get, rte_eth_rx_mq_mode_ETH_MQ_RX_NONE, rte_eth_rx_mq_mode_ETH_MQ_RX_RSS, rte_ether_addr, rte_flow,
 };
 use native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use native::zcsi::{
     add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring,
     init_ovs_eth_ring, init_pmd_port, kni_alloc, kni_get_name, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
-    rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlow, RteFlowError, RteKni,
+    rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlowError, RteKni,
 };
 use regex::Regex;
 use std::cell::RefCell;
@@ -720,7 +721,7 @@ impl PmdPort {
         )
     }
 
-    pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4) -> Option<&RteFlow> {
+    pub fn map_rx_flow_2_queue(&self, rxq: u16, flow: FiveTupleV4, flow_mask: FiveTupleV4) -> Option<&rte_flow> {
         unsafe {
             let mut error = RteFlowError {
                 err_type: 0,
@@ -906,10 +907,12 @@ impl PmdPort {
             );
         }
         if actual_rxqs > 0 && actual_txqs > 0 {
-            //PmdPort::print_eth_dev_info(port);
-            if fdir_conf.is_some() {
-                debug!("calling init_pmd_port with fdir_conf {}", fdir_conf.unwrap());
-            }
+            // DPDK no longer accepts RSS on some virtual ports like virtio
+            let rx_mq_mode = if port_type == Physical {
+                rte_eth_rx_mq_mode_ETH_MQ_RX_RSS
+            } else {
+                rte_eth_rx_mq_mode_ETH_MQ_RX_NONE
+            };
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -922,11 +925,7 @@ impl PmdPort {
                     loopbackv,
                     tsov,
                     csumoffloadv,
-                    if fdir_conf.is_some() {
-                        fdir_conf.unwrap() as *const RteFdirConf
-                    } else {
-                        ptr::null()
-                    },
+                    rx_mq_mode,
                 )
             };
             if ret == 0 {
