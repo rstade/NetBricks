@@ -231,7 +231,7 @@ assert_link_status(int port_id) {
 
 
 int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], int txq_core[], uint16_t nrxd, uint16_t ntxd,
-                  int loopback, int tso, int csumoffload, enum rte_eth_rx_mq_mode rx_mq_mode) {
+                  int loopback, int tso, int csumoffload, enum rte_eth_rx_mq_mode rx_mq_mode, struct rte_fdir_conf const *p_fdir_conf) {
     struct rte_eth_dev_info dev_info = {};
     struct rte_eth_conf eth_conf;
     struct rte_eth_rxconf eth_rxconf;
@@ -248,6 +248,8 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
 
     eth_conf = default_eth_conf;
     eth_conf.lpbk_mode = !(!loopback);
+    if (p_fdir_conf) eth_conf.fdir_conf = *p_fdir_conf;
+    eth_conf.rxmode.mq_mode=rx_mq_mode;
 
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
@@ -269,7 +271,7 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     eth_txconf = dev_info.default_txconf;
     tso = !(!tso);
     csumoffload = !(!csumoffload);
-    eth_conf.rxmode.mq_mode=rx_mq_mode;
+
     /* removed in 18.08
     eth_txconf.txq_flags = ETH_TXQ_FLAGS_NOVLANOFFL | ETH_TXQ_FLAGS_NOMULTSEGS * (1 - tso) |
                            ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);

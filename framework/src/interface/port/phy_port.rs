@@ -630,6 +630,15 @@ impl PmdPort {
     }
 
     #[inline]
+    pub fn get_ipv4_dst_mask(&self) -> u32 {
+        if self.fdir_conf.is_some() {
+            u32::from_be(self.fdir_conf.unwrap().mask.ipv4_mask.dst_ip)
+        } else {
+            0x00000000
+        }
+    }
+
+    #[inline]
     pub fn is_native_kni(&self) -> bool {
         self.kni.is_some()
     }
@@ -926,6 +935,11 @@ impl PmdPort {
                     tsov,
                     csumoffloadv,
                     rx_mq_mode,
+                    if fdir_conf.is_some() {
+                        fdir_conf.unwrap() as *const RteFdirConf
+                    } else {
+                        ptr::null()
+                    },
                 )
             };
             if ret == 0 {
