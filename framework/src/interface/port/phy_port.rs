@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use allocators::*;
@@ -20,6 +21,7 @@ use native::zcsi::{
     rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlowError, RteKni,
 };
 use regex::Regex;
+use std::arch::x86_64::_rdtsc;
 use std::cell::RefCell;
 use std::cmp::min;
 use std::collections::VecDeque;
@@ -33,7 +35,7 @@ use std::rc::Rc;
 use std::string::ToString;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use utils::{rdtsc_unsafe, FiveTupleV4};
+use utils::FiveTupleV4;
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -284,7 +286,7 @@ impl PortQueue {
 
     #[inline]
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
-        let start = rdtsc_unsafe();
+        let start = unsafe { _rdtsc() };
         unsafe {
             let recv = if self.port.is_native_kni() {
                 rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32)
@@ -296,7 +298,7 @@ impl PortQueue {
             self.stats_rx.stats.store(update, Ordering::Relaxed);
 
             if recv > 0 {
-                let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (rdtsc_unsafe() - start);
+                let update = self.stats_rx.cycles.load(Ordering::Relaxed) + (_rdtsc() - start);
                 self.stats_rx.cycles.store(update, Ordering::Relaxed);
             }
             Ok(recv)
@@ -420,7 +422,7 @@ impl PortQueueTxBuffered {
 
     #[inline]
     fn send_queue(&mut self, pkts: &mut [*mut MBuf], to_send: u32) -> errors::Result<u32> {
-        let stamp = rdtsc_unsafe();
+        let stamp = unsafe { _rdtsc() };
         if self.tx_queue_is_empty() {
             let sent = self.port_queue.try_send(pkts, to_send);
             if sent < to_send {

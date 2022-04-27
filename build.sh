@@ -128,9 +128,13 @@ case $TASK in
             popd
         done
         ;;
-
+    huge_pages)
+        sudo dpdk-hugepages.py -p 2M --setup 8G
+        sudo dpdk-hugepages.py -s
+        ;;
     test)
         native
+        huge_pages
         pushd $BASE_DIR/framework
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
 #        sudo -E env "PATH=$PATH" ${CARGO} test --release
@@ -210,6 +214,7 @@ case $TASK in
           clean: Remove all built files
           dist_clean: Remove all support files
           env: Environment variables, run as eval \`./build.sh env\`.
+          huge_pages: setup huge pages for dpdk
 endhelp
         ;;
 esac

@@ -22,9 +22,7 @@ pub fn tcp_nf<T: 'static + Batch>(parent: T) -> CompositionBatch {
                 "payload: {:x} {:x} {:x} {:x}",
                 payload[0], payload[1], payload[2], payload[3]
             );
-            unsafe {
-                println!("Src {} dst {}", flow.src_port, flow.dst_port);
-            }
+            println!("Src {} dst {}", { flow.src_port }, { flow.dst_port });
         })
         .map(box |pkt| {
             println!("TCP header {}", pkt.headers().tcp(2));

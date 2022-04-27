@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use e2d2::operators::*;
 use e2d2::scheduler::*;
 use e2d2::utils::*;

@@ -1,6 +1,4 @@
 #![feature(box_syntax)]
-#![feature(asm)]
-#![feature(llvm_asm)]
 extern crate e2d2;
 extern crate fnv;
 extern crate getopts;
@@ -21,6 +19,8 @@ use std::env;
 use std::process;
 use std::thread;
 use std::time::Duration;
+use time::OffsetDateTime;
+
 mod nf;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
@@ -55,7 +55,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
+        Err(f) => panic!("{}", f.to_string()),
     };
     let mut configuration = read_matches(&matches, &opts);
 
@@ -82,13 +82,13 @@ fn main() {
             const PRINT_DELAY: f64 = 15.;
             const RUN_TIME: f64 = 60.;
             let sleep_delay = (PRINT_DELAY / 2.) as u64;
-            let mut start = time::precise_time_ns() as f64 / CONVERSION_FACTOR;
+            let mut start = OffsetDateTime::now_utc().unix_timestamp_nanos() as f64 / CONVERSION_FACTOR;
             let system_boot = start;
             let sleep_time = Duration::from_millis(sleep_delay);
             println!("0 OVERALL RX 0.00 TX 0.00 CYCLE_PER_DELAY 0 0 0");
             loop {
                 thread::sleep(sleep_time); // Sleep for a bit
-                let now = time::precise_time_ns() as f64 / CONVERSION_FACTOR;
+                let now = OffsetDateTime::now_utc().unix_timestamp_nanos() as f64 / CONVERSION_FACTOR;
                 if now - start > PRINT_DELAY {
                     let mut rx = 0;
                     let mut tx = 0;

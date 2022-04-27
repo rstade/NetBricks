@@ -1,4 +1,5 @@
 use super::{Executable, Scheduler};
+use std::arch::x86_64::_rdtsc;
 use std::cmp;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -7,7 +8,6 @@ use std::sync::Arc;
 use std::thread;
 
 use separator::Separatable;
-use utils;
 use uuid::Uuid;
 
 /// Used to keep stats about each pipeline and eventually grant tokens, etc.
@@ -31,7 +31,7 @@ impl Runnable {
             cycles: 0,
             count: 0,
             queue_len: 0,
-            last_run: utils::rdtsc_unsafe(),
+            last_run: unsafe { _rdtsc() },
             is_ready: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -43,7 +43,7 @@ impl Runnable {
             cycles: 0,
             count: 0,
             queue_len: 0,
-            last_run: utils::rdtsc_unsafe(),
+            last_run: unsafe { _rdtsc() },
             is_ready: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -224,7 +224,7 @@ impl StandaloneScheduler {
                     "core {}: set task state all {:?} at {:>20}",
                     self.core,
                     state,
-                    utils::rdtsc_unsafe().separated_string()
+                    unsafe { _rdtsc() }.separated_string()
                 );
             }
             SchedulerCommand::GetPerformance => {
@@ -267,7 +267,7 @@ impl StandaloneScheduler {
             let task = &mut (&mut self.run_q[self.next_task]);
             if task.is_ready() {
                 let (count, q_len) = task.task.execute();
-                let end = utils::rdtsc_unsafe();
+                let end = unsafe { _rdtsc() };
                 if count > 0 {
                     task.count += count as u64;
                     task.cycles += end - begin;
@@ -278,7 +278,7 @@ impl StandaloneScheduler {
                 }
                 end
             } else {
-                utils::rdtsc_unsafe()
+                unsafe { _rdtsc() }
             }
         };
 
@@ -300,14 +300,14 @@ impl StandaloneScheduler {
         self.execute_loop = true;
         if !self.run_q.is_empty() {
             while self.execute_loop {
-                self.execute_internal(utils::rdtsc_unsafe());
+                self.execute_internal(unsafe { _rdtsc() });
             }
         }
     }
 
     pub fn execute_one(&mut self) {
         if !self.run_q.is_empty() {
-            self.execute_internal(utils::rdtsc_unsafe());
+            self.execute_internal(unsafe { _rdtsc() });
         }
     }
 }

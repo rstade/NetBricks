@@ -16,6 +16,7 @@ use std::process;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use time::OffsetDateTime;
 
 const CONVERSION_FACTOR: f64 = 1000000000.;
 
@@ -66,7 +67,7 @@ fn main() {
     opts.optopt("m", "master", "Master core", "master");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
+        Err(f) => panic!("{}", f.to_string()),
     };
     if matches.opt_present("h") {
         print!("{}", opts.usage(&format!("Usage: {} [options]", program)));
@@ -138,12 +139,13 @@ fn main() {
         })
         .collect();
     let mut pkts_so_far = (0, 0);
-    let mut start = time::precise_time_ns() as f64 / CONVERSION_FACTOR;
+    //let mut start = time::precise_time_ns() as f64 / CONVERSION_FACTOR;
+    let mut start = OffsetDateTime::now_utc().unix_timestamp_nanos() as f64 / CONVERSION_FACTOR;
     let sleep_time = Duration::from_millis(500);
     loop {
         thread::sleep(sleep_time); // Sleep for a bit
         consumer.sync();
-        let now = time::precise_time_ns() as f64 / CONVERSION_FACTOR;
+        let now = OffsetDateTime::now_utc().unix_timestamp_nanos() as f64 / CONVERSION_FACTOR;
         if now - start > 1.0 {
             let mut rx = 0;
             let mut tx = 0;

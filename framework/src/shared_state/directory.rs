@@ -15,7 +15,7 @@ pub struct DirectoryHeader {
     // Used to signal that snapshotting is in progress.
     current_version: AtomicUsize,
     committed_version: AtomicUsize,
-    length: usize,
+    // length: usize,
 }
 
 #[repr(packed, C)]
@@ -42,11 +42,11 @@ impl Directory {
             let entry_size = size_of::<DirectoryEntry>();
             let entries = (BYTE_SIZE - header_size) / entry_size;
             let entry = (head.offset(1) as *mut u8) as *mut DirectoryEntry;
-            (*head).length = entries;
+            //(*head).length = entries;
             (*head).entries.store(0, Ordering::Release);
             (*head).committed_version.store(1, Ordering::SeqCst);
             Directory {
-                head: head,
+                head,
                 data: entry,
                 _shared_memory: shared,
                 entry: 0,

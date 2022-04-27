@@ -1,13 +1,10 @@
 use e2d2::operators::*;
+use std::arch::asm;
 
 #[inline]
 fn lat() {
     unsafe {
-        llvm_asm!("nop"
-             :
-             :
-             :
-             : "volatile");
+        asm!("nop");
     }
 }
 

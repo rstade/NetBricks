@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use common::*;
 use state::RingBuffer;
 use std::cmp::{max, min};

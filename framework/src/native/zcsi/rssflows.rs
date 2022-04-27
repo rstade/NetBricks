@@ -61,6 +61,7 @@ impl rte_eth_dev_info {
             max_vfs: 0,
             max_vmdq_pools: 0,
             rx_seg_capa: rte_eth_rxseg_capa {
+                _bitfield_align_1: [],
                 _bitfield_1: Default::default(),
                 max_nseg: 0,
                 reserved: 0,

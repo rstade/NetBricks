@@ -21,17 +21,15 @@ pub struct FiveTupleV4 {
 
 impl fmt::Display for FiveTupleV4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {
-            write!(
-                f,
-                "src_ip={}, dst_ip= {}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",
-                Ipv4Addr::from(self.src_ip),
-                Ipv4Addr::from(self.dst_ip),
-                self.src_port,
-                self.dst_port,
-                self.proto,
-            )
-        }
+        write!(
+            f,
+            "src_ip={}, dst_ip= {}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",
+            Ipv4Addr::from(self.src_ip),
+            Ipv4Addr::from(self.dst_ip),
+            { self.src_port },
+            { self.dst_port },
+            { self.proto },
+        )
     }
 }
 

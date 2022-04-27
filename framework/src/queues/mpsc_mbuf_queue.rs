@@ -2,12 +2,13 @@ use common::*;
 use interface::{PacketRx, Pdu};
 use native::zcsi::MBuf;
 use operators::ReceiveBatch;
+use std::arch::x86_64::_mm_pause;
 use std::clone::Clone;
 use std::cmp::min;
 use std::default::Default;
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 use std::sync::Arc;
-use utils::{pause, round_to_power_of_2};
+use utils::round_to_power_of_2;
 
 #[derive(Default)]
 struct QueueMetadata {
@@ -158,7 +159,9 @@ impl MpscQueue {
                 let producer_tail = self.producer.tail.load(Ordering::Acquire);
                 producer_tail != producer_head
             } {
-                pause(); // Pausing is a nice thing to do during spin locks
+                unsafe {
+                    _mm_pause();
+                } // Pausing is a nice thing to do during spin locks
             }
             // Once this has been achieved, update tail. Any conflicting updates will wait on the previous spin lock.
             self.producer.tail.store(end, Ordering::Release);
