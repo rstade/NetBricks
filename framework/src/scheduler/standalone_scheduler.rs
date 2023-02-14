@@ -25,7 +25,7 @@ pub struct Runnable {
 impl Runnable {
     pub fn from_task<T: Executable + 'static>(uuid: Uuid, name: String, task: T) -> Runnable {
         Runnable {
-            task: box task,
+            task: Box::new(task),
             uuid,
             name,
             cycles: 0,

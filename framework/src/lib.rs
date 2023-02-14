@@ -1,13 +1,5 @@
 #![recursion_limit = "1024"]
-#![feature(log_syntax)]
-#![feature(box_syntax)]
-#![feature(min_specialization)]
-#![feature(slice_concat_ext)]
 #![feature(ptr_internals)]
-// Used for cache alignment.
-#![feature(allocator_api)]
-#![allow(unused_features)]
-#![feature(integer_atomics)]
 #![allow(unused_doc_comments)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 // Need this since PMD port construction triggers too many arguments.

@@ -1,8 +1,8 @@
 pub use self::config_reader::*;
 pub use self::flag_reader::*;
+use interface::{FlowSteeringMode, NetSpec};
 use native::zcsi::RteFdirConf;
 use std::fmt;
-use interface::{FlowSteeringMode, NetSpec};
 
 mod config_reader;
 mod flag_reader;
@@ -87,11 +87,11 @@ impl fmt::Display for NetbricksConfiguration {
         for port in &self.ports {
             write!(f, "\t{}\n", port)?
         }
-        write!(f, "Cores:\n")?;
+        write!(f, "Cores:")?;
         for core in &self.cores {
-            write!(f, "\t{}\n", core)?
+            write!(f, "\t{}", core)?
         }
-        write!(f, "")
+        write!(f, "\n")
     }
 }
 

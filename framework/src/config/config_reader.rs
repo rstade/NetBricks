@@ -6,7 +6,6 @@ use eui48::MacAddress;
 use ipnet::Ipv4Net;
 use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
 use std::clone::Clone;
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::net::{AddrParseError, Ipv4Addr};
@@ -160,28 +159,28 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 }
             }
 
-            fn read_ipv4(mask_def: &BTreeMap<String, Value>, key: String) -> Result<u32, AddrParseError> {
+            fn read_ipv4(mask_def: &toml::map::Map<String, Value>, key: String) -> Result<u32, AddrParseError> {
                 match mask_def.get(&key) {
                     Some(&Value::String(ref ipv4_string)) => Ok(u32::from(Ipv4Addr::from_str(ipv4_string)?)),
                     _ => Ok(0u32),
                 }
             }
 
-            fn read_hex_u32(mask_def: &BTreeMap<String, Value>, key: String) -> u32 {
+            fn read_hex_u32(mask_def: &toml::map::Map<String, Value>, key: String) -> u32 {
                 match mask_def.get(&key) {
                     Some(&Value::String(ref hex_string)) => u32::from_str_radix(hex_string, 16).unwrap_or(0u32),
                     _ => 0u32,
                 }
             }
 
-            fn read_hex_u16(mask_def: &BTreeMap<String, Value>, key: String) -> u16 {
+            fn read_hex_u16(mask_def: &toml::map::Map<String, Value>, key: String) -> u16 {
                 match mask_def.get(&key) {
                     Some(&Value::String(ref hex_string)) => u16::from_str_radix(hex_string, 16).unwrap_or(0u16),
                     _ => 0u16,
                 }
             }
 
-            fn read_hex_u8(mask_def: &BTreeMap<String, Value>, key: String) -> u8 {
+            fn read_hex_u8(mask_def: &toml::map::Map<String, Value>, key: String) -> u8 {
                 match mask_def.get(&key) {
                     Some(&Value::String(ref hex_string)) => u8::from_str_radix(hex_string, 16).unwrap_or(0u8),
                     _ => 0u8,

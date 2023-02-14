@@ -11,7 +11,9 @@ pub struct CompositionBatch {
 
 impl CompositionBatch {
     pub fn new<V: 'static + Batch>(parent: V) -> CompositionBatch {
-        CompositionBatch { parent: box parent }
+        CompositionBatch {
+            parent: Box::new(parent),
+        }
     }
 }
 

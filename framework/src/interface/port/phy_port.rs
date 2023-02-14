@@ -136,7 +136,8 @@ impl Default for PmdPort {
         }
     }
 }
-
+pub type PciQueueType = CacheAligned<PortQueueTxBuffered>;
+pub type KniQueueType = CacheAligned<PortQueue>;
 /// A port queue represents a single queue for a physical port, and should be used to send and receive data.
 #[derive(Clone)]
 pub struct PortQueue {

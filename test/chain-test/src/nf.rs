@@ -1,8 +1,8 @@
 use e2d2::operators::*;
 
 #[inline]
-pub fn chain_nf<T: 'static + Batch>(parent: T) ->  CompositionBatch {
-    let next= parent
+pub fn chain_nf<T: 'static + Batch>(parent: T) -> CompositionBatch {
+    let next = parent
         .transform(box move |pkt| {
             let hdr = pkt.headers_mut().mac_mut(0);
             hdr.swap_addresses();
@@ -20,21 +20,16 @@ pub fn chain_nf<T: 'static + Batch>(parent: T) ->  CompositionBatch {
 }
 
 #[inline]
-pub fn chain<S: 'static + Batch>(
-    parent: S,
-    len: u32,
-    pos: u32,
-) -> CompositionBatch {
+pub fn chain<S: 'static + Batch>(parent: S, len: u32, pos: u32) -> CompositionBatch {
     let mut chained = chain_nf(parent);
     for _ in 1..len {
         chained = chain_nf(chained);
     }
-    let next= if len % 2 == 0 || pos % 2 == 1 {
-        CompositionBatch::new(chained
-            .transform(box move |pkt| {
-                let hdr = pkt.headers_mut().mac_mut(0);
-                hdr.swap_addresses();
-            }))
+    let next = if len % 2 == 0 || pos % 2 == 1 {
+        CompositionBatch::new(chained.transform(box move |pkt| {
+            let hdr = pkt.headers_mut().mac_mut(0);
+            hdr.swap_addresses();
+        }))
     } else {
         chained
     };

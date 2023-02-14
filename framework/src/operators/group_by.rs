@@ -40,7 +40,6 @@ where
         {
             let iter = PayloadEnumerator::new(&mut self.parent);
             while let Some(ParsedDescriptor { mut pdu, .. }) = iter.next(&mut self.parent) {
-                //let group = (self.group_fn)(&mut packet);
                 let group = (self.group_fn)(&mut pdu);
                 if !self.producers[group].enqueue_one(pdu) {
                     warn!("queue overflow in GroupByProducer for group {}", group);

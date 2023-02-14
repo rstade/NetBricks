@@ -324,5 +324,6 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
         cores.extend(ctx.rx_queues.keys());
     };
     ctx.active_cores = cores.into_iter().collect();
+    ctx.active_cores.sort_by(|a, b| a.cmp(b));
     Ok(ctx)
 }

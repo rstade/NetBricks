@@ -1,6 +1,6 @@
 [package]
 name = "e2d2"
-version = "1.0.7"
+version = "1.0.8"
 authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "Rainer Stademann"]
 build = "build.rs"
 
@@ -21,12 +21,12 @@ lazy_static = "*"
 net2 = "*"
 # NIX restricts us to just unix for now, we can fix this if someone cares at a later point.
 nix = ">=0.10.0"
-toml = "~0.4"
+toml = "0.6"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
-eui48 = { version= ">=0.4" }
+eui48 = { git= "https://github.com/readysettech/eui48.git", version= ">=1.1", features=["serde"] , default-features= false}
 separator =  ">= 0.3"
 serde_derive = "1.0"
 serde = "1.0"

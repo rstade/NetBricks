@@ -12,10 +12,7 @@ type FnvHash = BuildHasherDefault<FnvHasher>;
 const BUFFER_SIZE: usize = 2048;
 const PRINT_SIZE: usize = 256;
 
-pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(
-    parent: T,
-    sched: &mut S,
-) -> CompositionBatch {
+pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched: &mut S) -> CompositionBatch {
     let mut cache = HashMap::<FiveTupleV4, ReorderedBuffer, FnvHash>::with_hasher(Default::default());
     let mut read_buf: Vec<u8> = (0..PRINT_SIZE).map(|_| 0).collect();
     let uuid = Uuid::new_v4();

@@ -21,6 +21,7 @@ pub fn basic_opts() -> Options {
     opts.optopt("m", "master", "Master core", "master");
     opts.optopt("f", "configuration", "Configuration file", "path");
     opts.optmulti("", "vdev", "Virtual device to create", "vdev_name");
+    opts.optflag("i", "interactive", "run interactively");
     opts
 }
 

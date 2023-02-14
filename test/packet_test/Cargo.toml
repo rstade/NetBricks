@@ -9,7 +9,7 @@ time = ">=0.1.0"
 getopts = "*"
 rand = "0.3"
 fnv = "*"
-eui48 = ">=0.3"
+eui48 = { git= "https://github.com/readysettech/eui48.git", version= ">=1.1", features=["serde"] , default-features= false}
 uuid = { version = ">=0.7", features = ["v4"] }
 
 [features]
