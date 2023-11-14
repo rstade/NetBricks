@@ -1,6 +1,6 @@
 [package]
 name = "e2d2"
-version = "1.0.8"
+version = "1.0.9"
 authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "Rainer Stademann"]
 build = "build.rs"
 
@@ -20,7 +20,7 @@ regex = "*"
 lazy_static = "*"
 net2 = "*"
 # NIX restricts us to just unix for now, we can fix this if someone cares at a later point.
-nix = ">=0.10.0"
+nix = { version = ">=0.27.1", features =["event"] }
 toml = "0.6"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
@@ -36,3 +36,4 @@ ipnet = ">=1.0"
 default = []
 performance = []
 packet_offset = []
+

@@ -26,7 +26,7 @@ pub fn nat<T: 'static + Batch>(parent: T, _s: &mut dyn Scheduler, nat_ip: &Ipv4A
     let mut next_port = 1024;
     const MIN_PORT: u16 = 1024;
     const MAX_PORT: u16 = 65535;
-    let pipeline = parent.transform(box move |pkt| {
+    let pipeline = parent.transform(Box::new(move |pkt| {
         let payload = pkt.get_payload_mut(0);
         let flow = ipv4_extract_flow(payload);
         let found = match port_hash.get(&flow) {
@@ -53,6 +53,6 @@ pub fn nat<T: 'static + Batch>(parent: T, _s: &mut dyn Scheduler, nat_ip: &Ipv4A
                 outgoing_flow.ipv4_stamp_flow(payload);
             }
         }
-    });
+    }));
     pipeline.compose()
 }

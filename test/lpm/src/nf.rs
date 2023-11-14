@@ -208,21 +208,21 @@ pub fn lpm<T: 'static + Batch, S: Scheduler + Sized>(parent: T, s: &mut S) -> Co
     lpm_table.construct_table();
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .transform(box |p| p.headers_mut().mac_mut(0).swap_addresses())
+        .transform(Box::new(|p| p.headers_mut().mac_mut(0).swap_addresses()))
         .group_by(
             3,
-            box move |pkt| {
+            Box::new(move |pkt| {
                 let hdr = pkt.headers().ip(1);
                 lpm_table.lookup_entry(hdr.src()) as usize
-            },
+            }),
             s,
             "lpm_groups".to_string(),
             uuid,
         );
     let pipeline = merge_batches(vec![
-        box groups.get_group(0).unwrap(),
-        box groups.get_group(1).unwrap(),
-        box groups.get_group(2).unwrap(),
+        Box::new(groups.get_group(0).unwrap()),
+        Box::new(groups.get_group(1).unwrap()),
+        Box::new(groups.get_group(2).unwrap()),
     ])
     .compose();
     pipeline

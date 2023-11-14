@@ -1,4 +1,3 @@
-#![feature(box_syntax)]
 extern crate e2d2;
 extern crate eui48;
 extern crate fnv;

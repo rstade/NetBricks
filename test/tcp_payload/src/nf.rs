@@ -35,12 +35,12 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
     let mut payload_cache = HashMap::<FiveTupleV4, Vec<u8>>::with_hasher(Default::default());
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .transform(box move |p| {
+        .transform(Box::new(move |p| {
             p.headers_mut().mac_mut(0).swap_addresses();
-        })
+        }))
         .group_by(
             2,
-            box move |p| if p.headers().ip(1).protocol() == 6 { 0 } else { 1 },
+            Box::new(move |p| if p.headers().ip(1).protocol() == 6 { 0 } else { 1 }),
             sched,
             "GroupByProtocol".to_string(),
             uuid,
@@ -48,7 +48,7 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
     let pipe = groups
         .get_group(0)
         .unwrap()
-        .transform(box move |p| {
+        .transform(Box::new(move |p| {
             let flow = p.headers().ip(1).flow().unwrap();
             let mut seq = p.headers().tcp(2).seq_num();
             match rb_map.entry(flow) {
@@ -108,7 +108,7 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
                     }
                 }
             }
-        })
+        }))
         .compose();
     merge(vec![pipe, groups.get_group(1).unwrap().compose()]).compose()
 }

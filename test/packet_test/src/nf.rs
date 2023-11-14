@@ -7,9 +7,9 @@ pub fn delay<T: 'static + Batch>(parent: T) -> TransformBatch<T> {
     m.dst = MacAddress::new([0x68, 0x05, 0xca, 0x33, 0xff, 0x79]);
     m.src = MacAddress::new([0x68, 0x05, 0xca, 0x33, 0xfd, 0xc8]);
     m.set_etype(0x800);
-    parent.transform(box move |pkt| {
+    parent.transform(Box::new(move |pkt| {
         pkt.replace_header(0, &Header::new(&mut m as *mut MacHeader));
-    })
+    }))
     // parent.parse::<MacHeader>()
     // .transform(box move |pkt| {
     // assert!(pkt.refcnt() == 1);

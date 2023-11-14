@@ -17,12 +17,12 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
     let mut read_buf: Vec<u8> = (0..PRINT_SIZE).map(|_| 0).collect();
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .transform(box move |p| {
+        .transform(Box::new(move |p| {
             p.headers_mut().mac_mut(0).swap_addresses();
-        })
+        }))
         .group_by(
             2,
-            box move |p| if p.headers().ip(1).protocol() == 6 { 0 } else { 1 },
+            Box::new(move |p| if p.headers().ip(1).protocol() == 6 { 0 } else { 1 }),
             sched,
             "GroupByProtocol".to_string(),
             uuid,
@@ -30,7 +30,7 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
     let pipe = groups
         .get_group(0)
         .unwrap()
-        .transform(box move |p| {
+        .transform(Box::new(move |p| {
             if !p.headers().tcp(2).psh_flag() {
                 let flow = p.headers().ip(1).flow().unwrap();
                 let seq = p.headers().tcp(2).seq_num();
@@ -88,7 +88,7 @@ pub fn reconstruction<T: 'static + Batch, S: Scheduler + Sized>(parent: T, sched
                     },
                 }
             }
-        })
+        }))
         .compose();
     merge(vec![pipe, groups.get_group(1).unwrap().compose()]).compose()
 }

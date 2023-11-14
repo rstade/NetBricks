@@ -39,10 +39,10 @@ impl Acl {
 pub fn acl_match<T: 'static + Batch>(parent: T, acls: Vec<Acl>) -> CompositionBatch {
     let mut flow_cache = HashSet::<FiveTupleV4, FnvHash>::with_hasher(Default::default());
     parent
-        .transform(box move |p| {
+        .transform(Box::new(move |p| {
             p.headers_mut().mac_mut(0).swap_addresses();
-        })
-        .filter(box move |p| {
+        }))
+        .filter(Box::new(move |p| {
             let flow = p.headers().ip(1).flow().unwrap();
             for acl in &acls {
                 if acl.matches(&flow, &flow_cache) {
@@ -53,6 +53,6 @@ pub fn acl_match<T: 'static + Batch>(parent: T, acls: Vec<Acl>) -> CompositionBa
                 }
             }
             return false;
-        })
+        }))
         .compose()
 }

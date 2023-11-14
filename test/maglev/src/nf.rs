@@ -43,7 +43,7 @@ impl Maglev {
 
     fn generate_lut(permutations: &Vec<Vec<usize>>, size: usize) -> Box<Vec<usize>> {
         let mut next: Vec<_> = permutations.iter().map(|_| 0).collect();
-        let mut entry: Box<Vec<usize>> = box ((0..size).map(|_| 0x8000).collect());
+        let mut entry: Box<Vec<usize>> = Box::new((0..size).map(|_| 0x8000).collect());
         let mut n = 0;
         println!("Generating LUT");
         while n < size {
@@ -68,7 +68,7 @@ impl Maglev {
     }
 
     pub fn new(name: &[&str], lsize: usize) -> Maglev {
-        let permutations = box Maglev::generate_permutations(name, lsize);
+        let permutations = Box::new(Maglev::generate_permutations(name, lsize));
         Maglev {
             lut: Maglev::generate_lut(&*permutations, lsize),
             lut_size: lsize,
@@ -87,19 +87,19 @@ pub fn maglev<T: 'static + Batch, S: Scheduler + Sized>(parent: T, s: &mut S, ba
     let mut cache = HashMap::<usize, usize, FnvHash>::with_hasher(Default::default());
     let uuid = Uuid::new_v4();
     let mut groups = parent
-        .transform(box move |pkt| {
+        .transform(Box::new(move |pkt| {
             assert!(pkt.refcnt() == 1);
             let hdr = pkt.headers_mut().mac_mut(0);
             hdr.swap_addresses();
-        })
+        }))
         .group_by(
             ct,
-            box move |pkt| {
+            Box::new(move |pkt| {
                 let payload = pkt.get_payload(0);
                 let hash = ipv4_flow_hash(payload, 0);
                 let out = cache.entry(hash).or_insert_with(|| lut.lookup(hash));
                 *out
-            },
+            }),
             s,
             "GroupBy".to_string(),
             uuid,

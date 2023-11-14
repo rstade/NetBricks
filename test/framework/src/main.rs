@@ -1,4 +1,3 @@
-#![feature(box_syntax)]
 extern crate e2d2;
 extern crate getopts;
 extern crate rand;
@@ -25,16 +24,16 @@ fn monitor<T: 'static + Batch>(
     mut monitoring_cache: MergeableStoreDP<isize>,
 ) -> TransformBatch<TransformBatch<T>> {
     parent
-        .transform(box |pkt| {
+        .transform(Box::new(|pkt| {
             let hdr = pkt.headers_mut().mac_mut(0);
             hdr.swap_addresses();
-        })
-        .transform(box move |pkt| {
+        }))
+        .transform(Box::new(move |pkt| {
             let hdr = pkt.headers_mut().ip_mut(1);
             let ttl = hdr.ttl();
             hdr.set_ttl(ttl + 1);
             monitoring_cache.update(hdr.flow().unwrap(), 1);
-        })
+        }))
 }
 
 fn recv_thread(ports: Vec<CacheAligned<PortQueue>>, core: i32, counter: MergeableStoreDP<isize>) {
@@ -45,7 +44,7 @@ fn recv_thread(ports: Vec<CacheAligned<PortQueue>>, core: i32, counter: Mergeabl
         .iter()
         .map(|port| {
             let ctr = counter.clone();
-            box monitor(ReceiveBatch::new(port.clone()), ctr).send(port.clone()) as Box<dyn Batch>
+            Box::new(monitor(ReceiveBatch::new(port.clone()), ctr).send(port.clone())) as Box<dyn Batch>
         })
         .collect();
     println!("Running {} pipelines", pipelines.len());
