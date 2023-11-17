@@ -129,12 +129,13 @@ case $TASK in
         done
         ;;
     huge_pages)
-        sudo dpdk-hugepages.py -p 2M --setup 8G
-        sudo dpdk-hugepages.py -s
+	./hugepages.sh
+//        sudo dpdk-hugepages.py -p 2M --setup 8G
+//        sudo dpdk-hugepages.py -s
         ;;
     test)
         native
-        huge_pages
+        ./hugepages.sh
         pushd $BASE_DIR/framework
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
 #        sudo -E env "PATH=$PATH" ${CARGO} test --release

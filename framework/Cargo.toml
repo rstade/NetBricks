@@ -1,7 +1,7 @@
 [package]
 name = "e2d2"
-version = "1.0.9"
-authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "Rainer Stademann"]
+version = "1.0.10"
+authors = ["Aurojit Panda <apanda@cs.berkeley.edu>", "Rainer Stademann <rainer.stademann@silverengine.de>"]
 build = "build.rs"
 
 [lib]
@@ -11,7 +11,7 @@ doctest = false
 libc = ">= 0.2.79"
 time = ">=0.1.0"
 chashmap = ">= 2.2.0"
-log = "0.3"
+log = ">=0.3"
 getopts = "*"
 byteorder = "*"
 fnv = "*"
@@ -21,15 +21,15 @@ lazy_static = "*"
 net2 = "*"
 # NIX restricts us to just unix for now, we can fix this if someone cares at a later point.
 nix = { version = ">=0.27.1", features =["event"] }
-toml = "0.6"
+toml = ">=0.6"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
 tokio-core=">=0.1.8"
 futures=">=0.1.14"
 eui48 = { git= "https://github.com/readysettech/eui48.git", version= ">=1.1", features=["serde"] , default-features= false}
 separator =  ">= 0.3"
-serde_derive = "1.0"
-serde = "1.0"
+serde_derive = ">=1.0"
+serde = ">=1.0"
 ipnet = ">=1.0"
 
 [features]
