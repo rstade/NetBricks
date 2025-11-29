@@ -2,9 +2,9 @@ use super::act::Act;
 use super::iterator::BatchIterator;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::{PacketTx, Pdu};
-use scheduler::Executable;
+use crate::common::*;
+use crate::interface::{PacketTx, Pdu};
+use crate::scheduler::Executable;
 use std::cmp;
 
 pub struct MergeBatchTraitObj {
@@ -55,7 +55,7 @@ impl BatchIterator for MergeBatchTraitObj {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parents[self.which].next_payload(idx)
     }
 }
@@ -168,7 +168,7 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parents[self.which].next_payload(idx)
     }
 }

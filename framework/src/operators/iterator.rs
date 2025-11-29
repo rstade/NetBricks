@@ -1,4 +1,4 @@
-use interface::Pdu;
+use crate::interface::Pdu;
 use std::cell::Cell;
 
 /// An interface implemented by all batches for iterating through the set of packets in a batch.
@@ -16,7 +16,7 @@ pub trait BatchIterator {
     /// index 0.
     fn start(&mut self) -> usize;
 
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu>;
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>>;
 }
 
 /// A struct containing the parsed information returned by the `PayloadEnumerator`.

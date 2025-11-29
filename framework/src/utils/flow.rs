@@ -1,11 +1,11 @@
 use byteorder::{BigEndian, ByteOrder};
 use fnv::FnvHasher;
-use native::zcsi::*;
 use std::fmt;
 use std::hash::Hasher;
 use std::mem;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::slice;
+use crate::native::zcsi::{crc_hash_native, ipv4_cksum};
 
 // TODO: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.
@@ -20,7 +20,7 @@ pub struct FiveTupleV4 {
 }
 
 impl fmt::Display for FiveTupleV4 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "src_ip={}, dst_ip= {}, src_port= {:#04x}, dst_port= {:#04x}, proto= {:#02x}",

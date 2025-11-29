@@ -1,9 +1,9 @@
 #![allow(dead_code)]
-use common::*;
-use state::RingBuffer;
+use crate::common::*;
+use crate::state::RingBuffer;
 use std::cmp::{max, min};
 use std::u16;
-use utils::*;
+use crate::utils::*;
 
 /// Results from inserting into `ReorderedBuffer`
 pub enum InsertionResult {

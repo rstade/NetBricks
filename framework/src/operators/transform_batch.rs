@@ -2,11 +2,11 @@ use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::PacketTx;
-use interface::Pdu;
+use crate::common::*;
+use crate::interface::PacketTx;
+use crate::interface::Pdu;
 
-pub type TransformFn = Box<dyn FnMut(&mut Pdu) + Send>;
+pub type TransformFn = Box<dyn FnMut(&mut Pdu<'_>) + Send>;
 
 pub struct TransformBatch<V>
 where
@@ -50,7 +50,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parent.next_payload(idx)
     }
 }

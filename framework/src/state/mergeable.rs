@@ -7,7 +7,7 @@ use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use utils::FiveTupleV4;
+use crate::utils::FiveTupleV4;
 
 /// A generic store for associating some merge-able type with each flow. Note, the merge must be commutative, we do not
 /// guarantee ordering for things being merged. The merge function is implemented by implementing the
@@ -55,7 +55,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
         MergeableStoreCP::dp_store_with_cache_and_size(self, CACHE_SIZE, VEC_SIZE)
     }
 
-    fn hmap_to_vec(hash: &RwLockReadGuard<HashMap<FiveTupleV4, T, FnvHash>>) -> Vec<(FiveTupleV4, T)> {
+    fn hmap_to_vec(hash: &RwLockReadGuard<'_, HashMap<FiveTupleV4, T, FnvHash>>) -> Vec<(FiveTupleV4, T)> {
         let mut t = Vec::with_capacity(hash.len());
         t.extend(hash.iter().map(|(f, v)| (*f, v.clone())));
         t
@@ -85,7 +85,7 @@ impl<T: AddAssign<T> + Default + Clone> MergeableStoreCP<T> {
         }
     }
 
-    pub fn iter(&self) -> Iter<FiveTupleV4, T> {
+    pub fn iter(&self) -> Iter<'_, FiveTupleV4, T> {
         self.flow_counters.iter()
     }
 

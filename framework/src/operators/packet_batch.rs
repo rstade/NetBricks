@@ -1,11 +1,11 @@
 use super::act::Act;
 use super::iterator::BatchIterator;
 use super::Batch;
-use common::errors;
-use common::errors::ErrorKind;
-use interface::*;
-use native::zcsi::MBuf;
-use native::zcsi::*;
+use crate::common::errors;
+use crate::common::errors::ErrorKind;
+use crate::interface::*;
+use crate::native::zcsi::MBuf;
+use crate::native::zcsi::*;
 use std::result;
 
 /// Base packet batch structure, this represents an array of mbufs and is the primary interface for sending and
@@ -77,7 +77,7 @@ impl PacketBatch {
 
     // Assumes we have already deallocated batch.
     #[inline]
-    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> {
+    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> { unsafe {
         let capacity = self.array.capacity();
         self.add_to_batch(capacity);
         match port.recv(self.packet_ptr()) {
@@ -87,7 +87,7 @@ impl PacketBatch {
                 Ok((recv, q_count))
             }
         }
-    }
+    } }
 
     /// This drops packet buffers and keeps things ordered. We expect that idxes is an ordered vector of indices, no
     /// guarantees are made when this is not the case.
@@ -154,24 +154,24 @@ impl PacketBatch {
     }
 
     #[inline]
-    unsafe fn consume_batch_partial(&mut self, consumed: usize) {
+    unsafe fn consume_batch_partial(&mut self, consumed: usize) { unsafe {
         let len = self.array.len();
         for (new_idx, idx) in (consumed..len).enumerate() {
             self.array[new_idx] = self.array[idx];
         }
 
         self.array.set_len(len - consumed);
-    }
+    } }
 
     #[inline]
-    unsafe fn consume_batch(&mut self) {
+    unsafe fn consume_batch(&mut self) { unsafe {
         self.array.set_len(0)
-    }
+    } }
 
     #[inline]
-    unsafe fn add_to_batch(&mut self, added: usize) {
+    unsafe fn add_to_batch(&mut self, added: usize) { unsafe {
         self.array.set_len(added);
-    }
+    } }
 
     #[inline]
     fn alloc_packet_batch(&mut self, cnt: i32) -> errors::Result<()> {
@@ -221,7 +221,7 @@ impl BatchIterator for PacketBatch {
     }
 
     /// The starting offset for packets in the current batch.
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         if idx < self.array.len() {
             Some(Pdu::pdu_from_mbuf_no_increment(self.array[idx]))
         } else {

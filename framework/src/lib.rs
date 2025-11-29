@@ -1,32 +1,23 @@
 #![recursion_limit = "1024"]
-#![feature(ptr_internals)]
+#![deny(rust_2018_idioms)]
+#![deny(unsafe_op_in_unsafe_fn)]
+//#![feature(ptr_internals)]
 #![allow(unused_doc_comments)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 // Need this since PMD port construction triggers too many arguments.
 #![cfg_attr(feature = "dev", allow(too_many_arguments))]
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", deny(warnings))]
-extern crate byteorder;
-extern crate fnv;
-extern crate ipnet;
-extern crate libc;
-extern crate net2;
-extern crate regex;
-extern crate separator;
-extern crate twox_hash;
+
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
+
 #[macro_use]
 extern crate lazy_static;
 
 #[cfg(feature = "sctp")]
 extern crate sctp;
-// TOML for scheduling configuration
-extern crate toml;
-// UUID for SHM naming
-extern crate uuid;
 
 // For cache aware allocation
 // extern crate alloc;
@@ -38,12 +29,8 @@ extern crate uuid;
 // Logging
 #[macro_use]
 extern crate log;
-
-extern crate core;
 #[allow(dead_code)]
-extern crate eui48;
 #[cfg(unix)]
-extern crate nix;
 
 pub mod allocators;
 pub mod common;

@@ -1,8 +1,3 @@
-use native::zcsi::rte_ethdev_api::{
-    rte_eth_desc_lim, rte_eth_dev_info, rte_eth_dev_portconf, rte_eth_rxconf, rte_eth_rxseg, rte_eth_rxseg_capa,
-    rte_eth_switch_info, rte_eth_thresh, rte_eth_txconf, RTE_ETH_FLOW_MAX,
-};
-
 const RSS_FLOW_NAMES: [&str; (RTE_ETH_FLOW_MAX + 1) as usize] = [
     "Unknown",
     "Raw",
@@ -38,6 +33,11 @@ pub fn rss_flow_name(rss_flow_id: usize) -> &'static str {
         RSS_FLOW_NAMES[0]
     }
 }
+
+use crate::native::zcsi::rte_ethdev_api::{
+    rte_eth_desc_lim, rte_eth_dev_info, rte_eth_dev_portconf, rte_eth_rxconf, rte_eth_rxseg, rte_eth_rxseg_capa,
+    rte_eth_switch_info, rte_eth_thresh, rte_eth_txconf, RTE_ETH_FLOW_MAX,
+};
 
 use std::os::raw::c_void;
 use std::ptr;

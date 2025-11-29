@@ -5,7 +5,7 @@ use std::default::Default;
 use std::fmt;
 use std::net::Ipv4Addr;
 use std::slice;
-use utils::{checksum, FiveTupleV4};
+use crate::utils::{checksum, FiveTupleV4};
 
 /// IP header using SSE
 #[derive(Clone, Copy, Debug, Default)]
@@ -19,7 +19,7 @@ pub struct IpHeader {
 }
 
 impl fmt::Display for IpHeader {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let src = Ipv4Addr::from(self.src());
         let dst = Ipv4Addr::from(self.dst());
         write!(

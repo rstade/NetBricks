@@ -42,7 +42,7 @@ impl EndOffset for ArpIpv4Header {
 }
 
 impl fmt::Display for ArpIpv4Header {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "Arp(hw_type= {}, proto_type= 0x{:04x}, op= {}, {} > {})",

@@ -1,7 +1,7 @@
 use super::{EndOffset, HeaderKind};
 use std::default::Default;
 use std::fmt;
-use utils::update_checksum_incremental;
+use crate::utils::update_checksum_incremental;
 
 #[derive(Clone, Copy, Debug, Default)]
 #[repr(C, packed)]
@@ -38,7 +38,7 @@ macro_rules! write_or_return {
 }
 
 impl fmt::Display for TcpHeader {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write_or_return!(
             f,
             "tcp src_port {} dst_port {} seq {} ack {} data_offset {} flags ",
@@ -308,7 +308,7 @@ impl TcpHeader {
         self.flags &= !FIN;
     }
 
-    pub fn fmt_flags(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    pub fn fmt_flags(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write_or_return!(f, "| ");
         if self.ns_flag() {
             write_or_return!(f, "NS ")

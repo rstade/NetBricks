@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 
-use utils::FiveTupleV4;
+use crate::utils::FiveTupleV4;
 
 /// A generic store for associating some merge-able type with each flow. Note, the merge must be commutative, we do not
 /// guarantee ordering for things being merged. The merge function is implemented by implementing the
@@ -66,7 +66,7 @@ impl<T: AddAssign<T> + Default> DpMergeableStore<T> {
     ///
     /// #[Warning]
     /// This might have severe performance penalties.
-    pub fn iter(&mut self) -> Iter<FiveTupleV4, T> {
+    pub fn iter(&mut self) -> Iter<'_, FiveTupleV4, T> {
         self.merge_cache();
         self.state.iter()
     }

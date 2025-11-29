@@ -1,14 +1,14 @@
-use common::*;
-use interface::{PacketRx, Pdu};
-use native::zcsi::MBuf;
-use operators::ReceiveBatch;
+use crate::common::*;
+use crate::interface::{PacketRx, Pdu};
+use crate::native::zcsi::MBuf;
+use crate::operators::ReceiveBatch;
 use std::arch::x86_64::_mm_pause;
 use std::clone::Clone;
 use std::cmp::min;
 use std::default::Default;
 use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 use std::sync::Arc;
-use utils::round_to_power_of_2;
+use crate::utils::round_to_power_of_2;
 
 #[derive(Default)]
 struct QueueMetadata {
@@ -231,7 +231,7 @@ impl Clone for MpscProducer {
 }
 
 impl MpscProducer {
-    pub fn enqueue(&self, pdus: &mut Vec<Pdu>) -> usize {
+    pub fn enqueue(&self, pdus: &mut Vec<Pdu<'_>>) -> usize {
         let mbufs: Vec<_> = pdus.drain(..).map(|p| unsafe { p.get_mbuf() }).collect();
         self.mpsc_queue.enqueue(&mbufs[..])
     }
@@ -242,12 +242,12 @@ impl MpscProducer {
     }
 
     #[inline]
-    pub fn enqueue_one(&self, pdu: Pdu) -> bool {
+    pub fn enqueue_one(&self, pdu: Pdu<'_>) -> bool {
         unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
     }
 
     #[inline]
-    pub fn enqueue_one_boxed(&self, pdu: Box<Pdu>) -> bool {
+    pub fn enqueue_one_boxed(&self, pdu: Box<Pdu<'_>>) -> bool {
         unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
     }
 

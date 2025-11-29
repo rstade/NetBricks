@@ -103,13 +103,13 @@ impl<T> __IncompleteArrayField<T> {
         self as *mut _ as *mut T
     }
     #[inline]
-    pub unsafe fn as_slice(&self, len: usize) -> &[T] {
+    pub unsafe fn as_slice(&self, len: usize) -> &[T] { unsafe {
         ::std::slice::from_raw_parts(self.as_ptr(), len)
-    }
+    } }
     #[inline]
-    pub unsafe fn as_mut_slice(&mut self, len: usize) -> &mut [T] {
+    pub unsafe fn as_mut_slice(&mut self, len: usize) -> &mut [T] { unsafe {
         ::std::slice::from_raw_parts_mut(self.as_mut_ptr(), len)
-    }
+    } }
 }
 impl<T> ::std::fmt::Debug for __IncompleteArrayField<T> {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -2448,22 +2448,22 @@ pub struct _IO_FILE {
 pub type off_t = __off_t;
 pub type ssize_t = __ssize_t;
 pub type fpos_t = __fpos_t;
-extern "C" {
+unsafe extern "C" {
     pub static mut stdin: *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut stdout: *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut stderr: *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn remove(__filename: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rename(__old: *const ::std::os::raw::c_char, __new: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn renameat(
         __oldfd: ::std::os::raw::c_int,
         __old: *const ::std::os::raw::c_char,
@@ -2471,57 +2471,57 @@ extern "C" {
         __new: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tmpfile() -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tmpnam(__s: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tmpnam_r(__s: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tempnam(
         __dir: *const ::std::os::raw::c_char,
         __pfx: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fclose(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fflush(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fflush_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fopen(__filename: *const ::std::os::raw::c_char, __modes: *const ::std::os::raw::c_char) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn freopen(
         __filename: *const ::std::os::raw::c_char,
         __modes: *const ::std::os::raw::c_char,
         __stream: *mut FILE,
     ) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fdopen(__fd: ::std::os::raw::c_int, __modes: *const ::std::os::raw::c_char) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fmemopen(
         __s: *mut ::std::os::raw::c_void,
         __len: size_t,
         __modes: *const ::std::os::raw::c_char,
     ) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn open_memstream(__bufloc: *mut *mut ::std::os::raw::c_char, __sizeloc: *mut size_t) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setbuf(__stream: *mut FILE, __buf: *mut ::std::os::raw::c_char);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setvbuf(
         __stream: *mut FILE,
         __buf: *mut ::std::os::raw::c_char,
@@ -2529,43 +2529,43 @@ extern "C" {
         __n: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setbuffer(__stream: *mut FILE, __buf: *mut ::std::os::raw::c_char, __size: size_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setlinebuf(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fprintf(__stream: *mut FILE, __format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn printf(__format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sprintf(
         __s: *mut ::std::os::raw::c_char,
         __format: *const ::std::os::raw::c_char,
         ...
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vfprintf(
         __s: *mut FILE,
         __format: *const ::std::os::raw::c_char,
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vprintf(__format: *const ::std::os::raw::c_char, __arg: *mut __va_list_tag) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vsprintf(
         __s: *mut ::std::os::raw::c_char,
         __format: *const ::std::os::raw::c_char,
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn snprintf(
         __s: *mut ::std::os::raw::c_char,
         __maxlen: ::std::os::raw::c_ulong,
@@ -2573,7 +2573,7 @@ extern "C" {
         ...
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vsnprintf(
         __s: *mut ::std::os::raw::c_char,
         __maxlen: ::std::os::raw::c_ulong,
@@ -2581,38 +2581,38 @@ extern "C" {
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vdprintf(
         __fd: ::std::os::raw::c_int,
         __fmt: *const ::std::os::raw::c_char,
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn dprintf(__fd: ::std::os::raw::c_int, __fmt: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fscanf(__stream: *mut FILE, __format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn scanf(__format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sscanf(
         __s: *const ::std::os::raw::c_char,
         __format: *const ::std::os::raw::c_char,
         ...
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_fscanf"]
     pub fn fscanf1(__stream: *mut FILE, __format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_scanf"]
     pub fn scanf1(__format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_sscanf"]
     pub fn sscanf1(
         __s: *const ::std::os::raw::c_char,
@@ -2620,24 +2620,24 @@ extern "C" {
         ...
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vfscanf(
         __s: *mut FILE,
         __format: *const ::std::os::raw::c_char,
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vscanf(__format: *const ::std::os::raw::c_char, __arg: *mut __va_list_tag) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn vsscanf(
         __s: *const ::std::os::raw::c_char,
         __format: *const ::std::os::raw::c_char,
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_vfscanf"]
     pub fn vfscanf1(
         __s: *mut FILE,
@@ -2645,11 +2645,11 @@ extern "C" {
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_vscanf"]
     pub fn vscanf1(__format: *const ::std::os::raw::c_char, __arg: *mut __va_list_tag) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__isoc99_vsscanf"]
     pub fn vsscanf1(
         __s: *const ::std::os::raw::c_char,
@@ -2657,56 +2657,56 @@ extern "C" {
         __arg: *mut __va_list_tag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fgetc(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getc(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getchar() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getc_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getchar_unlocked() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fgetc_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fputc(__c: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putc(__c: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putchar(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fputc_unlocked(__c: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putc_unlocked(__c: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putchar_unlocked(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getw(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putw(__w: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fgets(
         __s: *mut ::std::os::raw::c_char,
         __n: ::std::os::raw::c_int,
         __stream: *mut FILE,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __getdelim(
         __lineptr: *mut *mut ::std::os::raw::c_char,
         __n: *mut size_t,
@@ -2714,7 +2714,7 @@ extern "C" {
         __stream: *mut FILE,
     ) -> __ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getdelim(
         __lineptr: *mut *mut ::std::os::raw::c_char,
         __n: *mut size_t,
@@ -2722,19 +2722,19 @@ extern "C" {
         __stream: *mut FILE,
     ) -> __ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getline(__lineptr: *mut *mut ::std::os::raw::c_char, __n: *mut size_t, __stream: *mut FILE) -> __ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fputs(__s: *const ::std::os::raw::c_char, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn puts(__s: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ungetc(__c: ::std::os::raw::c_int, __stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fread(
         __ptr: *mut ::std::os::raw::c_void,
         __size: ::std::os::raw::c_ulong,
@@ -2742,7 +2742,7 @@ extern "C" {
         __stream: *mut FILE,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fwrite(
         __ptr: *const ::std::os::raw::c_void,
         __size: ::std::os::raw::c_ulong,
@@ -2750,7 +2750,7 @@ extern "C" {
         __s: *mut FILE,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fread_unlocked(
         __ptr: *mut ::std::os::raw::c_void,
         __size: size_t,
@@ -2758,7 +2758,7 @@ extern "C" {
         __stream: *mut FILE,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fwrite_unlocked(
         __ptr: *const ::std::os::raw::c_void,
         __size: size_t,
@@ -2766,86 +2766,86 @@ extern "C" {
         __stream: *mut FILE,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fseek(
         __stream: *mut FILE,
         __off: ::std::os::raw::c_long,
         __whence: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ftell(__stream: *mut FILE) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rewind(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fseeko(__stream: *mut FILE, __off: __off_t, __whence: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ftello(__stream: *mut FILE) -> __off_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fgetpos(__stream: *mut FILE, __pos: *mut fpos_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fsetpos(__stream: *mut FILE, __pos: *const fpos_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clearerr(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn feof(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ferror(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clearerr_unlocked(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn feof_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ferror_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn perror(__s: *const ::std::os::raw::c_char);
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut sys_nerr: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut sys_errlist: [*const ::std::os::raw::c_char; 0usize];
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fileno(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fileno_unlocked(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn popen(__command: *const ::std::os::raw::c_char, __modes: *const ::std::os::raw::c_char) -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pclose(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ctermid(__s: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn flockfile(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ftrylockfile(__stream: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn funlockfile(__stream: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __uflow(arg1: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __overflow(arg1: *mut FILE, arg2: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 pub type wchar_t = ::std::os::raw::c_int;
@@ -2871,76 +2871,76 @@ pub struct lldiv_t {
     pub quot: ::std::os::raw::c_longlong,
     pub rem: ::std::os::raw::c_longlong,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __ctype_get_mb_cur_max() -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn atof(__nptr: *const ::std::os::raw::c_char) -> f64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn atoi(__nptr: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn atol(__nptr: *const ::std::os::raw::c_char) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn atoll(__nptr: *const ::std::os::raw::c_char) -> ::std::os::raw::c_longlong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtod(__nptr: *const ::std::os::raw::c_char, __endptr: *mut *mut ::std::os::raw::c_char) -> f64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtof(__nptr: *const ::std::os::raw::c_char, __endptr: *mut *mut ::std::os::raw::c_char) -> f32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtold(__nptr: *const ::std::os::raw::c_char, __endptr: *mut *mut ::std::os::raw::c_char) -> u128;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtol(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoul(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoq(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_longlong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtouq(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_ulonglong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoll(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_longlong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoull(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_ulonglong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn l64a(__n: ::std::os::raw::c_long) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn a64l(__s: *const ::std::os::raw::c_char) -> ::std::os::raw::c_long;
 }
 pub type u_char = __u_char;
@@ -3000,7 +3000,7 @@ pub struct fd_set {
     pub __fds_bits: [__fd_mask; 16usize],
 }
 pub type fd_mask = __fd_mask;
-extern "C" {
+unsafe extern "C" {
     pub fn select(
         __nfds: ::std::os::raw::c_int,
         __readfds: *mut fd_set,
@@ -3009,7 +3009,7 @@ extern "C" {
         __timeout: *mut timeval,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pselect(
         __nfds: ::std::os::raw::c_int,
         __readfds: *mut fd_set,
@@ -3154,20 +3154,20 @@ pub union pthread_barrierattr_t {
     pub __size: [::std::os::raw::c_char; 4usize],
     pub __align: ::std::os::raw::c_int,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn random() -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn srandom(__seed: ::std::os::raw::c_uint);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn initstate(
         __seed: ::std::os::raw::c_uint,
         __statebuf: *mut ::std::os::raw::c_char,
         __statelen: size_t,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setstate(__statebuf: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
 #[repr(C)]
@@ -3181,13 +3181,13 @@ pub struct random_data {
     pub rand_sep: ::std::os::raw::c_int,
     pub end_ptr: *mut i32,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn random_r(__buf: *mut random_data, __result: *mut i32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn srandom_r(__seed: ::std::os::raw::c_uint, __buf: *mut random_data) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn initstate_r(
         __seed: ::std::os::raw::c_uint,
         __statebuf: *mut ::std::os::raw::c_char,
@@ -3195,43 +3195,43 @@ extern "C" {
         __buf: *mut random_data,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setstate_r(__statebuf: *mut ::std::os::raw::c_char, __buf: *mut random_data) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rand() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn srand(__seed: ::std::os::raw::c_uint);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rand_r(__seed: *mut ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn drand48() -> f64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn erand48(__xsubi: *mut ::std::os::raw::c_ushort) -> f64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn lrand48() -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn nrand48(__xsubi: *mut ::std::os::raw::c_ushort) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mrand48() -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn jrand48(__xsubi: *mut ::std::os::raw::c_ushort) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn srand48(__seedval: ::std::os::raw::c_long);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn seed48(__seed16v: *mut ::std::os::raw::c_ushort) -> *mut ::std::os::raw::c_ushort;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn lcong48(__param: *mut ::std::os::raw::c_ushort);
 }
 #[repr(C)]
@@ -3243,83 +3243,83 @@ pub struct drand48_data {
     pub __init: ::std::os::raw::c_ushort,
     pub __a: ::std::os::raw::c_ulonglong,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn drand48_r(__buffer: *mut drand48_data, __result: *mut f64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn erand48_r(
         __xsubi: *mut ::std::os::raw::c_ushort,
         __buffer: *mut drand48_data,
         __result: *mut f64,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn lrand48_r(__buffer: *mut drand48_data, __result: *mut ::std::os::raw::c_long) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn nrand48_r(
         __xsubi: *mut ::std::os::raw::c_ushort,
         __buffer: *mut drand48_data,
         __result: *mut ::std::os::raw::c_long,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mrand48_r(__buffer: *mut drand48_data, __result: *mut ::std::os::raw::c_long) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn jrand48_r(
         __xsubi: *mut ::std::os::raw::c_ushort,
         __buffer: *mut drand48_data,
         __result: *mut ::std::os::raw::c_long,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn srand48_r(__seedval: ::std::os::raw::c_long, __buffer: *mut drand48_data) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn seed48_r(__seed16v: *mut ::std::os::raw::c_ushort, __buffer: *mut drand48_data) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn lcong48_r(__param: *mut ::std::os::raw::c_ushort, __buffer: *mut drand48_data) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn malloc(__size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn calloc(__nmemb: ::std::os::raw::c_ulong, __size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn realloc(__ptr: *mut ::std::os::raw::c_void, __size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn free(__ptr: *mut ::std::os::raw::c_void);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn alloca(__size: ::std::os::raw::c_ulong) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn valloc(__size: size_t) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn posix_memalign(
         __memptr: *mut *mut ::std::os::raw::c_void,
         __alignment: size_t,
         __size: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn aligned_alloc(__alignment: size_t, __size: size_t) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn abort();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn atexit(__func: ::std::option::Option<unsafe extern "C" fn()>) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn at_quick_exit(__func: ::std::option::Option<unsafe extern "C" fn()>) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn on_exit(
         __func: ::std::option::Option<
             unsafe extern "C" fn(__status: ::std::os::raw::c_int, __arg: *mut ::std::os::raw::c_void),
@@ -3327,53 +3327,53 @@ extern "C" {
         __arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn exit(__status: ::std::os::raw::c_int);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn quick_exit(__status: ::std::os::raw::c_int);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _Exit(__status: ::std::os::raw::c_int);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getenv(__name: *const ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn putenv(__string: *mut ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setenv(
         __name: *const ::std::os::raw::c_char,
         __value: *const ::std::os::raw::c_char,
         __replace: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn unsetenv(__name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clearenv() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mktemp(__template: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mkstemp(__template: *mut ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mkstemps(
         __template: *mut ::std::os::raw::c_char,
         __suffixlen: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mkdtemp(__template: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn system(__command: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn realpath(
         __name: *const ::std::os::raw::c_char,
         __resolved: *mut ::std::os::raw::c_char,
@@ -3385,7 +3385,7 @@ pub type __compar_fn_t = ::std::option::Option<
         arg2: *const ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn bsearch(
         __key: *const ::std::os::raw::c_void,
         __base: *const ::std::os::raw::c_void,
@@ -3394,28 +3394,28 @@ extern "C" {
         __compar: __compar_fn_t,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qsort(__base: *mut ::std::os::raw::c_void, __nmemb: size_t, __size: size_t, __compar: __compar_fn_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn abs(__x: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn labs(__x: ::std::os::raw::c_long) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn llabs(__x: ::std::os::raw::c_longlong) -> ::std::os::raw::c_longlong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn div(__numer: ::std::os::raw::c_int, __denom: ::std::os::raw::c_int) -> div_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ldiv(__numer: ::std::os::raw::c_long, __denom: ::std::os::raw::c_long) -> ldiv_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn lldiv(__numer: ::std::os::raw::c_longlong, __denom: ::std::os::raw::c_longlong) -> lldiv_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ecvt(
         __value: f64,
         __ndigit: ::std::os::raw::c_int,
@@ -3423,7 +3423,7 @@ extern "C" {
         __sign: *mut ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fcvt(
         __value: f64,
         __ndigit: ::std::os::raw::c_int,
@@ -3431,14 +3431,14 @@ extern "C" {
         __sign: *mut ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn gcvt(
         __value: f64,
         __ndigit: ::std::os::raw::c_int,
         __buf: *mut ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qecvt(
         __value: u128,
         __ndigit: ::std::os::raw::c_int,
@@ -3446,7 +3446,7 @@ extern "C" {
         __sign: *mut ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qfcvt(
         __value: u128,
         __ndigit: ::std::os::raw::c_int,
@@ -3454,14 +3454,14 @@ extern "C" {
         __sign: *mut ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qgcvt(
         __value: u128,
         __ndigit: ::std::os::raw::c_int,
         __buf: *mut ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ecvt_r(
         __value: f64,
         __ndigit: ::std::os::raw::c_int,
@@ -3471,7 +3471,7 @@ extern "C" {
         __len: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn fcvt_r(
         __value: f64,
         __ndigit: ::std::os::raw::c_int,
@@ -3481,7 +3481,7 @@ extern "C" {
         __len: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qecvt_r(
         __value: u128,
         __ndigit: ::std::os::raw::c_int,
@@ -3491,7 +3491,7 @@ extern "C" {
         __len: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn qfcvt_r(
         __value: u128,
         __ndigit: ::std::os::raw::c_int,
@@ -3501,32 +3501,32 @@ extern "C" {
         __len: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mblen(__s: *const ::std::os::raw::c_char, __n: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mbtowc(__pwc: *mut wchar_t, __s: *const ::std::os::raw::c_char, __n: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn wctomb(__s: *mut ::std::os::raw::c_char, __wchar: wchar_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mbstowcs(__pwcs: *mut wchar_t, __s: *const ::std::os::raw::c_char, __n: size_t) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn wcstombs(__s: *mut ::std::os::raw::c_char, __pwcs: *const wchar_t, __n: size_t) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rpmatch(__response: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getsubopt(
         __optionp: *mut *mut ::std::os::raw::c_char,
         __tokens: *const *mut ::std::os::raw::c_char,
         __valuep: *mut *mut ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getloadavg(__loadavg: *mut f64, __nelem: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 pub const _ISupper: ::std::os::raw::c_uint = 256;
@@ -3542,67 +3542,67 @@ pub const _IScntrl: ::std::os::raw::c_uint = 2;
 pub const _ISpunct: ::std::os::raw::c_uint = 4;
 pub const _ISalnum: ::std::os::raw::c_uint = 8;
 pub type _bindgen_ty_1 = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn __ctype_b_loc() -> *mut *const ::std::os::raw::c_ushort;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __ctype_tolower_loc() -> *mut *const __int32_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __ctype_toupper_loc() -> *mut *const __int32_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isalnum(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isalpha(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn iscntrl(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isdigit(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn islower(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isgraph(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isprint(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ispunct(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isspace(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isupper(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isxdigit(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tolower(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn toupper(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isblank(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isascii(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn toascii(__c: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _toupper(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _tolower(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 #[repr(C)]
@@ -3616,55 +3616,55 @@ pub struct __locale_struct {
 }
 pub type __locale_t = *mut __locale_struct;
 pub type locale_t = __locale_t;
-extern "C" {
+unsafe extern "C" {
     pub fn isalnum_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isalpha_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn iscntrl_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isdigit_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn islower_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isgraph_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isprint_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ispunct_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isspace_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isupper_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isxdigit_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isblank_l(arg1: ::std::os::raw::c_int, arg2: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __tolower_l(__c: ::std::os::raw::c_int, __l: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tolower_l(__c: ::std::os::raw::c_int, __l: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __toupper_l(__c: ::std::os::raw::c_int, __l: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn toupper_l(__c: ::std::os::raw::c_int, __l: locale_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __errno_location() -> *mut ::std::os::raw::c_int;
 }
 #[repr(C)]
@@ -3678,41 +3678,41 @@ pub type __cpu_mask = ::std::os::raw::c_ulong;
 pub struct cpu_set_t {
     pub __bits: [__cpu_mask; 16usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __sched_cpucount(__setsize: size_t, __setp: *const cpu_set_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __sched_cpualloc(__count: size_t) -> *mut cpu_set_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __sched_cpufree(__set: *mut cpu_set_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_setparam(__pid: __pid_t, __param: *const sched_param) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_getparam(__pid: __pid_t, __param: *mut sched_param) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_setscheduler(
         __pid: __pid_t,
         __policy: ::std::os::raw::c_int,
         __param: *const sched_param,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_getscheduler(__pid: __pid_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_yield() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_get_priority_max(__algorithm: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_get_priority_min(__algorithm: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sched_rr_get_interval(__pid: __pid_t, __t: *mut timespec) -> ::std::os::raw::c_int;
 }
 pub type rte_cpuset_t = cpu_set_t;
@@ -3726,58 +3726,58 @@ pub type RTE_MARKER8 = [u8; 0usize];
 pub type RTE_MARKER16 = [u16; 0usize];
 pub type RTE_MARKER32 = [u32; 0usize];
 pub type RTE_MARKER64 = [u64; 0usize];
-extern "C" {
+unsafe extern "C" {
     pub fn rte_exit(exit_code: ::std::os::raw::c_int, format: *const ::std::os::raw::c_char, ...);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_openlog_stream(f: *mut FILE) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_get_stream() -> *mut FILE;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_set_global_level(level: u32);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_get_global_level() -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_get_level(logtype: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_can_log(logtype: u32, loglevel: u32) -> bool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_set_level_pattern(pattern: *const ::std::os::raw::c_char, level: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_set_level_regexp(regex: *const ::std::os::raw::c_char, level: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_set_level(logtype: u32, level: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_cur_msg_loglevel() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_cur_msg_logtype() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_register(name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_register_type_and_pick_level(
         name: *const ::std::os::raw::c_char,
         level_def: u32,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_log(level: u32, logtype: u32, format: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_vlog(
         level: u32,
         logtype: u32,
@@ -3853,7 +3853,7 @@ pub union rte_intr_handle__bindgen_ty_1__bindgen_ty_1__bindgen_ty_1 {
     pub vfio_dev_fd: ::std::os::raw::c_int,
     pub uio_cfg_fd: ::std::os::raw::c_int,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_epoll_wait(
         epfd: ::std::os::raw::c_int,
         events: *mut rte_epoll_event,
@@ -3861,7 +3861,7 @@ extern "C" {
         timeout: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_epoll_wait_interruptible(
         epfd: ::std::os::raw::c_int,
         events: *mut rte_epoll_event,
@@ -3869,7 +3869,7 @@ extern "C" {
         timeout: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_epoll_ctl(
         epfd: ::std::os::raw::c_int,
         op: ::std::os::raw::c_int,
@@ -3877,10 +3877,10 @@ extern "C" {
         event: *mut rte_epoll_event,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_tls_epfd() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_rx_ctl(
         intr_handle: *mut rte_intr_handle,
         epfd: ::std::os::raw::c_int,
@@ -3889,42 +3889,42 @@ extern "C" {
         data: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_free_epoll_fd(intr_handle: *mut rte_intr_handle);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_efd_enable(intr_handle: *mut rte_intr_handle, nb_efd: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_efd_disable(intr_handle: *mut rte_intr_handle);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_dp_is_en(intr_handle: *mut rte_intr_handle) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_allow_others(intr_handle: *mut rte_intr_handle) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_cap_multiple(intr_handle: *mut rte_intr_handle) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_is_intr() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_callback_register(
         intr_handle: *const rte_intr_handle,
         cb: rte_intr_callback_fn,
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_callback_unregister(
         intr_handle: *const rte_intr_handle,
         cb: rte_intr_callback_fn,
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_callback_unregister_pending(
         intr_handle: *const rte_intr_handle,
         cb_fn: rte_intr_callback_fn,
@@ -3932,13 +3932,13 @@ extern "C" {
         ucb_fn: rte_intr_unregister_callback_fn,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_enable(intr_handle: *const rte_intr_handle) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_disable(intr_handle: *const rte_intr_handle) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_intr_ack(intr_handle: *const rte_intr_handle) -> ::std::os::raw::c_int;
 }
 pub const rte_dev_event_type_RTE_DEV_EVENT_ADD: rte_dev_event_type = 0;
@@ -3991,26 +3991,26 @@ pub struct rte_device__bindgen_ty_1 {
     pub tqe_next: *mut rte_device,
     pub tqe_prev: *mut *mut rte_device,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_is_probed(dev: *const rte_device) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_hotplug_add(
         busname: *const ::std::os::raw::c_char,
         devname: *const ::std::os::raw::c_char,
         drvargs: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_probe(devargs: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_hotplug_remove(
         busname: *const ::std::os::raw::c_char,
         devname: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_remove(dev: *mut rte_device) -> ::std::os::raw::c_int;
 }
 pub type rte_dev_cmp_t = ::std::option::Option<
@@ -4034,45 +4034,45 @@ pub type rte_dev_iterate_t = ::std::option::Option<
         it: *const rte_dev_iterator,
     ) -> *mut ::std::os::raw::c_void,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_iterator_init(
         it: *mut rte_dev_iterator,
         str_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_iterator_next(it: *mut rte_dev_iterator) -> *mut rte_device;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_event_callback_register(
         device_name: *const ::std::os::raw::c_char,
         cb_fn: rte_dev_event_cb_fn,
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_event_callback_unregister(
         device_name: *const ::std::os::raw::c_char,
         cb_fn: rte_dev_event_cb_fn,
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_event_callback_process(device_name: *const ::std::os::raw::c_char, event: rte_dev_event_type);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_event_monitor_start() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_event_monitor_stop() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_hotplug_handle_enable() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_hotplug_handle_disable() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_dma_map(
         dev: *mut rte_device,
         addr: *mut ::std::os::raw::c_void,
@@ -4080,7 +4080,7 @@ extern "C" {
         len: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dev_dma_unmap(
         dev: *mut rte_device,
         addr: *mut ::std::os::raw::c_void,
@@ -4170,35 +4170,35 @@ pub struct rte_bus__bindgen_ty_1 {
     pub tqe_next: *mut rte_bus,
     pub tqe_prev: *mut *mut rte_bus,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_register(bus: *mut rte_bus);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_unregister(bus: *mut rte_bus);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_scan() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_probe() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_dump(f: *mut FILE);
 }
 pub type rte_bus_cmp_t = ::std::option::Option<
     unsafe extern "C" fn(bus: *const rte_bus, data: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_find(start: *const rte_bus, cmp: rte_bus_cmp_t, data: *const ::std::os::raw::c_void)
         -> *mut rte_bus;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_find_by_device(dev: *const rte_device) -> *mut rte_bus;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_find_by_name(busname: *const ::std::os::raw::c_char) -> *mut rte_bus;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_bus_get_iommu_class() -> rte_iova_mode;
 }
 pub const rte_devtype_RTE_DEVTYPE_ALLOWED: rte_devtype = 0;
@@ -4231,32 +4231,32 @@ pub union rte_devargs__bindgen_ty_2 {
     pub args: *mut ::std::os::raw::c_char,
     pub drv_str: *const ::std::os::raw::c_char,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_parse(da: *mut rte_devargs, dev: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_parsef(
         da: *mut rte_devargs,
         format: *const ::std::os::raw::c_char,
         ...
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_insert(da: *mut *mut rte_devargs) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_add(devtype: rte_devtype, devargs_str: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_remove(devargs: *mut rte_devargs) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_type_count(devtype: rte_devtype) -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_devargs_next(busname: *const ::std::os::raw::c_char, start: *const rte_devargs) -> *mut rte_devargs;
 }
 #[repr(C)]
@@ -4285,19 +4285,19 @@ pub struct itimerspec {
 pub struct sigevent {
     _unused: [u8; 0],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock() -> clock_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn time(__timer: *mut time_t) -> time_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn difftime(__time1: time_t, __time0: time_t) -> f64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn mktime(__tp: *mut tm) -> time_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strftime(
         __s: *mut ::std::os::raw::c_char,
         __maxsize: size_t,
@@ -4305,7 +4305,7 @@ extern "C" {
         __tp: *const tm,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strftime_l(
         __s: *mut ::std::os::raw::c_char,
         __maxsize: size_t,
@@ -4314,76 +4314,76 @@ extern "C" {
         __loc: locale_t,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn gmtime(__timer: *const time_t) -> *mut tm;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn localtime(__timer: *const time_t) -> *mut tm;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn gmtime_r(__timer: *const time_t, __tp: *mut tm) -> *mut tm;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn localtime_r(__timer: *const time_t, __tp: *mut tm) -> *mut tm;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn asctime(__tp: *const tm) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ctime(__timer: *const time_t) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn asctime_r(__tp: *const tm, __buf: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ctime_r(__timer: *const time_t, __buf: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __tzname: [*mut ::std::os::raw::c_char; 2usize];
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __daylight: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __timezone: ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut tzname: [*mut ::std::os::raw::c_char; 2usize];
 }
-extern "C" {
+unsafe extern "C" {
     pub fn tzset();
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut daylight: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut timezone: ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn stime(__when: *const time_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timegm(__tp: *mut tm) -> time_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timelocal(__tp: *mut tm) -> time_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn dysize(__year: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn nanosleep(__requested_time: *const timespec, __remaining: *mut timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock_getres(__clock_id: clockid_t, __res: *mut timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock_gettime(__clock_id: clockid_t, __tp: *mut timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock_settime(__clock_id: clockid_t, __tp: *const timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock_nanosleep(
         __clock_id: clockid_t,
         __flags: ::std::os::raw::c_int,
@@ -4391,16 +4391,16 @@ extern "C" {
         __rem: *mut timespec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn clock_getcpuclockid(__pid: pid_t, __clock_id: *mut clockid_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timer_create(__clock_id: clockid_t, __evp: *mut sigevent, __timerid: *mut timer_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timer_delete(__timerid: timer_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timer_settime(
         __timerid: timer_t,
         __flags: ::std::os::raw::c_int,
@@ -4408,13 +4408,13 @@ extern "C" {
         __ovalue: *mut itimerspec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timer_gettime(__timerid: timer_t, __value: *mut itimerspec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timer_getoverrun(__timerid: timer_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn timespec_get(__ts: *mut timespec, __base: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 pub type __jmp_buf = [::std::os::raw::c_long; 8usize];
@@ -4467,7 +4467,7 @@ pub type _bindgen_ty_11 = ::std::os::raw::c_uint;
 pub const PTHREAD_CANCEL_DEFERRED: ::std::os::raw::c_uint = 0;
 pub const PTHREAD_CANCEL_ASYNCHRONOUS: ::std::os::raw::c_uint = 1;
 pub type _bindgen_ty_12 = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
@@ -4477,161 +4477,161 @@ extern "C" {
         __arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_exit(__retval: *mut ::std::os::raw::c_void);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_join(__th: pthread_t, __thread_return: *mut *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_detach(__th: pthread_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_self() -> pthread_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_equal(__thread1: pthread_t, __thread2: pthread_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_init(__attr: *mut pthread_attr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_destroy(__attr: *mut pthread_attr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getdetachstate(
         __attr: *const pthread_attr_t,
         __detachstate: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setdetachstate(
         __attr: *mut pthread_attr_t,
         __detachstate: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getguardsize(__attr: *const pthread_attr_t, __guardsize: *mut size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setguardsize(__attr: *mut pthread_attr_t, __guardsize: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getschedparam(
         __attr: *const pthread_attr_t,
         __param: *mut sched_param,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setschedparam(
         __attr: *mut pthread_attr_t,
         __param: *const sched_param,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getschedpolicy(
         __attr: *const pthread_attr_t,
         __policy: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setschedpolicy(
         __attr: *mut pthread_attr_t,
         __policy: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getinheritsched(
         __attr: *const pthread_attr_t,
         __inherit: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setinheritsched(
         __attr: *mut pthread_attr_t,
         __inherit: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getscope(
         __attr: *const pthread_attr_t,
         __scope: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setscope(__attr: *mut pthread_attr_t, __scope: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getstackaddr(
         __attr: *const pthread_attr_t,
         __stackaddr: *mut *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setstackaddr(
         __attr: *mut pthread_attr_t,
         __stackaddr: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getstacksize(__attr: *const pthread_attr_t, __stacksize: *mut size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setstacksize(__attr: *mut pthread_attr_t, __stacksize: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_getstack(
         __attr: *const pthread_attr_t,
         __stackaddr: *mut *mut ::std::os::raw::c_void,
         __stacksize: *mut size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_attr_setstack(
         __attr: *mut pthread_attr_t,
         __stackaddr: *mut ::std::os::raw::c_void,
         __stacksize: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_setschedparam(
         __target_thread: pthread_t,
         __policy: ::std::os::raw::c_int,
         __param: *const sched_param,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_getschedparam(
         __target_thread: pthread_t,
         __policy: *mut ::std::os::raw::c_int,
         __param: *mut sched_param,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_setschedprio(__target_thread: pthread_t, __prio: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: ::std::option::Option<unsafe extern "C" fn()>,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_setcancelstate(
         __state: ::std::os::raw::c_int,
         __oldstate: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_setcanceltype(
         __type: ::std::os::raw::c_int,
         __oldtype: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cancel(__th: pthread_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_testcancel();
 }
 #[repr(C)]
@@ -4654,13 +4654,13 @@ pub struct __pthread_cleanup_frame {
     pub __do_it: ::std::os::raw::c_int,
     pub __cancel_type: ::std::os::raw::c_int,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __pthread_register_cancel(__buf: *mut __pthread_unwind_buf_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __pthread_unregister_cancel(__buf: *mut __pthread_unwind_buf_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __pthread_unwind_next(__buf: *mut __pthread_unwind_buf_t);
 }
 #[repr(C)]
@@ -4668,310 +4668,310 @@ extern "C" {
 pub struct __jmp_buf_tag {
     _unused: [u8; 0],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __sigsetjmp(__env: *mut __jmp_buf_tag, __savemask: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
         __mutexattr: *const pthread_mutexattr_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_trylock(__mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_timedlock(__mutex: *mut pthread_mutex_t, __abstime: *const timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_getprioceiling(
         __mutex: *const pthread_mutex_t,
         __prioceiling: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_setprioceiling(
         __mutex: *mut pthread_mutex_t,
         __prioceiling: ::std::os::raw::c_int,
         __old_ceiling: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutex_consistent(__mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_init(__attr: *mut pthread_mutexattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_destroy(__attr: *mut pthread_mutexattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_getpshared(
         __attr: *const pthread_mutexattr_t,
         __pshared: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_setpshared(
         __attr: *mut pthread_mutexattr_t,
         __pshared: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_gettype(
         __attr: *const pthread_mutexattr_t,
         __kind: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_settype(
         __attr: *mut pthread_mutexattr_t,
         __kind: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_getprotocol(
         __attr: *const pthread_mutexattr_t,
         __protocol: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_setprotocol(
         __attr: *mut pthread_mutexattr_t,
         __protocol: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_getprioceiling(
         __attr: *const pthread_mutexattr_t,
         __prioceiling: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_setprioceiling(
         __attr: *mut pthread_mutexattr_t,
         __prioceiling: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_getrobust(
         __attr: *const pthread_mutexattr_t,
         __robustness: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_mutexattr_setrobust(
         __attr: *mut pthread_mutexattr_t,
         __robustness: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_init(
         __rwlock: *mut pthread_rwlock_t,
         __attr: *const pthread_rwlockattr_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_destroy(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_rdlock(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_tryrdlock(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_timedrdlock(
         __rwlock: *mut pthread_rwlock_t,
         __abstime: *const timespec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_wrlock(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_trywrlock(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_timedwrlock(
         __rwlock: *mut pthread_rwlock_t,
         __abstime: *const timespec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlock_unlock(__rwlock: *mut pthread_rwlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_init(__attr: *mut pthread_rwlockattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_destroy(__attr: *mut pthread_rwlockattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_getpshared(
         __attr: *const pthread_rwlockattr_t,
         __pshared: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_setpshared(
         __attr: *mut pthread_rwlockattr_t,
         __pshared: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_getkind_np(
         __attr: *const pthread_rwlockattr_t,
         __pref: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_rwlockattr_setkind_np(
         __attr: *mut pthread_rwlockattr_t,
         __pref: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_init(
         __cond: *mut pthread_cond_t,
         __cond_attr: *const pthread_condattr_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_wait(__cond: *mut pthread_cond_t, __mutex: *mut pthread_mutex_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_cond_timedwait(
         __cond: *mut pthread_cond_t,
         __mutex: *mut pthread_mutex_t,
         __abstime: *const timespec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_init(__attr: *mut pthread_condattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_destroy(__attr: *mut pthread_condattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_getpshared(
         __attr: *const pthread_condattr_t,
         __pshared: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_setpshared(
         __attr: *mut pthread_condattr_t,
         __pshared: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_getclock(
         __attr: *const pthread_condattr_t,
         __clock_id: *mut __clockid_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_condattr_setclock(__attr: *mut pthread_condattr_t, __clock_id: __clockid_t)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_spin_init(
         __lock: *mut pthread_spinlock_t,
         __pshared: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_spin_destroy(__lock: *mut pthread_spinlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_spin_lock(__lock: *mut pthread_spinlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_spin_trylock(__lock: *mut pthread_spinlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_spin_unlock(__lock: *mut pthread_spinlock_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrier_init(
         __barrier: *mut pthread_barrier_t,
         __attr: *const pthread_barrierattr_t,
         __count: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrier_destroy(__barrier: *mut pthread_barrier_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrier_wait(__barrier: *mut pthread_barrier_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrierattr_init(__attr: *mut pthread_barrierattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrierattr_destroy(__attr: *mut pthread_barrierattr_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrierattr_getpshared(
         __attr: *const pthread_barrierattr_t,
         __pshared: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_barrierattr_setpshared(
         __attr: *mut pthread_barrierattr_t,
         __pshared: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_key_create(
         __key: *mut pthread_key_t,
         __destr_function: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void)>,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_key_delete(__key: pthread_key_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_getspecific(__key: pthread_key_t) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_setspecific(__key: pthread_key_t, __pointer: *const ::std::os::raw::c_void)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_getcpuclockid(__thread_id: pthread_t, __clock_id: *mut __clockid_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn pthread_atfork(
         __prepare: ::std::option::Option<unsafe extern "C" fn()>,
         __parent: ::std::option::Option<unsafe extern "C" fn()>,
         __child: ::std::option::Option<unsafe extern "C" fn()>,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut per_lcore__rte_errno: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_strerror(errnum: ::std::os::raw::c_int) -> *const ::std::os::raw::c_char;
 }
 pub const RTE_MIN_ERRNO: ::std::os::raw::c_uint = 1000;
@@ -4979,21 +4979,21 @@ pub const E_RTE_SECONDARY: ::std::os::raw::c_uint = 1001;
 pub const E_RTE_NO_CONFIG: ::std::os::raw::c_uint = 1002;
 pub const RTE_MAX_ERRNO: ::std::os::raw::c_uint = 1003;
 pub type _bindgen_ty_13 = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn memcpy(
         __dest: *mut ::std::os::raw::c_void,
         __src: *const ::std::os::raw::c_void,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn memmove(
         __dest: *mut ::std::os::raw::c_void,
         __src: *const ::std::os::raw::c_void,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn memccpy(
         __dest: *mut ::std::os::raw::c_void,
         __src: *const ::std::os::raw::c_void,
@@ -5001,81 +5001,81 @@ extern "C" {
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn memset(
         __s: *mut ::std::os::raw::c_void,
         __c: ::std::os::raw::c_int,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn memcmp(
         __s1: *const ::std::os::raw::c_void,
         __s2: *const ::std::os::raw::c_void,
         __n: ::std::os::raw::c_ulong,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn memchr(
         __s: *const ::std::os::raw::c_void,
         __c: ::std::os::raw::c_int,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strncpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcat(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strncat(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcmp(__s1: *const ::std::os::raw::c_char, __s2: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strncmp(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcoll(__s1: *const ::std::os::raw::c_char, __s2: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strxfrm(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcoll_l(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
         __l: locale_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strxfrm_l(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
@@ -5083,75 +5083,75 @@ extern "C" {
         __l: locale_t,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strdup(__s: *const ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strndup(
         __string: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strchr(__s: *const ::std::os::raw::c_char, __c: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strrchr(__s: *const ::std::os::raw::c_char, __c: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcspn(
         __s: *const ::std::os::raw::c_char,
         __reject: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strspn(
         __s: *const ::std::os::raw::c_char,
         __accept: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strpbrk(
         __s: *const ::std::os::raw::c_char,
         __accept: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strstr(
         __haystack: *const ::std::os::raw::c_char,
         __needle: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtok(
         __s: *mut ::std::os::raw::c_char,
         __delim: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __strtok_r(
         __s: *mut ::std::os::raw::c_char,
         __delim: *const ::std::os::raw::c_char,
         __save_ptr: *mut *mut ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtok_r(
         __s: *mut ::std::os::raw::c_char,
         __delim: *const ::std::os::raw::c_char,
         __save_ptr: *mut *mut ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strlen(__s: *const ::std::os::raw::c_char) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strnlen(__string: *const ::std::os::raw::c_char, __maxlen: size_t) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strerror(__errnum: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     #[link_name = "\u{1}__xpg_strerror_r"]
     pub fn strerror_r(
         __errnum: ::std::os::raw::c_int,
@@ -5159,58 +5159,58 @@ extern "C" {
         __buflen: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strerror_l(__errnum: ::std::os::raw::c_int, __l: locale_t) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bcmp(
         __s1: *const ::std::os::raw::c_void,
         __s2: *const ::std::os::raw::c_void,
         __n: ::std::os::raw::c_ulong,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bcopy(__src: *const ::std::os::raw::c_void, __dest: *mut ::std::os::raw::c_void, __n: size_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bzero(__s: *mut ::std::os::raw::c_void, __n: ::std::os::raw::c_ulong);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn index(__s: *const ::std::os::raw::c_char, __c: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rindex(__s: *const ::std::os::raw::c_char, __c: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ffs(__i: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ffsl(__l: ::std::os::raw::c_long) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ffsll(__ll: ::std::os::raw::c_longlong) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcasecmp(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strncasecmp(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
         __n: ::std::os::raw::c_ulong,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strcasecmp_l(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
         __loc: locale_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strncasecmp_l(
         __s1: *const ::std::os::raw::c_char,
         __s2: *const ::std::os::raw::c_char,
@@ -5218,38 +5218,38 @@ extern "C" {
         __loc: locale_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn explicit_bzero(__s: *mut ::std::os::raw::c_void, __n: size_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strsep(
         __stringp: *mut *mut ::std::os::raw::c_char,
         __delim: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strsignal(__sig: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __stpcpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn stpcpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __stpncpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
         __n: size_t,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn stpncpy(
         __dest: *mut ::std::os::raw::c_char,
         __src: *const ::std::os::raw::c_char,
@@ -5284,10 +5284,10 @@ pub const rte_vect_max_simd_RTE_VECT_SIMD_256: rte_vect_max_simd = 256;
 pub const rte_vect_max_simd_RTE_VECT_SIMD_512: rte_vect_max_simd = 512;
 pub const rte_vect_max_simd_RTE_VECT_SIMD_MAX: rte_vect_max_simd = 32768;
 pub type rte_vect_max_simd = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_vect_get_max_simd_bitwidth() -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_vect_set_max_simd_bitwidth(bitwidth: u16) -> ::std::os::raw::c_int;
 }
 pub type __m64 = [::std::os::raw::c_longlong; 1usize];
@@ -5300,13 +5300,13 @@ pub type __v4sf = [f32; 4usize];
 pub type __m128 = [f32; 4usize];
 pub type __m128_u = [f32; 4usize];
 pub type __v4su = [::std::os::raw::c_uint; 4usize];
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_sfence();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_getcsr() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_setcsr(__i: ::std::os::raw::c_uint);
 }
 pub type __m128d = [f64; 2usize];
@@ -5321,16 +5321,16 @@ pub type __v2du = [::std::os::raw::c_ulonglong; 2usize];
 pub type __v8hu = [::std::os::raw::c_ushort; 8usize];
 pub type __v16qu = [::std::os::raw::c_uchar; 16usize];
 pub type __v16qs = [::std::os::raw::c_schar; 16usize];
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_clflush(__p: *const ::std::os::raw::c_void);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_lfence();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_mfence();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn _mm_pause();
 }
 pub type xmm_t = __m128i;
@@ -5346,13 +5346,13 @@ pub union rte_xmm {
     pub pd: [f64; 2usize],
 }
 pub type rte_xmm_t = rte_xmm;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_srand(seedval: u64);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_rand() -> u64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_rand_max(upper_bound: u64) -> u64;
 }
 pub type __gwchar_t = ::std::os::raw::c_int;
@@ -5362,34 +5362,34 @@ pub struct imaxdiv_t {
     pub quot: ::std::os::raw::c_long,
     pub rem: ::std::os::raw::c_long,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn imaxabs(__n: intmax_t) -> intmax_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn imaxdiv(__numer: intmax_t, __denom: intmax_t) -> imaxdiv_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoimax(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> intmax_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn strtoumax(
         __nptr: *const ::std::os::raw::c_char,
         __endptr: *mut *mut ::std::os::raw::c_char,
         __base: ::std::os::raw::c_int,
     ) -> uintmax_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn wcstoimax(
         __nptr: *const __gwchar_t,
         __endptr: *mut *mut __gwchar_t,
         __base: ::std::os::raw::c_int,
     ) -> intmax_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn wcstoumax(
         __nptr: *const __gwchar_t,
         __endptr: *mut *mut __gwchar_t,
@@ -5405,19 +5405,19 @@ pub struct max_align_t {
     pub __clang_max_align_nonce2: u128,
 }
 pub type rte_uuid_t = [::std::os::raw::c_uchar; 16usize];
-extern "C" {
+unsafe extern "C" {
     pub fn rte_uuid_is_null(uu: *mut ::std::os::raw::c_uchar) -> bool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_uuid_compare(a: *mut ::std::os::raw::c_uchar, b: *mut ::std::os::raw::c_uchar) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_uuid_parse(
         in_: *const ::std::os::raw::c_char,
         uu: *mut ::std::os::raw::c_uchar,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_uuid_unparse(uu: *mut ::std::os::raw::c_uchar, out: *mut ::std::os::raw::c_char, len: size_t);
 }
 pub const rte_intr_mode_RTE_INTR_MODE_NONE: rte_intr_mode = 0;
@@ -5430,22 +5430,22 @@ pub const rte_proc_type_t_RTE_PROC_PRIMARY: rte_proc_type_t = 0;
 pub const rte_proc_type_t_RTE_PROC_SECONDARY: rte_proc_type_t = 1;
 pub const rte_proc_type_t_RTE_PROC_INVALID: rte_proc_type_t = 2;
 pub type rte_proc_type_t = ::std::os::raw::c_int;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_process_type() -> rte_proc_type_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_iopl_init() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_init(argc: ::std::os::raw::c_int, argv: *mut *mut ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_cleanup() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_primary_proc_alive(config_file_path: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_disable() -> bool;
 }
 #[repr(C)]
@@ -5470,64 +5470,64 @@ pub type rte_mp_t = ::std::option::Option<
 pub type rte_mp_async_reply_t = ::std::option::Option<
     unsafe extern "C" fn(request: *const rte_mp_msg, reply: *const rte_mp_reply) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_action_register(name: *const ::std::os::raw::c_char, action: rte_mp_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_action_unregister(name: *const ::std::os::raw::c_char);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_sendmsg(msg: *mut rte_mp_msg) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_request_sync(
         req: *mut rte_mp_msg,
         reply: *mut rte_mp_reply,
         ts: *const timespec,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_request_async(
         req: *mut rte_mp_msg,
         ts: *const timespec,
         clb: rte_mp_async_reply_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mp_reply(msg: *mut rte_mp_msg, peer: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
 pub type rte_usage_hook_t = ::std::option::Option<unsafe extern "C" fn(prgname: *const ::std::os::raw::c_char)>;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_set_application_usage_hook(usage_func: rte_usage_hook_t) -> rte_usage_hook_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_has_hugepages() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_has_pci() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_create_uio_dev() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_vfio_intr_mode() -> rte_intr_mode;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_vfio_get_vf_token(vf_token: *mut ::std::os::raw::c_uchar);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_sys_gettid() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut per_lcore__thread_id: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_iova_mode() -> rte_iova_mode;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_mbuf_user_pool_ops() -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_get_runtime_dir() -> *const ::std::os::raw::c_char;
 }
 pub const rte_lcore_state_t_WAIT: rte_lcore_state_t = 0;
@@ -5536,7 +5536,7 @@ pub const rte_lcore_state_t_FINISHED: rte_lcore_state_t = 2;
 pub type rte_lcore_state_t = ::std::os::raw::c_uint;
 pub type lcore_function_t =
     ::std::option::Option<unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int>;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_remote_launch(
         f: lcore_function_t,
         arg: *mut ::std::os::raw::c_void,
@@ -5546,23 +5546,23 @@ extern "C" {
 pub const rte_rmt_call_main_t_SKIP_MAIN: rte_rmt_call_main_t = 0;
 pub const rte_rmt_call_main_t_CALL_MAIN: rte_rmt_call_main_t = 1;
 pub type rte_rmt_call_main_t = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_mp_remote_launch(
         f: lcore_function_t,
         arg: *mut ::std::os::raw::c_void,
         call_main: rte_rmt_call_main_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_get_lcore_state(worker_id: ::std::os::raw::c_uint) -> rte_lcore_state_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_wait_lcore(worker_id: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_mp_wait_lcore();
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut per_lcore__lcore_id: ::std::os::raw::c_uint;
 }
 pub const rte_lcore_role_t_ROLE_RTE: rte_lcore_role_t = 0;
@@ -5570,43 +5570,43 @@ pub const rte_lcore_role_t_ROLE_OFF: rte_lcore_role_t = 1;
 pub const rte_lcore_role_t_ROLE_SERVICE: rte_lcore_role_t = 2;
 pub const rte_lcore_role_t_ROLE_NON_EAL: rte_lcore_role_t = 3;
 pub type rte_lcore_role_t = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_lcore_role(lcore_id: ::std::os::raw::c_uint) -> rte_lcore_role_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_has_role(lcore_id: ::std::os::raw::c_uint, role: rte_lcore_role_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_main_lcore() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_count() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_index(lcore_id: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_socket_id() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_socket_count() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_socket_id_by_idx(idx: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_to_socket_id(lcore_id: ::std::os::raw::c_uint) -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_to_cpu_id(lcore_id: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_cpuset(lcore_id: ::std::os::raw::c_uint) -> rte_cpuset_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_is_enabled(lcore_id: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_next_lcore(
         i: ::std::os::raw::c_uint,
         skip_main: ::std::os::raw::c_int,
@@ -5618,7 +5618,7 @@ pub type rte_lcore_init_cb = ::std::option::Option<
 >;
 pub type rte_lcore_uninit_cb =
     ::std::option::Option<unsafe extern "C" fn(lcore_id: ::std::os::raw::c_uint, arg: *mut ::std::os::raw::c_void)>;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_callback_register(
         name: *const ::std::os::raw::c_char,
         init: rte_lcore_init_cb,
@@ -5626,37 +5626,37 @@ extern "C" {
         arg: *mut ::std::os::raw::c_void,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_callback_unregister(handle: *mut ::std::os::raw::c_void);
 }
 pub type rte_lcore_iterate_cb = ::std::option::Option<
     unsafe extern "C" fn(lcore_id: ::std::os::raw::c_uint, arg: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_iterate(cb: rte_lcore_iterate_cb, arg: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_lcore_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_set_affinity(cpusetp: *mut rte_cpuset_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_get_affinity(cpusetp: *mut rte_cpuset_t);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_setname(id: pthread_t, name: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_getname(id: pthread_t, name: *mut ::std::os::raw::c_char, len: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_register() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_thread_unregister();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ctrl_thread_create(
         thread: *mut pthread_t,
         name: *const ::std::os::raw::c_char,
@@ -5667,7 +5667,7 @@ extern "C" {
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __assert_fail(
         __assertion: *const ::std::os::raw::c_char,
         __file: *const ::std::os::raw::c_char,
@@ -5675,7 +5675,7 @@ extern "C" {
         __function: *const ::std::os::raw::c_char,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __assert_perror_fail(
         __errnum: ::std::os::raw::c_int,
         __file: *const ::std::os::raw::c_char,
@@ -5683,7 +5683,7 @@ extern "C" {
         __function: *const ::std::os::raw::c_char,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __assert(
         __assertion: *const ::std::os::raw::c_char,
         __file: *const ::std::os::raw::c_char,
@@ -5882,57 +5882,57 @@ impl rte_cpu_intrinsics {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_get_intrinsics_support(intrinsics: *mut rte_cpu_intrinsics);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_get_flag_name(feature: rte_cpu_flag_t) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_get_flag_enabled(feature: rte_cpu_flag_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_is_supported() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_getauxval(type_: ::std::os::raw::c_ulong) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_cpu_strcmp_auxval(
         type_: ::std::os::raw::c_ulong,
         str_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dump_stack();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_panic(funcname: *const ::std::os::raw::c_char, format: *const ::std::os::raw::c_char, ...);
 }
 pub const timer_source_EAL_TIMER_TSC: timer_source = 0;
 pub const timer_source_EAL_TIMER_HPET: timer_source = 1;
 pub type timer_source = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub static mut eal_timer_source: timer_source;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_tsc_hz() -> u64;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_delay_us: ::std::option::Option<unsafe extern "C" fn(us: ::std::os::raw::c_uint)>;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_delay_us_block(us: ::std::os::raw::c_uint);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_delay_us_sleep(us: ::std::os::raw::c_uint);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_delay_us_callback_register(
         userfunc: ::std::option::Option<unsafe extern "C" fn(arg1: ::std::os::raw::c_uint)>,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_rtm_supported: u8;
 }
 #[repr(C)]
@@ -5950,7 +5950,7 @@ pub struct rte_fbarray {
     pub data: *mut ::std::os::raw::c_void,
     pub rwlock: rte_rwlock_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_init(
         arr: *mut rte_fbarray,
         name: *const ::std::os::raw::c_char,
@@ -5958,109 +5958,109 @@ extern "C" {
         elt_sz: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_attach(arr: *mut rte_fbarray) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_destroy(arr: *mut rte_fbarray) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_detach(arr: *mut rte_fbarray) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_get(arr: *const rte_fbarray, idx: ::std::os::raw::c_uint) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_idx(arr: *const rte_fbarray, elt: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_set_used(arr: *mut rte_fbarray, idx: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_set_free(arr: *mut rte_fbarray, idx: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_is_used(arr: *mut rte_fbarray, idx: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_next_free(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_next_used(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_next_n_free(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
         n: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_next_n_used(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
         n: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_contig_free(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_contig_used(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_prev_free(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_prev_used(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_prev_n_free(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
         n: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_prev_n_used(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
         n: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_rev_contig_free(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_rev_contig_used(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_biggest_free(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_biggest_used(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_rev_biggest_free(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_find_rev_biggest_used(
         arr: *mut rte_fbarray,
         start: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_fbarray_dump_metadata(arr: *mut rte_fbarray, f: *mut FILE);
 }
 #[repr(C, packed)]
@@ -6099,22 +6099,22 @@ pub union rte_memseg_list__bindgen_ty_1 {
     pub base_va: *mut ::std::os::raw::c_void,
     pub addr_64: u64,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_lock_page(virt: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_virt2phy(virt: *const ::std::os::raw::c_void) -> phys_addr_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_virt2iova(virt: *const ::std::os::raw::c_void) -> rte_iova_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_iova2virt(iova: rte_iova_t) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_virt2memseg(virt: *const ::std::os::raw::c_void, msl: *const rte_memseg_list) -> *mut rte_memseg;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_virt2memseg_list(virt: *const ::std::os::raw::c_void) -> *mut rte_memseg_list;
 }
 pub type rte_memseg_walk_t = ::std::option::Option<
@@ -6135,52 +6135,52 @@ pub type rte_memseg_contig_walk_t = ::std::option::Option<
 pub type rte_memseg_list_walk_t = ::std::option::Option<
     unsafe extern "C" fn(msl: *const rte_memseg_list, arg: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_walk(func: rte_memseg_walk_t, arg: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_contig_walk(
         func: rte_memseg_contig_walk_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_list_walk(
         func: rte_memseg_list_walk_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_walk_thread_unsafe(
         func: rte_memseg_walk_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_contig_walk_thread_unsafe(
         func: rte_memseg_contig_walk_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_list_walk_thread_unsafe(
         func: rte_memseg_list_walk_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_get_fd(ms: *const rte_memseg) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_get_fd_thread_unsafe(ms: *const rte_memseg) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_get_fd_offset(ms: *const rte_memseg, offset: *mut size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memseg_get_fd_offset_thread_unsafe(ms: *const rte_memseg, offset: *mut size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_extmem_register(
         va_addr: *mut ::std::os::raw::c_void,
         len: size_t,
@@ -6189,37 +6189,37 @@ extern "C" {
         page_sz: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_extmem_unregister(va_addr: *mut ::std::os::raw::c_void, len: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_extmem_attach(va_addr: *mut ::std::os::raw::c_void, len: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_extmem_detach(va_addr: *mut ::std::os::raw::c_void, len: size_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_dump_physmem_layout(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_get_physmem_size() -> u64;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memory_get_nchannel() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memory_get_nrank() -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_check_dma_mask(maskbits: u8) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_check_dma_mask_thread_unsafe(maskbits: u8) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_set_dma_mask(maskbits: u8);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eal_using_phys_addrs() -> ::std::os::raw::c_int;
 }
 pub const rte_mem_event_RTE_MEM_EVENT_ALLOC: rte_mem_event = 0;
@@ -6233,14 +6233,14 @@ pub type rte_mem_event_callback_t = ::std::option::Option<
         arg: *mut ::std::os::raw::c_void,
     ),
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_event_callback_register(
         name: *const ::std::os::raw::c_char,
         clb: rte_mem_event_callback_t,
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_event_callback_unregister(
         name: *const ::std::os::raw::c_char,
         arg: *mut ::std::os::raw::c_void,
@@ -6249,7 +6249,7 @@ extern "C" {
 pub type rte_mem_alloc_validator_t = ::std::option::Option<
     unsafe extern "C" fn(socket_id: ::std::os::raw::c_int, cur_limit: size_t, new_len: size_t) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_alloc_validator_register(
         name: *const ::std::os::raw::c_char,
         clb: rte_mem_alloc_validator_t,
@@ -6257,7 +6257,7 @@ extern "C" {
         limit: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mem_alloc_validator_unregister(
         name: *const ::std::os::raw::c_char,
         socket_id: ::std::os::raw::c_int,
@@ -6280,7 +6280,7 @@ pub union rte_memzone__bindgen_ty_1 {
     pub addr: *mut ::std::os::raw::c_void,
     pub addr_64: u64,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_reserve(
         name: *const ::std::os::raw::c_char,
         len: size_t,
@@ -6288,7 +6288,7 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> *const rte_memzone;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_reserve_aligned(
         name: *const ::std::os::raw::c_char,
         len: size_t,
@@ -6297,7 +6297,7 @@ extern "C" {
         align: ::std::os::raw::c_uint,
     ) -> *const rte_memzone;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_reserve_bounded(
         name: *const ::std::os::raw::c_char,
         len: size_t,
@@ -6307,16 +6307,16 @@ extern "C" {
         bound: ::std::os::raw::c_uint,
     ) -> *const rte_memzone;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_free(mz: *const rte_memzone) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_lookup(name: *const ::std::os::raw::c_char) -> *const rte_memzone;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_memzone_walk(
         func: ::std::option::Option<unsafe extern "C" fn(arg1: *const rte_memzone, arg: *mut ::std::os::raw::c_void)>,
         arg: *mut ::std::os::raw::c_void,
@@ -6414,10 +6414,10 @@ pub union rte_ring__bindgen_ty_2 {
     pub hts_cons: rte_ring_hts_headtail,
     pub rts_cons: rte_ring_rts_headtail,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_get_memsize_elem(esize: ::std::os::raw::c_uint, count: ::std::os::raw::c_uint) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_create_elem(
         name: *const ::std::os::raw::c_char,
         esize: ::std::os::raw::c_uint,
@@ -6426,10 +6426,10 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> *mut rte_ring;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_get_memsize(count: ::std::os::raw::c_uint) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_init(
         r: *mut rte_ring,
         name: *const ::std::os::raw::c_char,
@@ -6437,7 +6437,7 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_create(
         name: *const ::std::os::raw::c_char,
         count: ::std::os::raw::c_uint,
@@ -6445,22 +6445,22 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> *mut rte_ring;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_free(r: *mut rte_ring);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_dump(f: *mut FILE, r: *const rte_ring);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_reset(r: *mut rte_ring);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_list_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ring_lookup(name: *const ::std::os::raw::c_char) -> *mut rte_ring;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_strsplit(
         string: *mut ::std::os::raw::c_char,
         stringlen: ::std::os::raw::c_int,
@@ -6469,67 +6469,67 @@ extern "C" {
         delim: ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_strscpy(dst: *mut ::std::os::raw::c_char, src: *const ::std::os::raw::c_char, dsize: size_t) -> ssize_t;
 }
 pub type rte_trace_point_t = u64;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_trace_point_enable(tp: *mut rte_trace_point_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_trace_point_disable(tp: *mut rte_trace_point_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_trace_point_is_enabled(tp: *mut rte_trace_point_t) -> bool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_trace_point_lookup(name: *const ::std::os::raw::c_char) -> *mut rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_trace_mem_per_thread_alloc();
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_trace_point_emit_field(
         sz: size_t,
         field: *const ::std::os::raw::c_char,
         type_: *const ::std::os::raw::c_char,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_trace_point_register(
         trace: *mut rte_trace_point_t,
         name: *const ::std::os::raw::c_char,
         register_fn: ::std::option::Option<unsafe extern "C" fn()>,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_ops_dequeue_bulk: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_ops_dequeue_contig_blocks: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_ops_enqueue_bulk: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_generic_put: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_put_bulk: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_generic_get: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_get_bulk: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_get_contig_blocks: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_default_cache: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_mempool_trace_cache_flush: rte_trace_point_t;
 }
 #[repr(C)]
@@ -6631,7 +6631,7 @@ pub union rte_mempool__bindgen_ty_1 {
 pub struct rte_mempool_objtlr {
     _unused: [u8; 0],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_check_cookies(
         mp: *const rte_mempool,
         obj_table_const: *const *mut ::std::os::raw::c_void,
@@ -6639,7 +6639,7 @@ extern "C" {
         free: ::std::os::raw::c_int,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_contig_blocks_check_cookies(
         mp: *const rte_mempool,
         first_obj_table_const: *const *mut ::std::os::raw::c_void,
@@ -6682,7 +6682,7 @@ pub type rte_mempool_calc_mem_size_t = ::std::option::Option<
         align: *mut size_t,
     ) -> ssize_t,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_op_calc_mem_size_helper(
         mp: *const rte_mempool,
         obj_num: u32,
@@ -6692,7 +6692,7 @@ extern "C" {
         align: *mut size_t,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_op_calc_mem_size_default(
         mp: *const rte_mempool,
         obj_num: u32,
@@ -6720,7 +6720,7 @@ pub type rte_mempool_populate_t = ::std::option::Option<
         obj_cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_op_populate_helper(
         mp: *mut rte_mempool,
         flags: ::std::os::raw::c_uint,
@@ -6732,7 +6732,7 @@ extern "C" {
         obj_cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_op_populate_default(
         mp: *mut rte_mempool,
         max_objs: ::std::os::raw::c_uint,
@@ -6770,16 +6770,16 @@ pub struct rte_mempool_ops_table {
     pub __bindgen_padding_0: [u64; 7usize],
     pub ops: [rte_mempool_ops; 16usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_mempool_ops_table: rte_mempool_ops_table;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_alloc(mp: *mut rte_mempool) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_get_count(mp: *const rte_mempool) -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_calc_mem_size(
         mp: *const rte_mempool,
         obj_num: u32,
@@ -6788,7 +6788,7 @@ extern "C" {
         align: *mut size_t,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_populate(
         mp: *mut rte_mempool,
         max_objs: ::std::os::raw::c_uint,
@@ -6799,20 +6799,20 @@ extern "C" {
         obj_cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_get_info(mp: *const rte_mempool, info: *mut rte_mempool_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_ops_free(mp: *mut rte_mempool);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_set_ops_byname(
         mp: *mut rte_mempool,
         name: *const ::std::os::raw::c_char,
         pool_config: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_register_ops(ops: *const rte_mempool_ops) -> ::std::os::raw::c_int;
 }
 pub type rte_mempool_obj_cb_t = ::std::option::Option<
@@ -6834,7 +6834,7 @@ pub type rte_mempool_mem_cb_t = ::std::option::Option<
 >;
 pub type rte_mempool_ctor_t =
     ::std::option::Option<unsafe extern "C" fn(arg1: *mut rte_mempool, arg2: *mut ::std::os::raw::c_void)>;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_create(
         name: *const ::std::os::raw::c_char,
         n: ::std::os::raw::c_uint,
@@ -6849,7 +6849,7 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> *mut rte_mempool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_create_empty(
         name: *const ::std::os::raw::c_char,
         n: ::std::os::raw::c_uint,
@@ -6860,10 +6860,10 @@ extern "C" {
         flags: ::std::os::raw::c_uint,
     ) -> *mut rte_mempool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_free(mp: *mut rte_mempool);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_populate_iova(
         mp: *mut rte_mempool,
         vaddr: *mut ::std::os::raw::c_char,
@@ -6873,7 +6873,7 @@ extern "C" {
         opaque: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_populate_virt(
         mp: *mut rte_mempool,
         addr: *mut ::std::os::raw::c_char,
@@ -6883,60 +6883,60 @@ extern "C" {
         opaque: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_populate_default(mp: *mut rte_mempool) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_populate_anon(mp: *mut rte_mempool) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_obj_iter(
         mp: *mut rte_mempool,
         obj_cb: rte_mempool_obj_cb_t,
         obj_cb_arg: *mut ::std::os::raw::c_void,
     ) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_mem_iter(
         mp: *mut rte_mempool,
         mem_cb: rte_mempool_mem_cb_t,
         mem_cb_arg: *mut ::std::os::raw::c_void,
     ) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_dump(f: *mut FILE, mp: *mut rte_mempool);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_cache_create(size: u32, socket_id: ::std::os::raw::c_int) -> *mut rte_mempool_cache;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_cache_free(cache: *mut rte_mempool_cache);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_avail_count(mp: *const rte_mempool) -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_in_use_count(mp: *const rte_mempool) -> ::std::os::raw::c_uint;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_audit(mp: *mut rte_mempool);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_list_dump(f: *mut FILE);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_lookup(name: *const ::std::os::raw::c_char) -> *mut rte_mempool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_calc_obj_size(elt_size: u32, flags: u32, sz: *mut rte_mempool_objsz) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_walk(
         func: ::std::option::Option<unsafe extern "C" fn(arg1: *mut rte_mempool, arg: *mut ::std::os::raw::c_void)>,
         arg: *mut ::std::os::raw::c_void,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mempool_get_page_size(mp: *mut rte_mempool, pg_sz: *mut size_t) -> ::std::os::raw::c_int;
 }
 pub type rte_be16_t = u16;
@@ -6945,28 +6945,28 @@ pub type rte_be64_t = u64;
 pub type rte_le16_t = u16;
 pub type rte_le32_t = u32;
 pub type rte_le64_t = u64;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_l2_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_l3_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_l4_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_tunnel_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_inner_l2_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_inner_l3_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_inner_l4_name(ptype: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_ptype_name(ptype: u32, buf: *mut ::std::os::raw::c_char, buflen: size_t) -> ::std::os::raw::c_int;
 }
 #[repr(C)]
@@ -7337,20 +7337,20 @@ pub struct rte_mbuf_ext_shared_info {
     pub fcb_opaque: *mut ::std::os::raw::c_void,
     pub refcnt: u16,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_rx_ol_flag_name(mask: u64) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_rx_ol_flag_list(
         mask: u64,
         buf: *mut ::std::os::raw::c_char,
         buflen: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_tx_ol_flag_name(mask: u64) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_get_tx_ol_flag_list(
         mask: u64,
         buf: *mut ::std::os::raw::c_char,
@@ -7364,17 +7364,17 @@ pub struct rte_pktmbuf_pool_private {
     pub mbuf_priv_size: u16,
     pub flags: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_sanity_check(m: *const rte_mbuf, is_header: ::std::os::raw::c_int);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_check(
         m: *const rte_mbuf,
         is_header: ::std::os::raw::c_int,
         reason: *mut *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_init(
         mp: *mut rte_mempool,
         opaque_arg: *mut ::std::os::raw::c_void,
@@ -7382,10 +7382,10 @@ extern "C" {
         i: ::std::os::raw::c_uint,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_pool_init(mp: *mut rte_mempool, opaque_arg: *mut ::std::os::raw::c_void);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_pool_create(
         name: *const ::std::os::raw::c_char,
         n: ::std::os::raw::c_uint,
@@ -7395,7 +7395,7 @@ extern "C" {
         socket_id: ::std::os::raw::c_int,
     ) -> *mut rte_mempool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_pool_create_by_ops(
         name: *const ::std::os::raw::c_char,
         n: ::std::os::raw::c_uint,
@@ -7414,7 +7414,7 @@ pub struct rte_pktmbuf_extmem {
     pub buf_len: size_t,
     pub elt_size: u16,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_pool_create_extbuf(
         name: *const ::std::os::raw::c_char,
         n: ::std::os::raw::c_uint,
@@ -7426,16 +7426,16 @@ extern "C" {
         ext_num: ::std::os::raw::c_uint,
     ) -> *mut rte_mempool;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_free_bulk(mbufs: *mut *mut rte_mbuf, count: ::std::os::raw::c_uint);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_clone(md: *mut rte_mbuf, mp: *mut rte_mempool) -> *mut rte_mbuf;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_copy(m: *const rte_mbuf, mp: *mut rte_mempool, offset: u32, length: u32) -> *mut rte_mbuf;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_pktmbuf_read(
         m: *const rte_mbuf,
         off: u32,
@@ -7443,10 +7443,10 @@ extern "C" {
         buf: *mut ::std::os::raw::c_void,
     ) -> *const ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __rte_pktmbuf_linearize(mbuf: *mut rte_mbuf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_pktmbuf_dump(f: *mut FILE, m: *const rte_mbuf, dump_len: ::std::os::raw::c_uint);
 }
 #[repr(C)]
@@ -7456,13 +7456,13 @@ extern "C" {
 pub struct rte_ether_addr {
     pub addr_bytes: [u8; 6usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_eth_random_addr(addr: *mut u8);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ether_format_addr(buf: *mut ::std::os::raw::c_char, size: u16, eth_addr: *const rte_ether_addr);
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_ether_unformat_addr(
         str_: *const ::std::os::raw::c_char,
         eth_addr: *mut rte_ether_addr,
@@ -7481,10 +7481,10 @@ pub struct rte_vlan_hdr {
     pub vlan_tci: u16,
     pub eth_proto: u16,
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_ethdev_trace_rx_burst: rte_trace_point_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut __rte_ethdev_trace_tx_burst: rte_trace_point_t;
 }
 #[repr(C)]
@@ -7510,10 +7510,10 @@ pub struct rte_eth_dev_module_info {
     pub type_: u32,
     pub eeprom_len: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_eth_dev_logtype: ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Initializes a device iterator."]
     #[doc = ""]
     #[doc = " This iterator allows accessing a list of devices matching some devargs."]
@@ -7533,7 +7533,7 @@ extern "C" {
         devargs: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Iterates on devices with devargs filter."]
     #[doc = " The ownership is not checked."]
     #[doc = ""]
@@ -7548,7 +7548,7 @@ extern "C" {
     #[doc = "   A port id if found, RTE_MAX_ETHPORTS otherwise."]
     pub fn rte_eth_iterator_next(iter: *mut rte_dev_iterator) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Free some allocated fields of the iterator."]
     #[doc = ""]
     #[doc = " This function is automatically called by rte_eth_iterator_next()"]
@@ -8305,7 +8305,7 @@ pub struct rte_arp_hdr {
     pub arp_opcode: u16,
     pub arp_data: rte_arp_ipv4,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_net_make_rarp_packet(mpool: *mut rte_mempool, mac: *const rte_ether_addr) -> *mut rte_mbuf;
 }
 #[repr(C, packed)]
@@ -8389,7 +8389,7 @@ pub struct cmsghdr {
     pub cmsg_type: ::std::os::raw::c_int,
     pub __cmsg_data: __IncompleteArrayField<::std::os::raw::c_uchar>,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn __cmsg_nxthdr(__mhdr: *mut msghdr, __cmsg: *mut cmsghdr) -> *mut cmsghdr;
 }
 pub const SCM_RIGHTS: ::std::os::raw::c_uint = 1;
@@ -8410,14 +8410,14 @@ pub const SHUT_RD: ::std::os::raw::c_uint = 0;
 pub const SHUT_WR: ::std::os::raw::c_uint = 1;
 pub const SHUT_RDWR: ::std::os::raw::c_uint = 2;
 pub type _bindgen_ty_17 = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn socket(
         __domain: ::std::os::raw::c_int,
         __type: ::std::os::raw::c_int,
         __protocol: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn socketpair(
         __domain: ::std::os::raw::c_int,
         __type: ::std::os::raw::c_int,
@@ -8425,27 +8425,27 @@ extern "C" {
         __fds: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bind(__fd: ::std::os::raw::c_int, __addr: *const sockaddr, __len: socklen_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getsockname(
         __fd: ::std::os::raw::c_int,
         __addr: *mut sockaddr,
         __len: *mut socklen_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn connect(__fd: ::std::os::raw::c_int, __addr: *const sockaddr, __len: socklen_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getpeername(
         __fd: ::std::os::raw::c_int,
         __addr: *mut sockaddr,
         __len: *mut socklen_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn send(
         __fd: ::std::os::raw::c_int,
         __buf: *const ::std::os::raw::c_void,
@@ -8453,7 +8453,7 @@ extern "C" {
         __flags: ::std::os::raw::c_int,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn recv(
         __fd: ::std::os::raw::c_int,
         __buf: *mut ::std::os::raw::c_void,
@@ -8461,7 +8461,7 @@ extern "C" {
         __flags: ::std::os::raw::c_int,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sendto(
         __fd: ::std::os::raw::c_int,
         __buf: *const ::std::os::raw::c_void,
@@ -8471,7 +8471,7 @@ extern "C" {
         __addr_len: socklen_t,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn recvfrom(
         __fd: ::std::os::raw::c_int,
         __buf: *mut ::std::os::raw::c_void,
@@ -8481,13 +8481,13 @@ extern "C" {
         __addr_len: *mut socklen_t,
     ) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sendmsg(__fd: ::std::os::raw::c_int, __message: *const msghdr, __flags: ::std::os::raw::c_int) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn recvmsg(__fd: ::std::os::raw::c_int, __message: *mut msghdr, __flags: ::std::os::raw::c_int) -> ssize_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn getsockopt(
         __fd: ::std::os::raw::c_int,
         __level: ::std::os::raw::c_int,
@@ -8496,7 +8496,7 @@ extern "C" {
         __optlen: *mut socklen_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn setsockopt(
         __fd: ::std::os::raw::c_int,
         __level: ::std::os::raw::c_int,
@@ -8505,23 +8505,23 @@ extern "C" {
         __optlen: socklen_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn listen(__fd: ::std::os::raw::c_int, __n: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn accept(
         __fd: ::std::os::raw::c_int,
         __addr: *mut sockaddr,
         __addr_len: *mut socklen_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn shutdown(__fd: ::std::os::raw::c_int, __how: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn sockatmark(__fd: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn isfdtype(__fd: ::std::os::raw::c_int, __fdtype: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
 pub type in_addr_t = u32;
@@ -8627,10 +8627,10 @@ pub union in6_addr__bindgen_ty_1 {
     pub __u6_addr16: [u16; 8usize],
     pub __u6_addr32: [u32; 4usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub static in6addr_any: in6_addr;
 }
-extern "C" {
+unsafe extern "C" {
     pub static in6addr_loopback: in6_addr;
 }
 #[repr(C)]
@@ -8700,22 +8700,22 @@ pub struct group_filter {
     pub gf_numsrc: u32,
     pub gf_slist: [sockaddr_storage; 1usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ntohl(__netlong: u32) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn ntohs(__netshort: u16) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn htonl(__hostlong: u32) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn htons(__hostshort: u16) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bindresvport(__sockfd: ::std::os::raw::c_int, __sock_in: *mut sockaddr_in) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn bindresvport6(__sockfd: ::std::os::raw::c_int, __sock_in: *mut sockaddr_in6) -> ::std::os::raw::c_int;
 }
 #[repr(C)]
@@ -9926,45 +9926,45 @@ pub struct rte_mbuf_dynflag {
     pub name: [::std::os::raw::c_char; 64usize],
     pub flags: ::std::os::raw::c_uint,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynfield_register(params: *const rte_mbuf_dynfield) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynfield_register_offset(params: *const rte_mbuf_dynfield, offset: size_t)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynfield_lookup(
         name: *const ::std::os::raw::c_char,
         params: *mut rte_mbuf_dynfield,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynflag_register(params: *const rte_mbuf_dynflag) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynflag_register_bitnum(
         params: *const rte_mbuf_dynflag,
         bitnum: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dynflag_lookup(
         name: *const ::std::os::raw::c_char,
         params: *mut rte_mbuf_dynflag,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dyn_dump(out: *mut FILE);
 }
 pub type rte_mbuf_timestamp_t = u64;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dyn_rx_timestamp_register(
         field_offset: *mut ::std::os::raw::c_int,
         rx_flag: *mut u64,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_mbuf_dyn_tx_timestamp_register(
         field_offset: *mut ::std::os::raw::c_int,
         tx_flag: *mut u64,
@@ -10109,7 +10109,7 @@ pub type rte_flow_item_type = ::std::os::raw::c_uint;
 pub struct rte_flow_item_higig2_hdr {
     pub hdr: rte_higig2_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_higig2_hdr_mask: rte_flow_item_higig2_hdr;
 }
 #[repr(C)]
@@ -10117,7 +10117,7 @@ extern "C" {
 pub struct rte_flow_item_any {
     pub num: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_any_mask: rte_flow_item_any;
 }
 #[repr(C)]
@@ -10125,7 +10125,7 @@ extern "C" {
 pub struct rte_flow_item_vf {
     pub id: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_vf_mask: rte_flow_item_vf;
 }
 #[repr(C)]
@@ -10133,7 +10133,7 @@ extern "C" {
 pub struct rte_flow_item_phy_port {
     pub index: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_phy_port_mask: rte_flow_item_phy_port;
 }
 #[repr(C)]
@@ -10141,7 +10141,7 @@ extern "C" {
 pub struct rte_flow_item_port_id {
     pub id: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_port_id_mask: rte_flow_item_port_id;
 }
 #[repr(C)]
@@ -10206,7 +10206,7 @@ impl rte_flow_item_raw {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_raw_mask: rte_flow_item_raw;
 }
 #[repr(C)]
@@ -10256,7 +10256,7 @@ impl rte_flow_item_eth {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_eth_mask: rte_flow_item_eth;
 }
 #[repr(C)]
@@ -10305,7 +10305,7 @@ impl rte_flow_item_vlan {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_vlan_mask: rte_flow_item_vlan;
 }
 #[repr(C)]
@@ -10313,7 +10313,7 @@ extern "C" {
 pub struct rte_flow_item_ipv4 {
     pub hdr: rte_ipv4_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_ipv4_mask: rte_flow_item_ipv4;
 }
 #[repr(C)]
@@ -10492,7 +10492,7 @@ impl rte_flow_item_ipv6 {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_ipv6_mask: rte_flow_item_ipv6;
 }
 #[repr(C)]
@@ -10500,7 +10500,7 @@ extern "C" {
 pub struct rte_flow_item_icmp {
     pub hdr: rte_icmp_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp_mask: rte_flow_item_icmp;
 }
 #[repr(C)]
@@ -10508,7 +10508,7 @@ extern "C" {
 pub struct rte_flow_item_udp {
     pub hdr: rte_udp_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_udp_mask: rte_flow_item_udp;
 }
 #[repr(C)]
@@ -10516,7 +10516,7 @@ extern "C" {
 pub struct rte_flow_item_tcp {
     pub hdr: rte_tcp_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_tcp_mask: rte_flow_item_tcp;
 }
 #[repr(C)]
@@ -10524,7 +10524,7 @@ extern "C" {
 pub struct rte_flow_item_sctp {
     pub hdr: rte_sctp_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_sctp_mask: rte_flow_item_sctp;
 }
 #[repr(C)]
@@ -10535,7 +10535,7 @@ pub struct rte_flow_item_vxlan {
     pub vni: [u8; 3usize],
     pub rsvd1: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_vxlan_mask: rte_flow_item_vxlan;
 }
 #[repr(C)]
@@ -10547,7 +10547,7 @@ pub struct rte_flow_item_e_tag {
     pub ecid_e: u8,
     pub inner_type: rte_be16_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_e_tag_mask: rte_flow_item_e_tag;
 }
 #[repr(C)]
@@ -10558,7 +10558,7 @@ pub struct rte_flow_item_nvgre {
     pub tni: [u8; 3usize],
     pub flow_id: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_nvgre_mask: rte_flow_item_nvgre;
 }
 #[repr(C)]
@@ -10567,7 +10567,7 @@ pub struct rte_flow_item_mpls {
     pub label_tc_s: [u8; 3usize],
     pub ttl: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_mpls_mask: rte_flow_item_mpls;
 }
 #[repr(C)]
@@ -10576,7 +10576,7 @@ pub struct rte_flow_item_gre {
     pub c_rsvd0_ver: rte_be16_t,
     pub protocol: rte_be16_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_gre_mask: rte_flow_item_gre;
 }
 #[repr(C)]
@@ -10584,7 +10584,7 @@ extern "C" {
 pub struct rte_flow_item_fuzzy {
     pub thresh: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_fuzzy_mask: rte_flow_item_fuzzy;
 }
 #[repr(C)]
@@ -10595,7 +10595,7 @@ pub struct rte_flow_item_gtp {
     pub msg_len: rte_be16_t,
     pub teid: rte_be32_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_gtp_mask: rte_flow_item_gtp;
 }
 #[repr(C)]
@@ -10603,7 +10603,7 @@ extern "C" {
 pub struct rte_flow_item_esp {
     pub hdr: rte_esp_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_esp_mask: rte_flow_item_esp;
 }
 #[repr(C)]
@@ -10614,7 +10614,7 @@ pub struct rte_flow_item_geneve {
     pub vni: [u8; 3usize],
     pub rsvd1: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_geneve_mask: rte_flow_item_geneve;
 }
 #[repr(C)]
@@ -10626,7 +10626,7 @@ pub struct rte_flow_item_vxlan_gpe {
     pub vni: [u8; 3usize],
     pub rsvd1: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_vxlan_gpe_mask: rte_flow_item_vxlan_gpe;
 }
 #[repr(C)]
@@ -10642,7 +10642,7 @@ pub struct rte_flow_item_arp_eth_ipv4 {
     pub tha: rte_ether_addr,
     pub tpa: rte_be32_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_arp_eth_ipv4_mask: rte_flow_item_arp_eth_ipv4;
 }
 #[repr(C)]
@@ -10650,7 +10650,7 @@ extern "C" {
 pub struct rte_flow_item_ipv6_ext {
     pub next_hdr: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_ipv6_ext_mask: rte_flow_item_ipv6_ext;
 }
 #[repr(C)]
@@ -10665,7 +10665,7 @@ pub struct rte_flow_item_icmp6 {
     pub code: u8,
     pub checksum: u16,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_mask: rte_flow_item_icmp6;
 }
 #[repr(C)]
@@ -10677,7 +10677,7 @@ pub struct rte_flow_item_icmp6_nd_ns {
     pub reserved: rte_be32_t,
     pub target_addr: [u8; 16usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_nd_ns_mask: rte_flow_item_icmp6_nd_ns;
 }
 #[repr(C)]
@@ -10689,7 +10689,7 @@ pub struct rte_flow_item_icmp6_nd_na {
     pub rso_reserved: rte_be32_t,
     pub target_addr: [u8; 16usize],
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_nd_na_mask: rte_flow_item_icmp6_nd_na;
 }
 #[repr(C)]
@@ -10698,7 +10698,7 @@ pub struct rte_flow_item_icmp6_nd_opt {
     pub type_: u8,
     pub length: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_nd_opt_mask: rte_flow_item_icmp6_nd_opt;
 }
 #[repr(C)]
@@ -10708,7 +10708,7 @@ pub struct rte_flow_item_icmp6_nd_opt_sla_eth {
     pub length: u8,
     pub sla: rte_ether_addr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_nd_opt_sla_eth_mask: rte_flow_item_icmp6_nd_opt_sla_eth;
 }
 #[repr(C)]
@@ -10718,7 +10718,7 @@ pub struct rte_flow_item_icmp6_nd_opt_tla_eth {
     pub length: u8,
     pub tla: rte_ether_addr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_icmp6_nd_opt_tla_eth_mask: rte_flow_item_icmp6_nd_opt_tla_eth;
 }
 #[repr(C)]
@@ -10726,7 +10726,7 @@ extern "C" {
 pub struct rte_flow_item_meta {
     pub data: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_meta_mask: rte_flow_item_meta;
 }
 #[repr(C)]
@@ -10735,7 +10735,7 @@ pub struct rte_flow_item_gtp_psc {
     pub pdu_type: u8,
     pub qfi: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_gtp_psc_mask: rte_flow_item_gtp_psc;
 }
 #[repr(C)]
@@ -10751,7 +10751,7 @@ pub struct rte_flow_item_pppoe {
 pub struct rte_flow_item_pppoe_proto_id {
     pub proto_id: rte_be16_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_pppoe_proto_id_mask: rte_flow_item_pppoe_proto_id;
 }
 #[repr(C)]
@@ -10760,7 +10760,7 @@ pub struct rte_flow_item_tag {
     pub data: u32,
     pub index: u8,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_tag_mask: rte_flow_item_tag;
 }
 #[repr(C)]
@@ -10768,7 +10768,7 @@ extern "C" {
 pub struct rte_flow_item_l2tpv3oip {
     pub session_id: rte_be32_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_l2tpv3oip_mask: rte_flow_item_l2tpv3oip;
 }
 #[repr(C)]
@@ -10776,7 +10776,7 @@ extern "C" {
 pub struct rte_flow_item_mark {
     pub id: u32,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_mark_mask: rte_flow_item_mark;
 }
 #[repr(C)]
@@ -10954,7 +10954,7 @@ impl rte_flow_item_nsh {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_nsh_mask: rte_flow_item_nsh;
 }
 #[repr(C)]
@@ -11016,7 +11016,7 @@ impl rte_flow_item_igmp {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_igmp_mask: rte_flow_item_igmp;
 }
 #[repr(C)]
@@ -11079,7 +11079,7 @@ impl rte_flow_item_ah {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_ah_mask: rte_flow_item_ah;
 }
 #[repr(C)]
@@ -11090,7 +11090,7 @@ pub struct rte_flow_item_pfcp {
     pub msg_len: rte_be16_t,
     pub seid: rte_be64_t,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_pfcp_mask: rte_flow_item_pfcp;
 }
 #[repr(C)]
@@ -11098,7 +11098,7 @@ extern "C" {
 pub struct rte_flow_item_ecpri {
     pub hdr: rte_ecpri_combined_msg_hdr,
 }
-extern "C" {
+unsafe extern "C" {
     pub static rte_flow_item_ecpri_mask: rte_flow_item_ecpri;
 }
 #[repr(C)]
@@ -11693,10 +11693,10 @@ pub struct rte_flow_action_set_dscp {
 pub struct rte_flow_shared_action {
     _unused: [u8; 0],
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_flow_dynf_metadata_offs: i32;
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_flow_dynf_metadata_mask: u64;
 }
 #[repr(C)]
@@ -11778,13 +11778,13 @@ pub const rte_flow_conv_op_RTE_FLOW_CONV_OP_ACTION_NAME: rte_flow_conv_op = 8;
 pub const rte_flow_conv_op_RTE_FLOW_CONV_OP_ITEM_NAME_PTR: rte_flow_conv_op = 9;
 pub const rte_flow_conv_op_RTE_FLOW_CONV_OP_ACTION_NAME_PTR: rte_flow_conv_op = 10;
 pub type rte_flow_conv_op = ::std::os::raw::c_uint;
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_dev_dump(port_id: u16, file: *mut FILE, error: *mut rte_flow_error) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_dynf_metadata_register() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_validate(
         port_id: u16,
         attr: *const rte_flow_attr,
@@ -11793,7 +11793,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_create(
         port_id: u16,
         attr: *const rte_flow_attr,
@@ -11802,13 +11802,13 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> *mut rte_flow;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_destroy(port_id: u16, flow: *mut rte_flow, error: *mut rte_flow_error) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_flush(port_id: u16, error: *mut rte_flow_error) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_query(
         port_id: u16,
         flow: *mut rte_flow,
@@ -11817,14 +11817,14 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_isolate(
         port_id: u16,
         set: ::std::os::raw::c_int,
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_error_set(
         error: *mut rte_flow_error,
         code: ::std::os::raw::c_int,
@@ -11842,7 +11842,7 @@ pub struct rte_flow_desc {
     pub actions: *mut rte_flow_action,
     pub data: __IncompleteArrayField<u8>,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_copy(
         fd: *mut rte_flow_desc,
         len: size_t,
@@ -11851,7 +11851,7 @@ extern "C" {
         actions: *const rte_flow_action,
     ) -> size_t;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_conv(
         op: rte_flow_conv_op,
         dst: *mut ::std::os::raw::c_void,
@@ -11860,7 +11860,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_get_aged_flows(
         port_id: u16,
         contexts: *mut *mut ::std::os::raw::c_void,
@@ -11928,7 +11928,7 @@ impl rte_flow_shared_action_conf {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_shared_action_create(
         port_id: u16,
         conf: *const rte_flow_shared_action_conf,
@@ -11936,14 +11936,14 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> *mut rte_flow_shared_action;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_shared_action_destroy(
         port_id: u16,
         action: *mut rte_flow_shared_action,
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_shared_action_update(
         port_id: u16,
         action: *mut rte_flow_shared_action,
@@ -11951,7 +11951,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_shared_action_query(
         port_id: u16,
         action: *const rte_flow_shared_action,
@@ -11998,7 +11998,7 @@ pub struct rte_flow_restore_info {
     pub group_id: u32,
     pub tunnel: rte_flow_tunnel,
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_tunnel_decap_set(
         port_id: u16,
         tunnel: *mut rte_flow_tunnel,
@@ -12007,7 +12007,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_tunnel_match(
         port_id: u16,
         tunnel: *mut rte_flow_tunnel,
@@ -12016,7 +12016,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_get_restore_info(
         port_id: u16,
         m: *mut rte_mbuf,
@@ -12024,7 +12024,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_tunnel_action_decap_release(
         port_id: u16,
         actions: *mut rte_flow_action,
@@ -12032,7 +12032,7 @@ extern "C" {
         error: *mut rte_flow_error,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn rte_flow_tunnel_item_release(
         port_id: u16,
         items: *mut rte_flow_item,
@@ -12869,7 +12869,7 @@ pub struct rte_eth_dev_owner {
     #[doc = "< The owner name."]
     pub name: [::std::os::raw::c_char; 64usize],
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Iterates over valid ethdev ports owned by a specific owner."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -12881,7 +12881,7 @@ extern "C" {
     #[doc = "   Next valid port id owned by owner_id, RTE_MAX_ETHPORTS if there is none."]
     pub fn rte_eth_find_next_owned_by(port_id: u16, owner_id: u64) -> u64;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Iterates over valid ethdev ports."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -12890,7 +12890,7 @@ extern "C" {
     #[doc = "   Next valid port id, RTE_MAX_ETHPORTS if there is none."]
     pub fn rte_eth_find_next(port_id: u16) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12905,7 +12905,7 @@ extern "C" {
     #[doc = "   RTE_MAX_ETHPORTS if there is none."]
     pub fn rte_eth_find_next_of(port_id_start: u16, parent: *const rte_device) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12920,7 +12920,7 @@ extern "C" {
     #[doc = "   RTE_MAX_ETHPORTS if there is none."]
     pub fn rte_eth_find_next_sibling(port_id_start: u16, ref_port_id: u16) -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12934,7 +12934,7 @@ extern "C" {
     #[doc = "   Negative errno value on error, 0 on success."]
     pub fn rte_eth_dev_owner_new(owner_id: *mut u64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12948,7 +12948,7 @@ extern "C" {
     #[doc = "  Negative errno value on error, 0 on success."]
     pub fn rte_eth_dev_owner_set(port_id: u16, owner: *const rte_eth_dev_owner) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12962,7 +12962,7 @@ extern "C" {
     #[doc = "  0 on success, negative errno value on error."]
     pub fn rte_eth_dev_owner_unset(port_id: u16, owner_id: u64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12974,7 +12974,7 @@ extern "C" {
     #[doc = "  0 on success, negative errno value on error."]
     pub fn rte_eth_dev_owner_delete(owner_id: u64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -12988,7 +12988,7 @@ extern "C" {
     #[doc = "  0 on success, negative errno value on error.."]
     pub fn rte_eth_dev_owner_get(port_id: u16, owner: *mut rte_eth_dev_owner) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get the number of ports which are usable for the application."]
     #[doc = ""]
     #[doc = " These devices must be iterated by using the macro"]
@@ -12999,7 +12999,7 @@ extern "C" {
     #[doc = "   The count of available Ethernet devices."]
     pub fn rte_eth_dev_count_avail() -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get the total number of ports which are allocated."]
     #[doc = ""]
     #[doc = " Some devices may not be available for the application."]
@@ -13008,7 +13008,7 @@ extern "C" {
     #[doc = "   The total count of Ethernet devices."]
     pub fn rte_eth_dev_count_total() -> u16;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Convert a numerical speed in Mbps to a bitmap flag that can be used in"]
     #[doc = " the bitmap link_speeds of the struct rte_eth_conf"]
     #[doc = ""]
@@ -13020,7 +13020,7 @@ extern "C" {
     #[doc = "   0 if the speed cannot be mapped"]
     pub fn rte_eth_speed_bitflag(speed: u32, duplex: ::std::os::raw::c_int) -> u32;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get DEV_RX_OFFLOAD_* flag name."]
     #[doc = ""]
     #[doc = " @param offload"]
@@ -13029,7 +13029,7 @@ extern "C" {
     #[doc = "   Offload name or 'UNKNOWN' if the flag cannot be recognised."]
     pub fn rte_eth_dev_rx_offload_name(offload: u64) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get DEV_TX_OFFLOAD_* flag name."]
     #[doc = ""]
     #[doc = " @param offload"]
@@ -13038,7 +13038,7 @@ extern "C" {
     #[doc = "   Offload name or 'UNKNOWN' if the flag cannot be recognised."]
     pub fn rte_eth_dev_tx_offload_name(offload: u64) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Configure an Ethernet device."]
     #[doc = " This function must be invoked first before any other function in the"]
     #[doc = " Ethernet API. This function can also be re-invoked when a device is in the"]
@@ -13083,7 +13083,7 @@ extern "C" {
         eth_conf: *const rte_eth_conf,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -13095,7 +13095,7 @@ extern "C" {
     #[doc = "   1 when the Ethernet device is removed, otherwise 0."]
     pub fn rte_eth_dev_is_removed(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Allocate and set up a receive queue for an Ethernet device."]
     #[doc = ""]
     #[doc = " The function allocates a contiguous block of memory for *nb_rx_desc*"]
@@ -13165,7 +13165,7 @@ extern "C" {
         mb_pool: *mut rte_mempool,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -13198,7 +13198,7 @@ extern "C" {
         conf: *const rte_eth_hairpin_conf,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Allocate and set up a transmit queue for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13253,7 +13253,7 @@ extern "C" {
         tx_conf: *const rte_eth_txconf,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -13284,7 +13284,7 @@ extern "C" {
         conf: *const rte_eth_hairpin_conf,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -13316,7 +13316,7 @@ extern "C" {
         direction: u32,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -13339,7 +13339,7 @@ extern "C" {
     #[doc = "   - Others detailed errors from PMD drivers."]
     pub fn rte_eth_hairpin_bind(tx_port: u16, rx_port: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -13364,7 +13364,7 @@ extern "C" {
     #[doc = "   - Others detailed errors from PMD drivers."]
     pub fn rte_eth_hairpin_unbind(tx_port: u16, rx_port: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Return the NUMA socket to which an Ethernet device is connected"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13375,7 +13375,7 @@ extern "C" {
     #[doc = "   -1 is returned is the port_id value is out of range."]
     pub fn rte_eth_dev_socket_id(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Check if port_id of device is attached"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13385,7 +13385,7 @@ extern "C" {
     #[doc = "   - 1 if device is attached"]
     pub fn rte_eth_dev_is_valid_port(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Start specified RX queue of a port. It is used when rx_deferred_start"]
     #[doc = " flag of the specified queue is true."]
     #[doc = ""]
@@ -13403,7 +13403,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function not supported in PMD driver."]
     pub fn rte_eth_dev_rx_queue_start(port_id: u16, rx_queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Stop specified RX queue of a port"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13420,7 +13420,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function not supported in PMD driver."]
     pub fn rte_eth_dev_rx_queue_stop(port_id: u16, rx_queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Start TX for specified queue of a port. It is used when tx_deferred_start"]
     #[doc = " flag of the specified queue is true."]
     #[doc = ""]
@@ -13438,7 +13438,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function not supported in PMD driver."]
     pub fn rte_eth_dev_tx_queue_start(port_id: u16, tx_queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Stop specified TX queue of a port"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13455,7 +13455,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function not supported in PMD driver."]
     pub fn rte_eth_dev_tx_queue_stop(port_id: u16, tx_queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Start an Ethernet device."]
     #[doc = ""]
     #[doc = " The device start step is the last one and consists of setting the configured"]
@@ -13475,7 +13475,7 @@ extern "C" {
     #[doc = "   - <0: Error code of the driver device start function."]
     pub fn rte_eth_dev_start(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Stop an Ethernet device. The device can be restarted with a call to"]
     #[doc = " rte_eth_dev_start()"]
     #[doc = ""]
@@ -13486,7 +13486,7 @@ extern "C" {
     #[doc = "   - <0: Error code of the driver device stop function."]
     pub fn rte_eth_dev_stop(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Link up an Ethernet device."]
     #[doc = ""]
     #[doc = " Set device link up will re-enable the device rx/tx"]
@@ -13499,7 +13499,7 @@ extern "C" {
     #[doc = "   - <0: Error code of the driver device link up function."]
     pub fn rte_eth_dev_set_link_up(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Link down an Ethernet device."]
     #[doc = " The device rx/tx functionality will be disabled if success,"]
     #[doc = " and it can be re-enabled with a call to"]
@@ -13509,7 +13509,7 @@ extern "C" {
     #[doc = "   The port identifier of the Ethernet device."]
     pub fn rte_eth_dev_set_link_down(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Close a stopped Ethernet device. The device cannot be restarted!"]
     #[doc = " The function frees all port resources."]
     #[doc = ""]
@@ -13520,7 +13520,7 @@ extern "C" {
     #[doc = "   - Negative if something went wrong."]
     pub fn rte_eth_dev_close(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Reset a Ethernet device and keep its port id."]
     #[doc = ""]
     #[doc = " When a port has to be reset passively, the DPDK application can invoke"]
@@ -13558,7 +13558,7 @@ extern "C" {
     #[doc = "   - (-EAGAIN) if the reset temporarily failed and should be retried later."]
     pub fn rte_eth_dev_reset(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Enable receipt in promiscuous mode for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13570,7 +13570,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_promiscuous_enable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Disable receipt in promiscuous mode for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13582,7 +13582,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_promiscuous_disable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Return the value of promiscuous mode for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13593,7 +13593,7 @@ extern "C" {
     #[doc = "   - (-1) on error"]
     pub fn rte_eth_promiscuous_get(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Enable the receipt of any multicast frame by an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13605,7 +13605,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_allmulticast_enable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Disable the receipt of all multicast frames by an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13617,7 +13617,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_allmulticast_disable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Return the value of allmulticast mode for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13628,7 +13628,7 @@ extern "C" {
     #[doc = "   - (-1) on error"]
     pub fn rte_eth_allmulticast_get(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the link status (up/down), the duplex mode (half/full),"]
     #[doc = " the negotiation (auto/fixed), and if available, the speed (Mbps)."]
     #[doc = ""]
@@ -13645,7 +13645,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_link_get(port_id: u16, link: *mut rte_eth_link) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the link status (up/down), the duplex mode (half/full),"]
     #[doc = " the negotiation (auto/fixed), and if available, the speed (Mbps)."]
     #[doc = ""]
@@ -13659,7 +13659,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_link_get_nowait(port_id: u16, link: *mut rte_eth_link) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -13673,7 +13673,7 @@ extern "C" {
     #[doc = "   No free is required."]
     pub fn rte_eth_link_speed_to_str(link_speed: u32) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -13696,7 +13696,7 @@ extern "C" {
         eth_link: *const rte_eth_link,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the general I/O statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13714,7 +13714,7 @@ extern "C" {
     #[doc = "   Zero if successful. Non-zero otherwise."]
     pub fn rte_eth_stats_get(port_id: u16, stats: *mut rte_eth_stats) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Reset the general I/O statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13726,7 +13726,7 @@ extern "C" {
     #[doc = "   - (<0): Error code of the driver stats reset function."]
     pub fn rte_eth_stats_reset(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve names of extended statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " There is an assumption that 'xstat_names' and 'xstats' arrays are matched"]
@@ -13760,7 +13760,7 @@ extern "C" {
         size: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve extended statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " There is an assumption that 'xstat_names' and 'xstats' arrays are matched"]
@@ -13794,7 +13794,7 @@ extern "C" {
         n: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve names of extended statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13822,7 +13822,7 @@ extern "C" {
         ids: *mut u64,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve extended statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13851,7 +13851,7 @@ extern "C" {
         size: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Gets the ID of a statistic from its name."]
     #[doc = ""]
     #[doc = " This function searches for the statistics using string compares, and"]
@@ -13874,7 +13874,7 @@ extern "C" {
         id: *mut u64,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Reset extended statistics of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13887,7 +13887,7 @@ extern "C" {
     #[doc = "   - (<0): Error code of the driver xstats reset function."]
     pub fn rte_eth_xstats_reset(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = "  Set a mapping for the specified transmit queue to the specified per-queue"]
     #[doc = "  statistics counter."]
     #[doc = ""]
@@ -13910,7 +13910,7 @@ extern "C" {
         stat_idx: u8,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = "  Set a mapping for the specified receive queue to the specified per-queue"]
     #[doc = "  statistics counter."]
     #[doc = ""]
@@ -13933,7 +13933,7 @@ extern "C" {
         stat_idx: u8,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the Ethernet address of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -13946,7 +13946,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_macaddr_get(port_id: u16, mac_addr: *mut rte_ether_addr) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the contextual information of an Ethernet device."]
     #[doc = ""]
     #[doc = " As part of this function, a number of of fields in dev_info will be"]
@@ -13989,7 +13989,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_dev_info_get(port_id: u16, dev_info: *mut rte_eth_dev_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the firmware version of a device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14013,7 +14013,7 @@ extern "C" {
         fw_size: size_t,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the supported packet types of an Ethernet device."]
     #[doc = ""]
     #[doc = " When a packet type is announced as supported, it *must* be recognized by"]
@@ -14057,7 +14057,7 @@ extern "C" {
         num: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -14096,7 +14096,7 @@ extern "C" {
         num: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve the MTU of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14108,7 +14108,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_dev_get_mtu(port_id: u16, mtu: *mut u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Change the MTU of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14126,7 +14126,7 @@ extern "C" {
     #[doc = "   - (-EBUSY) if operation is not allowed when the port is running"]
     pub fn rte_eth_dev_set_mtu(port_id: u16, mtu: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Enable/Disable hardware filtering by an Ethernet device of received"]
     #[doc = " VLAN packets tagged with a given VLAN Tag Identifier."]
     #[doc = ""]
@@ -14146,7 +14146,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if *vlan_id* > 4095."]
     pub fn rte_eth_dev_vlan_filter(port_id: u16, vlan_id: u16, on: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Enable/Disable hardware VLAN Strip by a rx queue of an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14169,7 +14169,7 @@ extern "C" {
         on: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set the Outer VLAN Ether Type by an Ethernet device, it can be inserted to"]
     #[doc = " the VLAN header."]
     #[doc = ""]
@@ -14190,7 +14190,7 @@ extern "C" {
         tag_type: u16,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set VLAN offload configuration on an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14208,7 +14208,7 @@ extern "C" {
     #[doc = "   - (-EIO) if device is removed."]
     pub fn rte_eth_dev_set_vlan_offload(port_id: u16, offload_mask: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Read VLAN Offload configuration from an Ethernet device"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14222,7 +14222,7 @@ extern "C" {
     #[doc = "   - (-ENODEV) if *port_id* invalid."]
     pub fn rte_eth_dev_get_vlan_offload(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set port based TX VLAN insertion on or off."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14253,7 +14253,7 @@ pub struct rte_eth_dev_tx_buffer {
     pub length: u16,
     pub pkts: __IncompleteArrayField<*mut rte_mbuf>,
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Initialize default values for buffered transmitting"]
     #[doc = ""]
     #[doc = " @param buffer"]
@@ -14264,7 +14264,7 @@ extern "C" {
     #[doc = "   0 if no error"]
     pub fn rte_eth_tx_buffer_init(buffer: *mut rte_eth_dev_tx_buffer, size: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Configure a callback for buffered packets which cannot be sent"]
     #[doc = ""]
     #[doc = " Register a specific callback to be called when an attempt is made to send"]
@@ -14293,7 +14293,7 @@ extern "C" {
         userdata: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Callback function for silently dropping unsent buffered packets."]
     #[doc = ""]
     #[doc = " This function can be passed to rte_eth_tx_buffer_set_err_callback() to"]
@@ -14320,7 +14320,7 @@ extern "C" {
         userdata: *mut ::std::os::raw::c_void,
     );
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Callback function for tracking unsent buffered packets."]
     #[doc = ""]
     #[doc = " This function can be passed to rte_eth_tx_buffer_set_err_callback() to"]
@@ -14348,7 +14348,7 @@ extern "C" {
         userdata: *mut ::std::os::raw::c_void,
     );
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Request the driver to free mbufs currently cached by the driver. The"]
     #[doc = " driver will only free the mbuf if it is no longer in use. It is the"]
     #[doc = " application's responsibility to ensure rte_eth_tx_buffer_flush(..) is"]
@@ -14422,7 +14422,7 @@ pub type rte_eth_dev_cb_fn = ::std::option::Option<
         ret_param: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int,
 >;
-extern "C" {
+unsafe extern "C" {
     #[doc = " Register a callback function for port event."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14445,7 +14445,7 @@ extern "C" {
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Unregister a callback function for port event."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14469,7 +14469,7 @@ extern "C" {
         cb_arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " When there is no rx packet coming in Rx Queue for a long time, we can"]
     #[doc = " sleep lcore related to RX Queue for power saving, and enable rx interrupt"]
     #[doc = " to be triggered when Rx packet arrives."]
@@ -14491,7 +14491,7 @@ extern "C" {
     #[doc = "   - (-EIO) if device is removed."]
     pub fn rte_eth_dev_rx_intr_enable(port_id: u16, queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " When lcore wakes up from rx interrupt indicating packet coming, disable rx"]
     #[doc = " interrupt and returns to polling mode."]
     #[doc = ""]
@@ -14512,7 +14512,7 @@ extern "C" {
     #[doc = "   - (-EIO) if device is removed."]
     pub fn rte_eth_dev_rx_intr_disable(port_id: u16, queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " RX Interrupt control per port."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14535,7 +14535,7 @@ extern "C" {
         data: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " RX Interrupt control per queue."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14563,7 +14563,7 @@ extern "C" {
         data: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -14581,7 +14581,7 @@ extern "C" {
     #[doc = "   - (-1) on error."]
     pub fn rte_eth_dev_rx_intr_ctl_q_get_fd(port_id: u16, queue_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Turn on the LED on the Ethernet device."]
     #[doc = " This function turns on the LED on the Ethernet device."]
     #[doc = ""]
@@ -14595,7 +14595,7 @@ extern "C" {
     #[doc = "   - (-EIO) if device is removed."]
     pub fn rte_eth_led_on(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Turn off the LED on the Ethernet device."]
     #[doc = " This function turns off the LED on the Ethernet device."]
     #[doc = ""]
@@ -14609,7 +14609,7 @@ extern "C" {
     #[doc = "   - (-EIO) if device is removed."]
     pub fn rte_eth_led_off(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -14642,7 +14642,7 @@ extern "C" {
         num: ::std::os::raw::c_uint,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -14666,7 +14666,7 @@ extern "C" {
     #[doc = "   - (-ENODEV)  if *port_id* invalid."]
     pub fn rte_eth_fec_get(port_id: u16, fec_capa: *mut u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -14687,7 +14687,7 @@ extern "C" {
     #[doc = "   - (-ENODEV)  if *port_id* invalid."]
     pub fn rte_eth_fec_set(port_id: u16, fec_capa: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get current status of the Ethernet link flow control for Ethernet device"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14701,7 +14701,7 @@ extern "C" {
     #[doc = "   - (-EIO)  if device is removed."]
     pub fn rte_eth_dev_flow_ctrl_get(port_id: u16, fc_conf: *mut rte_eth_fc_conf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Configure the Ethernet link flow control for Ethernet device"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14716,7 +14716,7 @@ extern "C" {
     #[doc = "   - (-EIO)     if flow control setup failure or device is removed."]
     pub fn rte_eth_dev_flow_ctrl_set(port_id: u16, fc_conf: *mut rte_eth_fc_conf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Configure the Ethernet priority flow control under DCB environment"]
     #[doc = " for Ethernet device."]
     #[doc = ""]
@@ -14732,7 +14732,7 @@ extern "C" {
     #[doc = "   - (-EIO)     if flow control setup failure or device is removed."]
     pub fn rte_eth_dev_priority_flow_ctrl_set(port_id: u16, pfc_conf: *mut rte_eth_pfc_conf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Add a MAC address to the set used for filtering incoming packets."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14751,7 +14751,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if MAC address is invalid."]
     pub fn rte_eth_dev_mac_addr_add(port_id: u16, mac_addr: *mut rte_ether_addr, pool: u32) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Remove a MAC address from the internal array of addresses."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14765,7 +14765,7 @@ extern "C" {
     #[doc = "   - (-EADDRINUSE) if attempting to remove the default MAC address"]
     pub fn rte_eth_dev_mac_addr_remove(port_id: u16, mac_addr: *mut rte_ether_addr) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set the default MAC address."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14779,7 +14779,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if MAC address is invalid."]
     pub fn rte_eth_dev_default_mac_addr_set(port_id: u16, mac_addr: *mut rte_ether_addr) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Update Redirection Table(RETA) of Receive Side Scaling of Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14801,7 +14801,7 @@ extern "C" {
         reta_size: u16,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Query Redirection Table(RETA) of Receive Side Scaling of Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14824,7 +14824,7 @@ extern "C" {
         reta_size: u16,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Updates unicast hash table for receiving packet with the given destination"]
     #[doc = " MAC address, and the packet is routed to all VFs for which the RX mode is"]
     #[doc = " accept packets that match the unicast hash table."]
@@ -14844,7 +14844,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if bad parameter."]
     pub fn rte_eth_dev_uc_hash_table_set(port_id: u16, addr: *mut rte_ether_addr, on: u8) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Updates all unicast hash bitmaps for receiving packet with any Unicast"]
     #[doc = " Ethernet MAC addresses,the packet is routed to all VFs for which the RX"]
     #[doc = " mode is accept packets that match the unicast hash table."]
@@ -14863,7 +14863,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if bad parameter."]
     pub fn rte_eth_dev_uc_all_hash_table_set(port_id: u16, on: u8) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set a traffic mirroring rule on an Ethernet device"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14891,7 +14891,7 @@ extern "C" {
         on: u8,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Reset a traffic mirroring rule on an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14906,7 +14906,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if bad parameter."]
     pub fn rte_eth_mirror_rule_reset(port_id: u16, rule_id: u8) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set the rate limitation for a queue on an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14923,7 +14923,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if bad parameter."]
     pub fn rte_eth_set_queue_rate_limit(port_id: u16, queue_idx: u16, tx_rate: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Configuration of Receive Side Scaling hash computation of Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -14938,7 +14938,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) if bad parameter."]
     pub fn rte_eth_dev_rss_hash_update(port_id: u16, rss_conf: *mut rte_eth_rss_conf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve current configuration of Receive Side Scaling hash computation"]
     #[doc = " of Ethernet device."]
     #[doc = ""]
@@ -14953,7 +14953,7 @@ extern "C" {
     #[doc = "   - (-ENOTSUP) if hardware doesn't support RSS."]
     pub fn rte_eth_dev_rss_hash_conf_get(port_id: u16, rss_conf: *mut rte_eth_rss_conf) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Add UDP tunneling port for a specific type of tunnel."]
     #[doc = " The packets with this UDP port will be identified as this type of tunnel."]
     #[doc = " Before enabling any offloading function for a tunnel, users can call this API"]
@@ -14972,7 +14972,7 @@ extern "C" {
     #[doc = "   - (-ENOTSUP) if hardware doesn't support tunnel type."]
     pub fn rte_eth_dev_udp_tunnel_port_add(port_id: u16, tunnel_udp: *mut rte_eth_udp_tunnel) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Delete UDP tunneling port a specific type of tunnel."]
     #[doc = " The packets with this UDP port will not be identified as this type of tunnel"]
     #[doc = " any more."]
@@ -14995,7 +14995,7 @@ extern "C" {
         tunnel_udp: *mut rte_eth_udp_tunnel,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get DCB information on an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15009,7 +15009,7 @@ extern "C" {
     #[doc = "   - (-ENOTSUP) if hardware doesn't support."]
     pub fn rte_eth_dev_get_dcb_info(port_id: u16, dcb_info: *mut rte_eth_dcb_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Add a callback to be called on packet RX on a given port and queue."]
     #[doc = ""]
     #[doc = " This API configures a function to be called for each burst of"]
@@ -15040,7 +15040,7 @@ extern "C" {
         user_param: *mut ::std::os::raw::c_void,
     ) -> *const rte_eth_rxtx_callback;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Add a callback that must be called first on packet RX on a given port"]
     #[doc = " and queue."]
     #[doc = ""]
@@ -15072,7 +15072,7 @@ extern "C" {
         user_param: *mut ::std::os::raw::c_void,
     ) -> *const rte_eth_rxtx_callback;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Add a callback to be called on packet TX on a given port and queue."]
     #[doc = ""]
     #[doc = " This API configures a function to be called for each burst of"]
@@ -15103,7 +15103,7 @@ extern "C" {
         user_param: *mut ::std::os::raw::c_void,
     ) -> *const rte_eth_rxtx_callback;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Remove an RX packet callback from a given port and queue."]
     #[doc = ""]
     #[doc = " This function is used to removed callbacks that were added to a NIC port"]
@@ -15141,7 +15141,7 @@ extern "C" {
         user_cb: *const rte_eth_rxtx_callback,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Remove a TX packet callback from a given port and queue."]
     #[doc = ""]
     #[doc = " This function is used to removed callbacks that were added to a NIC port"]
@@ -15179,7 +15179,7 @@ extern "C" {
         user_cb: *const rte_eth_rxtx_callback,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve information about given port's RX queue."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15203,7 +15203,7 @@ extern "C" {
         qinfo: *mut rte_eth_rxq_info,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve information about given port's TX queue."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15227,7 +15227,7 @@ extern "C" {
         qinfo: *mut rte_eth_txq_info,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve information about the Rx packet burst mode."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15250,7 +15250,7 @@ extern "C" {
         mode: *mut rte_eth_burst_mode,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve information about the Tx packet burst mode."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15273,7 +15273,7 @@ extern "C" {
         mode: *mut rte_eth_burst_mode,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve device registers and register attributes (number of registers and"]
     #[doc = " register size)"]
     #[doc = ""]
@@ -15291,7 +15291,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_get_reg_info(port_id: u16, info: *mut rte_dev_reg_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve size of device EEPROM"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15304,7 +15304,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_get_eeprom_length(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Retrieve EEPROM and EEPROM attribute"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15320,7 +15320,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_get_eeprom(port_id: u16, info: *mut rte_dev_eeprom_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Program EEPROM with provided data"]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15336,7 +15336,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_set_eeprom(port_id: u16, info: *mut rte_dev_eeprom_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -15354,7 +15354,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_get_module_info(port_id: u16, modinfo: *mut rte_eth_dev_module_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -15373,7 +15373,7 @@ extern "C" {
     #[doc = "   - others depends on the specific operations implementation."]
     pub fn rte_eth_dev_get_module_eeprom(port_id: u16, info: *mut rte_dev_eeprom_info) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set the list of multicast addresses to filter on an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15396,7 +15396,7 @@ extern "C" {
         nb_mc_addr: u32,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Enable IEEE1588/802.1AS timestamping for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15409,7 +15409,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_timesync_enable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Disable IEEE1588/802.1AS timestamping for an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15422,7 +15422,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_timesync_disable(port_id: u16) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Read an IEEE1588/802.1AS RX timestamp from an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15445,7 +15445,7 @@ extern "C" {
         flags: u32,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Read an IEEE1588/802.1AS TX timestamp from an Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15461,7 +15461,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_timesync_read_tx_timestamp(port_id: u16, timestamp: *mut timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Adjust the timesync clock on an Ethernet device."]
     #[doc = ""]
     #[doc = " This is usually used in conjunction with other Ethdev timesync functions to"]
@@ -15479,7 +15479,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_timesync_adjust_time(port_id: u16, delta: i64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Read the time from the timesync clock on an Ethernet device."]
     #[doc = ""]
     #[doc = " This is usually used in conjunction with other Ethdev timesync functions to"]
@@ -15494,7 +15494,7 @@ extern "C" {
     #[doc = "   - 0: Success."]
     pub fn rte_eth_timesync_read_time(port_id: u16, time: *mut timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Set the time of the timesync clock on an Ethernet device."]
     #[doc = ""]
     #[doc = " This is usually used in conjunction with other Ethdev timesync functions to"]
@@ -15513,7 +15513,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_timesync_write_time(port_id: u16, time: *const timespec) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change without prior notice."]
     #[doc = ""]
@@ -15558,7 +15558,7 @@ extern "C" {
     #[doc = "   - -ENOTSUP: The function is not supported by the Ethernet driver."]
     pub fn rte_eth_read_clock(port_id: u16, clock: *mut u64) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get the port id from device name. The device name should be specified"]
     #[doc = " as below:"]
     #[doc = " - PCIe address (Domain:Bus:Device.Function), for example- 0000:2:00.0"]
@@ -15577,7 +15577,7 @@ extern "C" {
         port_id: *mut u16,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get the device name from port id. The device name is specified as below:"]
     #[doc = " - PCIe address (Domain:Bus:Device.Function), for example- 0000:02:00.0"]
     #[doc = " - SoC device name, for example- fsl-gmac0"]
@@ -15593,7 +15593,7 @@ extern "C" {
     #[doc = "   - (-EINVAL) on failure."]
     pub fn rte_eth_dev_get_name_by_port(port_id: u16, name: *mut ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Check that numbers of Rx and Tx descriptors satisfy descriptors limits from"]
     #[doc = " the ethernet device information, otherwise adjust them to boundaries."]
     #[doc = ""]
@@ -15614,7 +15614,7 @@ extern "C" {
         nb_tx_desc: *mut u16,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Test if a port supports specific mempool ops."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15629,7 +15629,7 @@ extern "C" {
     #[doc = "   - -EINVAL: Pool param is null."]
     pub fn rte_eth_dev_pool_ops_supported(port_id: u16, pool: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " Get the security context for the Ethernet device."]
     #[doc = ""]
     #[doc = " @param port_id"]
@@ -15639,7 +15639,7 @@ extern "C" {
     #[doc = "   - pointer to security context on success."]
     pub fn rte_eth_dev_get_sec_ctx(port_id: u16) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     #[doc = " @warning"]
     #[doc = " @b EXPERIMENTAL: this API may change, or be removed, without prior notice"]
     #[doc = ""]
@@ -15840,7 +15840,7 @@ impl rte_eth_dev_data {
         __bindgen_bitfield_unit
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub static mut rte_eth_devices: [rte_eth_dev; 0usize];
 }
 pub type __builtin_va_list = [__va_list_tag; 1usize];

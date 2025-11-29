@@ -23,7 +23,7 @@ pub struct IOScheduler<'fd, Fd: AsFd> {
 }
 
 impl<'fd, Fd: AsFd> IOScheduler<'fd, Fd> {
-    pub fn new(scheduler: &'fd PollHandle, fd: Fd, token: Token) -> IOScheduler<Fd> {
+    pub fn new(scheduler: &'_ PollHandle, fd: Fd, token: Token) -> IOScheduler<'_, Fd> {
         scheduler.new_io_fd(fd.as_fd(), token);
         IOScheduler { fd, scheduler, token }
     }

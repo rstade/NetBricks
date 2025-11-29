@@ -1,8 +1,8 @@
 use super::super::{PacketRx, PacketTx};
 use super::PortStats;
-use allocators::*;
-use common::*;
-use native::zcsi::{mbuf_alloc_bulk, mbuf_free_bulk, MBuf};
+use crate::allocators::*;
+use crate::common::*;
+use crate::native::zcsi::{mbuf_alloc_bulk, mbuf_free_bulk, MBuf};
 use std::fmt;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -19,7 +19,7 @@ pub struct VirtualQueue {
 }
 
 impl fmt::Display for VirtualQueue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "virtual queue")
     }
 }

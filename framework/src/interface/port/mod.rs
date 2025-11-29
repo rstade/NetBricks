@@ -2,10 +2,10 @@ pub use self::fdir::*;
 pub use self::phy_port::*;
 pub use self::virt_port::*;
 
-use allocators::*;
-use common::*;
-use interface::{PacketRx, PacketTx};
-use native::zcsi::MBuf;
+use crate::allocators::*;
+use crate::common::*;
+use crate::interface::{PacketRx, PacketTx};
+use crate::native::zcsi::MBuf;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 pub mod fdir;

@@ -1,18 +1,19 @@
 #!/bin/bash
 # Stop on any errors
-set -e
+set -eo pipefail
 
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 BUILD_SCRIPT=$( basename "$0" )
 
 echo "BASE_DIR=" $BASE_DIR
 DPDK_VER=20.11
-DPDK_LD_PATH="/usr/local/lib64"
+DPDK_LD_PATH="/usr/local/lib/x86_64-linux-gnu/"
+export LIBRARY_PATH=${DPDK_LD_PATH}:${LIBRARY_PATH}
+export LD_LIBRARY_PATH=${DPDK_LD_PATH}:${LD_LIBRARY_PATH}
 
-
-CARGO_LOC=`which cargo || true`
+CARGO_LOC=$(which cargo || true)
 export CARGO=${CARGO_PATH-"${CARGO_LOC}"}
-if [ -z ${CARGO} ] || [ ! -e ${CARGO} ]; then
+if [ -z "${CARGO}" ] || [ ! -e "${CARGO}" ]; then
     echo "Could not find a preinstalled Cargo in PATH. Set CARGO_PATH if necessary."
     exit 1
 fi
@@ -21,7 +22,7 @@ echo "Using Cargo from ${CARGO}"
 NATIVE_LIB_PATH="${BASE_DIR}/native"
 export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt
 
-source ${BASE_DIR}/examples.sh
+source "${BASE_DIR}/examples.sh"
 REQUIRE_RUSTFMT=0
 export RUSTFLAGS="-C target-cpu=native"
 
@@ -33,30 +34,30 @@ native () {
 
 print_examples () {
     echo "The following examples are available:"
-    for eg in ${examples[@]}; do
-        if [ -e ${BASE_DIR}/${eg}/Cargo.toml ]; then
-            target=$( ${CARGO} read-manifest --manifest-path ${BASE_DIR}/${eg}/Cargo.toml | ${BASE_DIR}/scripts/read-target.py - )
-            printf "\t %s\n" ${target}
+    for eg in "${examples[@]}"; do
+        if [ -e "${BASE_DIR}/${eg}/Cargo.toml" ]; then
+            target=$( ${CARGO} read-manifest --manifest-path "${BASE_DIR}/${eg}/Cargo.toml" | "${BASE_DIR}/scripts/read-target.py" - )
+            printf "\t %s\n" "${target}"
         fi
     done
     exit 0
 }
 
 clean () {
-    pushd $BASE_DIR/framework
+    pushd "$BASE_DIR/framework" >/dev/null
     ${CARGO} clean || true
-    popd
+    popd >/dev/null
 
-    pushd $BASE_DIR/test/framework
+    pushd "$BASE_DIR/test/framework" >/dev/null
     ${CARGO} clean || true
-    popd
+    popd >/dev/null
 
-    for example in ${examples[@]}; do
-        pushd ${BASE_DIR}/$example
+    for example in "${examples[@]}"; do
+        pushd "${BASE_DIR}/$example" >/dev/null
         ${CARGO} clean || true
-        popd
+        popd >/dev/null
     done
-    make clean -C ${BASE_DIR}/native
+    make clean -C "${BASE_DIR}/native"
     rm -rf ${BASE_DIR}/target 
 }
 
@@ -84,74 +85,69 @@ case $TASK in
         shift
         if [ $# -lt 1 ]; then
             echo Can build one of the following tests:
-            for example in ${examples[@]}; do
-                base_eg=$( basename ${example} )
-                printf "\t %s\n" ${base_eg}
+            for example in "${examples[@]}"; do
+                base_eg=$( basename "${example}" )
+                printf "\t %s\n" "${base_eg}"
             done
             exit 1
         fi
         build_dir=$1
-        if [ ! -e ${BASE_DIR}/test/${build_dir}/Cargo.toml ]; then
+        if [ ! -e "${BASE_DIR}/test/${build_dir}/Cargo.toml" ]; then
             echo "No Cargo.toml, not valid"
         fi
-        pushd ${BASE_DIR}/test/${build_dir}
+        pushd "${BASE_DIR}/test/${build_dir}" >/dev/null
             ${CARGO} build --release
-        popd
+        popd >/dev/null
         ;;
     build_fmwk)
         native
-        pushd $BASE_DIR/framework
+        pushd "$BASE_DIR/framework" >/dev/null
         ${CARGO} build --release
-        popd
+        popd >/dev/null
         ;;
     build)
         native
-        pushd $BASE_DIR/framework
+        pushd "$BASE_DIR/framework" >/dev/null
         ${CARGO} build --release
-        popd
+        popd >/dev/null
 
-        for example in ${examples[@]}; do
-            pushd ${BASE_DIR}/${example}
+        for example in "${examples[@]}"; do
+            pushd "${BASE_DIR}/${example}" >/dev/null
             ${CARGO} build --release
-            popd
+            popd >/dev/null
         done
         ;;
     build_debug)
         native
-        pushd $BASE_DIR/framework
+        pushd "$BASE_DIR/framework" >/dev/null
         ${CARGO} build
-        popd
+        popd >/dev/null
 
-        for example in ${examples[@]}; do
-            pushd ${BASE_DIR}/${example}
+        for example in "${examples[@]}"; do
+            pushd "${BASE_DIR}/${example}" >/dev/null
             ${CARGO} build
-            popd
+            popd >/dev/null
         done
         ;;
-    huge_pages)
-	./hugepages.sh
-//        sudo dpdk-hugepages.py -p 2M --setup 8G
-//        sudo dpdk-hugepages.py -s
-        ;;
     test)
+        shift
         native
-        ./hugepages.sh
-        pushd $BASE_DIR/framework
+        pushd "$BASE_DIR/framework" >/dev/null
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
 #        sudo -E env "PATH=$PATH" ${CARGO} test --release
-        ${CARGO} test --release -- $2
-        popd
+        ${CARGO} test --release -- "$@"
+        popd >/dev/null
 
         for testname in tcp_payload macswap; do
-          pushd $BASE_DIR/test/$testname
+          pushd "$BASE_DIR/test/$testname" >/dev/null
           ./check.sh
-          popd
+          popd >/dev/null
         done
         ;;
     unittest)
-        pushd $BASE_DIR/framework
+        pushd "$BASE_DIR/framework" >/dev/null
         ./test.sh all --release
-        popd
+        popd >/dev/null
         ;;
     run)
         shift
@@ -160,15 +156,15 @@ case $TASK in
         fi
         cmd=$1
         shift
-        executable=${BASE_DIR}/target/release/$cmd
-        if [ ! -e ${executable} ]; then
+        executable="${BASE_DIR}/target/release/$cmd"
+        if [ ! -e "${executable}" ]; then
             echo "${executable} not found, building"
             ${BASE_DIR}/${BUILD_SCRIPT} build
         fi
         export PATH="${BIN_DIR}:${PATH}"
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
         sudo env PATH="$PATH" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" LD_PRELOAD="$LD_PRELOAD" \
-            $executable "$@"
+            "$executable" "$@"
         ;;
     debug)
         shift
@@ -177,15 +173,15 @@ case $TASK in
         fi
         cmd=$1
         shift
-        executable=${BASE_DIR}/target/release/$cmd
-        if [ ! -e ${executable} ]; then
+        executable="${BASE_DIR}/target/release/$cmd"
+        if [ ! -e "${executable}" ]; then
             echo "${executable} not found, building"
             ${BASE_DIR}/${BUILD_SCRIPT} build
         fi
         export PATH="${BIN_DIR}:${PATH}"
         export LD_LIBRARY_PATH="${NATIVE_LIB_PATH}:${DPDK_LD_PATH}:${TOOLS_BASE}:${LD_LIBRARY_PATH}"
         sudo env PATH="$PATH" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" LD_PRELOAD="$LD_PRELOAD" \
-            rust-gdb --args $executable "$@"
+            rust-gdb --args "$executable" "$@"
         ;;
     check_examples)
         python3 scripts/check-examples.py "${examples[@]}"

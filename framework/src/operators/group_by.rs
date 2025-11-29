@@ -2,14 +2,14 @@ use super::act::Act;
 use super::iterator::*;
 use super::Batch;
 use super::ReceiveBatch;
-use interface::Pdu;
-use queues::*;
-use scheduler::{Executable, Runnable, Scheduler};
+use crate::interface::Pdu;
+use crate::queues::*;
+use crate::scheduler::{Executable, Runnable, Scheduler};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
-pub type GroupFnPdu = Box<dyn FnMut(&mut Pdu) -> usize>;
+pub type GroupFnPdu = Box<dyn FnMut(&mut Pdu<'_>) -> usize>;
 
 pub struct GroupBy<V>
 where

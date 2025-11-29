@@ -3,7 +3,7 @@ use std::cmp::{Eq, PartialEq};
 
 #[link(name = "numa")]
 #[allow(dead_code)]
-extern "C" {
+unsafe extern "C" {
     /// Check if NUMA support is enabled. Returns -1 if not enabled, in which case other functions will
     /// panic.
     pub fn numa_available() -> i32;
@@ -50,8 +50,9 @@ extern "C" {
 
 mod wrapped {
     use libc::c_void;
-    use native::libnuma::NumaBitmap;
-    extern "C" {
+    use crate::native::libnuma::NumaBitmap;
+
+    unsafe extern "C" {
         /// Memory nodes from which allocation is permitted.
         pub fn numa_get_mems_allowed() -> *mut NumaBitmap;
 
@@ -102,17 +103,17 @@ impl PartialEq for Bitmask {
 impl Eq for Bitmask {}
 
 impl Bitmask {
-    pub unsafe fn allocate_node_mask() -> Bitmask {
+    pub unsafe fn allocate_node_mask() -> Bitmask { unsafe {
         Bitmask {
             bitmask: wrapped::numa_bitmask_clearall(wrapped::numa_bitmask_alloc(numa_num_possible_nodes() as u32)),
         }
-    }
+    } }
 
-    pub unsafe fn allocate_cpu_mask() -> Bitmask {
+    pub unsafe fn allocate_cpu_mask() -> Bitmask { unsafe {
         Bitmask {
             bitmask: wrapped::numa_bitmask_clearall(wrapped::numa_bitmask_alloc(numa_num_possible_cpus() as u32)),
         }
-    }
+    } }
 
     #[inline]
     fn assert_size(&self, bit: usize) {
@@ -186,26 +187,26 @@ pub fn numa_distance(node1: i32, node2: i32) -> i32 {
     unsafe { wrapped::numa_distance(node1, node2) }
 }
 
-pub unsafe fn numa_set_interleave_mask(bitmap: &mut Bitmask) {
+pub unsafe fn numa_set_interleave_mask(bitmap: &mut Bitmask) { unsafe {
     wrapped::numa_set_interleave_mask(bitmap.bitmask)
-}
+} }
 
-pub unsafe fn numa_bind(bitmap: &mut Bitmask) {
+pub unsafe fn numa_bind(bitmap: &mut Bitmask) { unsafe {
     wrapped::numa_bind(bitmap.bitmask)
-}
+} }
 
-pub unsafe fn numa_set_membind(bitmap: &mut Bitmask) {
+pub unsafe fn numa_set_membind(bitmap: &mut Bitmask) { unsafe {
     wrapped::numa_set_membind(bitmap.bitmask)
-}
+} }
 
-pub unsafe fn numa_run_on_node_mask(mask: &mut Bitmask) {
+pub unsafe fn numa_run_on_node_mask(mask: &mut Bitmask) { unsafe {
     wrapped::numa_run_on_node_mask(mask.bitmask)
-}
+} }
 
-pub unsafe fn numa_alloc_interleaved_subset(size: usize, mask: &mut Bitmask) -> *mut c_void {
+pub unsafe fn numa_alloc_interleaved_subset(size: usize, mask: &mut Bitmask) -> *mut c_void { unsafe {
     wrapped::numa_alloc_interleaved_subset(size, mask.bitmask)
-}
+} }
 
-pub unsafe fn numa_tonodemask_memory(start: *mut c_void, size: usize, mask: &mut Bitmask) {
+pub unsafe fn numa_tonodemask_memory(start: *mut c_void, size: usize, mask: &mut Bitmask) { unsafe {
     wrapped::numa_tonodemask_memory(start, size, mask.bitmask)
-}
+} }

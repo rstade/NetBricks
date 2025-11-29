@@ -4,9 +4,9 @@ use super::packet_batch::PacketBatch;
 use super::Batch;
 use super::SchedulingPolicy;
 
-use common::*;
-use interface::{PacketTx, Pdu};
-use scheduler::Executable;
+use crate::common::*;
+use crate::interface::{PacketTx, Pdu};
+use crate::scheduler::Executable;
 use std::cmp;
 
 pub struct MergeBatchAuto {
@@ -114,7 +114,7 @@ impl BatchIterator for MergeBatchAuto {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parents[self.which].next_payload(idx)
     }
 }

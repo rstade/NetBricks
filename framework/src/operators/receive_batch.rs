@@ -2,8 +2,8 @@ use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::{PacketRx, PacketTx, Pdu};
+use crate::common::*;
+use crate::interface::{PacketRx, PacketTx, Pdu};
 
 pub struct ReceiveBatch<T: PacketRx> {
     parent: PacketBatch,
@@ -68,7 +68,7 @@ impl<T: PacketRx> BatchIterator for ReceiveBatch<T> {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parent.next_payload(idx)
     }
 }

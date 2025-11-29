@@ -5,11 +5,11 @@ use fnv::FnvHasher;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::hash::{BuildHasher, Hash, Hasher};
-use twox_hash::XxHash;
+use twox_hash::XxHash32;
 use uuid::Uuid;
 
 type FnvHash = BuildHasherDefault<FnvHasher>;
-type XxHashFactory = BuildHasherDefault<XxHash>;
+type XxHashFactory = BuildHasherDefault<XxHash32>;
 
 struct Maglev {
     // permutation: Box<Vec<Vec<usize>>>,

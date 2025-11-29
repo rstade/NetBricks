@@ -3,11 +3,10 @@ use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
-use twox_hash::XxHash;
+use twox_hash::XxHash32;
+use crate::utils::FiveTupleV4;
 
-use utils::FiveTupleV4;
-
-type XxHasher = BuildHasherDefault<XxHash>;
+type XxHasher = BuildHasherDefault<XxHash32>;
 const VEC_SIZE: usize = 1 << 24;
 
 /// A generic store for associating some merge-able type with each flow. Note, the merge must be commutative, we do not
@@ -72,7 +71,7 @@ impl<T: AddAssign<T> + Default + Clone> CpMergeableStoreControlPlane<T> {
         }
     }
 
-    pub fn iter(&self) -> Iter<FiveTupleV4, T> {
+    pub fn iter(&self) -> Iter<'_, FiveTupleV4, T> {
         self.flow_counters.iter()
     }
 

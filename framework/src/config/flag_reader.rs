@@ -1,4 +1,4 @@
-extern crate getopts;
+use getopts;
 use self::getopts::{Matches, Options};
 
 use super::{read_configuration, NetbricksConfiguration, PortConfiguration};

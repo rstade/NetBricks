@@ -3,8 +3,8 @@ use std::net::Ipv4Addr;
 use std::sync::Arc;
 
 use super::PmdPort;
-use native::zcsi::rte_ethdev_api::rte_flow;
-use native::zcsi::*;
+use crate::native::zcsi::rte_ethdev_api::rte_flow;
+use crate::native::zcsi::*;
 
 #[derive(Clone, Copy)]
 pub struct L4Flow {

@@ -2,9 +2,9 @@ use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::{PacketTx, Pdu};
-use scheduler::Executable;
+use crate::common::*;
+use crate::interface::{PacketTx, Pdu};
+use crate::scheduler::Executable;
 
 pub struct SendBatch<Port, V>
 where
@@ -50,7 +50,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, _: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, _: usize) -> Option<Pdu<'_>> {
         panic!("Cannot iterate send batch")
     }
 }

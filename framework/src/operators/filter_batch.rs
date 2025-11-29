@@ -2,11 +2,11 @@ use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::PacketTx;
-use interface::Pdu;
+use crate::common::*;
+use crate::interface::PacketTx;
+use crate::interface::Pdu;
 
-pub type FilterFn = Box<dyn FnMut(&Pdu) -> bool + Send>;
+pub type FilterFn = Box<dyn FnMut(&Pdu<'_>) -> bool + Send>;
 
 pub struct FilterBatch<V>
 where
@@ -107,7 +107,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parent.next_payload(idx)
     }
 }

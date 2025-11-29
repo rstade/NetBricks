@@ -1,6 +1,6 @@
-use native::zcsi::rte_mbuf_api::{rte_mbuf, PKT_TX_IPV4, PKT_TX_IP_CKSUM, PKT_TX_TCP_CKSUM};
 use std::fmt;
 use std::ptr;
+use crate::native::zcsi::rte_mbuf_api::{rte_mbuf, PKT_TX_IPV4, PKT_TX_IP_CKSUM, PKT_TX_TCP_CKSUM};
 
 pub type MBuf = rte_mbuf;
 
@@ -26,14 +26,14 @@ impl MBuf {
     }
 
     #[inline]
-    pub unsafe fn metadata_as<T: Sized>(mbuf: *const MBuf, slot: usize) -> *const T {
+    pub unsafe fn metadata_as<T: Sized>(mbuf: *const MBuf, slot: usize) -> *const T { unsafe {
         (mbuf.offset(1) as *const usize).offset(slot as isize) as *const T
-    }
+    } }
 
     #[inline]
-    pub unsafe fn mut_metadata_as<T: Sized>(mbuf: *mut MBuf, slot: usize) -> *mut T {
+    pub unsafe fn mut_metadata_as<T: Sized>(mbuf: *mut MBuf, slot: usize) -> *mut T { unsafe {
         (mbuf.offset(1) as *mut usize).offset(slot as isize) as *mut T
-    }
+    } }
 
     #[inline]
     pub fn data_address(&self, offset: usize) -> *mut u8 {
@@ -213,7 +213,7 @@ impl MBuf {
 }
 
 impl fmt::Display for MBuf {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "MBuf(&buf_addr= {:p}, data_len= {}, refcnt= {}, data_off= {}, data=",

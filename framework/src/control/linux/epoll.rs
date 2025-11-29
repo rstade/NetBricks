@@ -100,7 +100,7 @@ impl PollScheduler {
             let dest =
                 unsafe { slice::from_raw_parts_mut(self.ready_tokens.as_mut_ptr(), self.ready_tokens.capacity()) };
             // self.events = epoll_wait(self.epoll_fd, dest, 0).unwrap();
-            self.events = self.poll_handle.epoll.wait(dest, 0).expect("Epoll::wait failed");
+            self.events = self.poll_handle.epoll.wait(dest, 0_u8).expect("Epoll::wait failed");
             unsafe { self.ready_tokens.set_len(self.events) };
             self.ready_tokens.pop()
         }

@@ -6,7 +6,7 @@ use libc::{self, c_void, close, ftruncate, mmap, munmap, shm_open, shm_unlink};
 use std::ffi::CString;
 use std::io::Error;
 use std::ptr;
-use utils::PAGE_SIZE;
+use crate::utils::PAGE_SIZE;
 
 struct SharedMemory<T> {
     pub mem: *mut T,
@@ -26,7 +26,7 @@ impl<T> Drop for SharedMemory<T> {
     }
 }
 
-unsafe fn open_shared<T>(name: &str, size: usize) -> SharedMemory<T> {
+unsafe fn open_shared<T>(name: &str, size: usize) -> SharedMemory<T> { unsafe {
     // Make sure size is page aligned
     assert!(size & !PAGE_SIZE == 0);
     let name = CString::new(name).unwrap();
@@ -61,4 +61,4 @@ unsafe fn open_shared<T>(name: &str, size: usize) -> SharedMemory<T> {
         name: name,
         size: size,
     }
-}
+} }

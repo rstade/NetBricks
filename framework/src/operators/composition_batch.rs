@@ -1,7 +1,7 @@
 use super::super::common::errors;
 use super::super::interface::{PacketTx, Pdu};
 use super::{Act, Batch, BatchIterator, PacketBatch};
-use scheduler::Executable;
+use crate::scheduler::Executable;
 
 /// `CompositionBatch` allows multiple NFs to be combined.
 ///
@@ -31,7 +31,7 @@ impl BatchIterator for CompositionBatch {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parent.next_payload(idx)
     }
 }

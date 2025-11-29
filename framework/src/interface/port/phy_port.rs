@@ -1,21 +1,21 @@
 #![allow(dead_code)]
 use super::super::{PacketRx, PacketTx};
 use super::PortStats;
-use allocators::*;
-use common::errors;
-use common::errors::ErrorKind;
-use config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
+use crate::allocators::*;
+use crate::common::errors;
+use crate::common::errors::ErrorKind;
+use crate::config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
 use eui48::MacAddress;
-use interface::port::fdir::FlowSteeringMode;
-use interface::PortType::Physical;
+use crate::interface::port::fdir::FlowSteeringMode;
+use crate::interface::PortType::Physical;
 use ipnet::Ipv4Net;
 use libc::if_indextoname;
-use native::zcsi::rte_ethdev_api::{
+use crate::native::zcsi::rte_ethdev_api::{
     rte_eth_dev_info, rte_eth_dev_info_get, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name,
     rte_eth_macaddr_get, rte_eth_rx_mq_mode_ETH_MQ_RX_NONE, rte_eth_rx_mq_mode_ETH_MQ_RX_RSS, rte_ether_addr, rte_flow,
 };
-use native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
-use native::zcsi::{
+use crate::native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
+use crate::native::zcsi::{
     add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring,
     init_ovs_eth_ring, init_pmd_port, kni_alloc, kni_get_name, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
     rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlowError, RteKni,
@@ -29,13 +29,28 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
-use std::ptr;
-use std::ptr::Unique;
+use std::ptr::{self, NonNull};
 use std::rc::Rc;
 use std::string::ToString;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use utils::FiveTupleV4;
+use crate::utils::FiveTupleV4;
+
+#[derive(Clone, Copy)]
+struct KniPtr(NonNull<RteKni>);
+
+impl KniPtr {
+    #[inline]
+    fn as_ptr(&self) -> *mut RteKni {
+        self.0.as_ptr()
+    }
+}
+
+// Safety: KNI handle is an opaque pointer managed by DPDK; sharing the pointer across threads
+// does not change aliasing or ownership semantics beyond what the original code did with Unique.
+// The underlying synchronization/usage is enforced by higher-level logic.
+unsafe impl Send for KniPtr {}
+unsafe impl Sync for KniPtr {}
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -50,7 +65,7 @@ pub enum PortType {
 }
 
 impl fmt::Display for PortType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::PortType::*;
         let printable = match *self {
             Physical => "PHYSICAL",
@@ -80,8 +95,8 @@ pub struct PmdPort {
     port: u16,
     // id of an associated port, if any
     associated_dpdk_port_id: Option<u16>,
-    //must use Unique because raw ptr does not implement Send
-    kni: Option<Unique<RteKni>>,
+    // must use a wrapper to mark the opaque pointer as Send/Sync
+    kni: Option<KniPtr>,
     // used for kni interfaces
     linux_if: Option<String>,
     rxqs: u16,
@@ -99,7 +114,7 @@ pub struct PmdPort {
 }
 
 impl fmt::Display for PmdPort {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{} ({}:{}, linux_if={:?})",
@@ -247,7 +262,7 @@ impl Drop for PmdPort {
 */
 /// Print information about PortQueue
 impl fmt::Display for PortQueue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "port: {} ({}) rxq: {} txq: {}, max_rxq_len: {}, recv_cycles: {}",
@@ -527,7 +542,7 @@ impl PacketRx for PortQueueTxBuffered {
 }
 
 impl fmt::Display for PortQueueTxBuffered {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.port_queue.fmt(f)
     }
 }
@@ -1041,7 +1056,7 @@ impl PmdPort {
                     kni_name: None, // kni ports do not have an associated kni
                     port_type: PortType::Kni,
                     port: associated_dpdk_port_id,
-                    kni: Some(Unique::new(p_kni).unwrap()),
+                    kni: NonNull::new(p_kni).map(KniPtr),
                     linux_if: kni_get_name(p_kni),
                     rx_cores: Some(rx_cores.to_vec()),
                     tx_cores: Some(tx_cores.to_vec()),

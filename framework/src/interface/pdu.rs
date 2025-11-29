@@ -5,12 +5,12 @@ use std::ops::Range;
 use std::ptr;
 use std::slice;
 
-use common::errors;
-use common::errors::ErrorKind;
-use headers::{ArpIpv4Header, EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
-use native::zcsi::MBuf;
-use native::zcsi::{mbuf_alloc, mbuf_alloc_bulk, validate_tx_offload};
-use utils::ipv4_checksum;
+use crate::common::errors;
+use crate::common::errors::ErrorKind;
+use crate::headers::{ArpIpv4Header, EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
+use crate::native::zcsi::MBuf;
+use crate::native::zcsi::{mbuf_alloc, mbuf_alloc_bulk, validate_tx_offload};
+use crate::utils::ipv4_checksum;
 
 const MAX_HEADERS: usize = 5;
 
@@ -99,7 +99,7 @@ impl<'a> HeaderStack<'a> {
 }
 
 impl<'a> fmt::Display for HeaderStack<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut r = Ok(());
         if self.hc == 0 {
             r = write!(f, "<no headers>");
@@ -120,7 +120,7 @@ pub struct Pdu<'a> {
 }
 
 impl<'a> fmt::Display for Pdu<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "({}, data_len= {}), headers=\n{ }",
@@ -193,19 +193,19 @@ impl<'a> Pdu<'a> {
     }
 
     #[inline]
-    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu {
+    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu<'_> { unsafe {
         assert!(!mbuf.is_null());
         (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
         Pdu::pdu_from_mbuf_no_increment(mbuf)
-    }
+    } }
 
     /// copy gets us a new mbuf
     #[inline]
-    pub unsafe fn copy(&self) -> Pdu {
+    pub unsafe fn copy(&self) -> Pdu<'_> { unsafe {
         // This sets refcnt = 1
         let mbuf = mbuf_alloc();
         self.copy_use_mbuf(mbuf)
-    }
+    } }
 
     /// clone has same mbuf as the original and increments mbuf ref count
     /// clone replicates the mutable references to the headers, therefore it is unsafe, see parse()
@@ -216,7 +216,7 @@ impl<'a> Pdu<'a> {
 
     /// same as clone, but without increment of mbuf ref count
     #[inline]
-    pub fn clone_without_ref_counting(&mut self) -> Pdu {
+    pub fn clone_without_ref_counting(&mut self) -> Pdu<'_> {
         Pdu::pdu_from_mbuf_no_increment(self.mbuf)
     }
 
@@ -313,9 +313,9 @@ impl<'a> Pdu<'a> {
     /// The reference held by this Packet is nulled out as a result of this code. The callee is responsible for
     /// appropriately freeing this mbuf from here-on out.
     #[inline]
-    pub unsafe fn get_mbuf(mut self) -> *mut MBuf {
+    pub unsafe fn get_mbuf(mut self) -> *mut MBuf { unsafe {
         self.get_mbuf_ref()
-    }
+    } }
 
     #[inline]
     unsafe fn get_mbuf_ref(&mut self) -> *mut MBuf {
@@ -346,7 +346,7 @@ impl<'a> Pdu<'a> {
     }
 
     #[inline]
-    pub fn replace_header(&mut self, which: usize, hdr: &Header) {
+    pub fn replace_header(&mut self, which: usize, hdr: &Header<'_>) {
         unsafe {
             let pdu_header = self.header_stack.get_mut(which);
             assert_eq!(hdr.kind(), pdu_header.kind());
@@ -364,7 +364,7 @@ impl<'a> Pdu<'a> {
         }
     }
 
-    pub unsafe fn replace(&mut self, other: Pdu<'static>) -> Pdu {
+    pub unsafe fn replace(&mut self, other: Pdu<'static>) -> Pdu<'_> {
         mem::replace(self, other)
     }
 

@@ -1,6 +1,6 @@
-use config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE};
-use native::libnuma;
-use native::zcsi;
+use crate::config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE};
+use crate::native::libnuma;
+use crate::native::zcsi;
 use std::cell::Cell;
 use std::ffi::CString;
 
@@ -115,7 +115,7 @@ fn set_numa_domain() {
             domain
         }
     };
-    NUMA_DOMAIN.with(|f| f.set(domain))
+    NUMA_DOMAIN.set(domain)
 }
 
 /// Affinitize a pthread to a core and assign a DPDK thread ID.
@@ -133,5 +133,5 @@ pub fn init_thread(tid: i32, core: i32) {
 
 #[inline]
 pub fn get_domain() -> i32 {
-    NUMA_DOMAIN.with(|f| f.get())
+    NUMA_DOMAIN.get()
 }

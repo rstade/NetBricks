@@ -1,9 +1,9 @@
 use super::super::super::headers::IpHeader;
-use native::zcsi::rte_ethdev_api::{
+use crate::native::zcsi::rte_ethdev_api::{
     rte_eth_dev_get_name_by_port, rte_eth_rx_mq_mode, rte_eth_stats, rte_eth_xstat_name, rte_flow, RTE_ETH_FLOW_MAX,
     RTE_ETH_NAME_MAX_LEN,
 };
-use native::zcsi::rte_mbuf_api::rte_mbuf;
+use crate::native::zcsi::rte_mbuf_api::rte_mbuf;
 use std::convert;
 use std::ffi::CStr;
 use std::fmt;
@@ -108,7 +108,7 @@ impl convert::From<i32> for RteFilterType {
 }
 
 impl fmt::Display for RteFilterType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &self)
     }
 }
@@ -191,14 +191,14 @@ impl RteFlowError {
     }
 }
 
-pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> {
+pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> { unsafe {
     let kni_if_raw: *const c_char = rte_kni_get_name(p_kni);
     let slice = CStr::from_ptr(kni_if_raw).to_str();
     match slice {
         Ok(slice) => Some(String::from(slice)),
         Err(_) => None,
     }
-}
+} }
 
 pub fn eth_dev_get_name_by_port(port_id: u16) -> Option<String> {
     let mut name = vec![' ' as u8; RTE_ETH_NAME_MAX_LEN as usize];
@@ -239,7 +239,7 @@ impl rte_eth_stats {
 }
 
 impl fmt::Display for rte_eth_stats {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "imissed= {}, rx_no_mbuf= {}\n", self.imissed, self.rx_nombuf).unwrap();
         write!(
             f,
@@ -290,7 +290,7 @@ pub struct RteEthIpv4Flow {
 }
 
 impl fmt::Display for RteEthIpv4Flow {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "(src_ip= {}, dst_ip= {}, tos= {}, ttl= {}, proto= {})",
@@ -777,7 +777,7 @@ impl RteFdirConf {
 }
 
 impl fmt::Display for RteFdirConf {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "RteFdirConf(mode = {}, pballoc= {}, ipv4_mask= {}. src_port_mask= {:x}, dst_port_mask= {:x})",
@@ -802,7 +802,7 @@ pub fn check_os_error(code: i32) -> io::Result<i32> {
 #[link(name = "rte_kni")]
 #[link(name = "rte_ethdev")]
 #[link(name = "rte_eal")]
-extern "C" {
+unsafe extern "C" {
     pub fn init_system_whitelisted(
         name: *const c_char,
         nlen: i32,

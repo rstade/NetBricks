@@ -1,4 +1,4 @@
-use common::*;
+use crate::common::*;
 use std::cmp::min;
 use std::io::{Read, Write};
 

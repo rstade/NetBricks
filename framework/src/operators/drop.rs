@@ -2,8 +2,8 @@ use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
 use super::Batch;
-use common::*;
-use interface::{PacketTx, Pdu};
+use crate::common::*;
+use crate::interface::{PacketTx, Pdu};
 
 pub struct DropBatch<V>
 where
@@ -93,7 +93,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
         self.parent.next_payload(idx)
     }
 }

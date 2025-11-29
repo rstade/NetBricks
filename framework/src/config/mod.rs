@@ -1,7 +1,7 @@
 pub use self::config_reader::*;
 pub use self::flag_reader::*;
-use interface::{FlowSteeringMode, NetSpec};
-use native::zcsi::RteFdirConf;
+use crate::interface::{FlowSteeringMode, NetSpec};
+use crate::native::zcsi::RteFdirConf;
 use std::fmt;
 
 mod config_reader;
@@ -73,7 +73,7 @@ impl NetbricksConfiguration {
 }
 
 impl fmt::Display for NetbricksConfiguration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "name: {}\nmempool size: {}\ncore cache: {}\n mbuf count: {}\nprimary core: {}\n",
@@ -172,7 +172,7 @@ impl PortConfiguration {
 }
 
 impl fmt::Display for PortConfiguration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let rx_queues_str_vec: Vec<_> = self.rx_queues.iter().map(|q| q.to_string()).collect();
         let rx_queue_str = rx_queues_str_vec.join(" ");
         let tx_queues_str_vec: Vec<_> = self.tx_queues.iter().map(|q| q.to_string()).collect();

@@ -202,7 +202,7 @@ impl<'a> Header<'a> {
 }
 
 impl<'a> fmt::Display for Header<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Header::Null => write!(f, "{:?}", self),
             Header::Mac(_) => write!(f, "{:?}", self.as_mac().unwrap()),

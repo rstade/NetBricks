@@ -1,10 +1,10 @@
 use super::super::interface::{FlowSteeringMode, NetSpec};
 use super::{DriverType, NetbricksConfiguration, PortConfiguration};
-use common::errors;
-use common::errors::ErrorKind;
+use crate::common::errors;
+use crate::common::errors::ErrorKind;
 use eui48::MacAddress;
 use ipnet::Ipv4Net;
-use native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
+use crate::native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
 use std::clone::Clone;
 use std::fs::File;
 use std::io::Read;
