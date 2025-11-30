@@ -19,8 +19,7 @@ pub struct IPLookup {
 const TBL24_SIZE: usize = (1 << 24) + 1;
 const RAW_SIZE: usize = 33;
 const OVERFLOW_MASK: u16 = 0x8000;
-#[derive(Default, Clone)]
-struct Empty;
+
 impl Default for IPLookup {
     fn default() -> IPLookup {
         IPLookup {

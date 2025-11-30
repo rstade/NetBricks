@@ -1,4 +1,5 @@
 [workspace]
+resolver = "3"
 members=["framework",
         "test/framework",
         "test/delay-test",

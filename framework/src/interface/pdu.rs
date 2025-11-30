@@ -117,6 +117,21 @@ impl<'a> fmt::Display for HeaderStack<'a> {
 pub struct Pdu<'a> {
     header_stack: HeaderStack<'a>,
     mbuf: *mut MBuf,
+    owns_mbuf: bool, // NEW: whether this PDU should deref the mbuf on Drop
+}
+
+impl<'a> Drop for Pdu<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            if !self.mbuf.is_null() && self.owns_mbuf {
+                // This decrements the rte_mbuf refcnt and may free the mbuf.
+                (*self.mbuf).dereference();
+                // Prevent any accidental double use in potential future drops.
+                self.mbuf = std::ptr::null_mut();
+                self.owns_mbuf = false;
+            }
+        }
+    }
 }
 
 impl<'a> fmt::Display for Pdu<'a> {
@@ -144,6 +159,7 @@ impl<'a> Pdu<'a> {
                 Some(Pdu {
                     mbuf,
                     header_stack: HeaderStack::new(),
+                    owns_mbuf: true,
                 })
             }
         }
@@ -155,7 +171,7 @@ impl<'a> Pdu<'a> {
         unsafe {
             let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
             if alloc_ret == 0 {
-                Some(pkts.iter().map(|m| Pdu::pdu_from_mbuf_no_increment(*m)).collect())
+                Some(pkts.iter().map(|&m| Pdu { mbuf: m, header_stack: HeaderStack::new(), owns_mbuf: true }).collect())
             } else {
                 None
             }
@@ -166,14 +182,16 @@ impl<'a> Pdu<'a> {
     pub fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu<'a> {
         // Need to up the refcnt, so that things don't drop.
         reference_mbuf(mbuf);
-        Pdu::pdu_from_mbuf_no_increment(mbuf)
+        Pdu { mbuf, header_stack: HeaderStack::new(), owns_mbuf: true }
     }
 
+    // For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
     #[inline]
-    pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu<'a> {
+      pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu<'a> {
         let mut pdu = Pdu {
             mbuf,
             header_stack: HeaderStack::new(),
+            owns_mbuf: true,
         };
         pdu.parse();
         pdu
@@ -201,23 +219,28 @@ impl<'a> Pdu<'a> {
 
     /// copy gets us a new mbuf
     #[inline]
-    pub unsafe fn copy(&self) -> Pdu<'_> { unsafe {
+    pub unsafe fn copy(&self) -> Option<Pdu<'_>> { unsafe {
         // This sets refcnt = 1
         let mbuf = mbuf_alloc();
-        self.copy_use_mbuf(mbuf)
+        if mbuf.is_null() { return None; }
+        Some(self.copy_use_mbuf(mbuf)) // ensure copy_use_mbuf sets owns_mbuf = true
     } }
 
     /// clone has same mbuf as the original and increments mbuf ref count
     /// clone replicates the mutable references to the headers, therefore it is unsafe, see parse()
     #[inline]
     pub fn clone(&mut self) -> Pdu<'static> {
-        Pdu::pdu_from_mbuf(self.mbuf)
+        Pdu::pdu_from_mbuf(self.mbuf) // owns_mbuf = true via above
     }
 
     /// same as clone, but without increment of mbuf ref count
     #[inline]
-    pub fn clone_without_ref_counting(&mut self) -> Pdu<'_> {
-        Pdu::pdu_from_mbuf_no_increment(self.mbuf)
+    /// Unsafe: returns a Pdu that does not own an mbuf reference. The caller must
+    /// ensure the mbuf outlives this Pdu and that some other owner eventually frees it.
+    pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu<'_> {
+        let mut p = Pdu { mbuf: self.mbuf, header_stack: HeaderStack::new(), owns_mbuf: false };
+        p.parse();
+        p
     }
 
     #[inline]
@@ -315,12 +338,13 @@ impl<'a> Pdu<'a> {
     #[inline]
     pub unsafe fn get_mbuf(mut self) -> *mut MBuf { unsafe {
         self.get_mbuf_ref()
-    } }
+    }}
 
     #[inline]
     unsafe fn get_mbuf_ref(&mut self) -> *mut MBuf {
         let mbuf = self.mbuf;
-        self.mbuf = ptr::null_mut();
+        self.mbuf = std::ptr::null_mut();
+        self.owns_mbuf = false; // NEW: prevent Drop from dereferencing
         mbuf
     }
 

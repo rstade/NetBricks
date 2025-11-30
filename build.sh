@@ -5,7 +5,7 @@ set -eo pipefail
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 BUILD_SCRIPT=$( basename "$0" )
 
-echo "BASE_DIR=" $BASE_DIR
+echo "BASE_DIR=" "$BASE_DIR"
 DPDK_VER=20.11
 DPDK_LD_PATH="/usr/local/lib/x86_64-linux-gnu/"
 export LIBRARY_PATH=${DPDK_LD_PATH}:${LIBRARY_PATH}
@@ -23,12 +23,11 @@ NATIVE_LIB_PATH="${BASE_DIR}/native"
 export SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt
 
 source "${BASE_DIR}/examples.sh"
-REQUIRE_RUSTFMT=0
 export RUSTFLAGS="-C target-cpu=native"
 
 native () {
-    make -j $proc -C $BASE_DIR/native
-#    make -C $BASE_DIR/native install
+    make -j $proc -C "$BASE_DIR"/native
+    make -C "$BASE_DIR"/native install
 }
 
 
@@ -58,19 +57,19 @@ clean () {
         popd >/dev/null
     done
     make clean -C "${BASE_DIR}/native"
-    rm -rf ${BASE_DIR}/target 
+    rm -rf "${BASE_DIR}"/target
 }
 
 UNWIND_BUILD="${TOOLS_BASE}"/libunwind
 
 clean_deps() {
     echo "Cleaning dependencies"
-    rm -rf ${BIN_DIR} || true
-    rm -rf ${DOWNLOAD_DIR} || true
-    rm -rf ${TOOLS_BASE} || true
-    rm -rf ${LLVM_RESULT} || true
-    rm -rf ${MUSL_RESULT} || true
-    rm -rf ${DPDK_HOME} || true
+    rm -rf "${BIN_DIR}" || true
+    rm -rf "${DOWNLOAD_DIR}" || true
+    rm -rf "${TOOLS_BASE}" || true
+    rm -rf "${LLVM_RESULT}" || true
+    rm -rf "${MUSL_RESULT}" || true
+    rm -rf "${DPDK_HOME}" || true
     echo "Cleaned DEPS"
 }
 

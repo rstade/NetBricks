@@ -2,6 +2,8 @@
 name = "tcp_payload"
 version = "0.1.0"
 authors = ["Steven H. Wang <wang.steven.h@gmail.com>"]
+edition = "2024"
+rust-version = "1.91.1"
 
 [dependencies]
 e2d2 = { path = "../../framework", features = ["performance"] }

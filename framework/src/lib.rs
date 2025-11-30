@@ -1,7 +1,6 @@
 #![recursion_limit = "1024"]
 #![deny(rust_2018_idioms)]
 #![deny(unsafe_op_in_unsafe_fn)]
-//#![feature(ptr_internals)]
 #![allow(unused_doc_comments)]
 #![cfg_attr(feature = "dev", allow(unstable_features))]
 // Need this since PMD port construction triggers too many arguments.

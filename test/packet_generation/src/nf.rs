@@ -40,7 +40,7 @@ impl<'a> PacketCreator {
     }
 
     #[inline]
-    pub fn create_packet(&self) -> Pdu {
+    pub fn create_packet(&'_ self) -> Pdu<'_> {
         self.initialize_packet(Pdu::new_pdu().unwrap())
     }
 }
