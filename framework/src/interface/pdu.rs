@@ -105,7 +105,7 @@ impl<'a> fmt::Display for HeaderStack<'a> {
             r = write!(f, "<no headers>");
         } else {
             for i in 0..self.hc {
-                r = writeln!(f, "{:1}: {}", i, self.stack[i as usize]);
+                r = writeln!(f, "{:1}: {}", i, self.stack[i]);
                 r?
             }
         }
@@ -127,7 +127,7 @@ impl<'a> Drop for Pdu<'a> {
                 // This decrements the rte_mbuf refcnt and may free the mbuf.
                 (*self.mbuf).dereference();
                 // Prevent any accidental double use in potential future drops.
-                self.mbuf = std::ptr::null_mut();
+                self.mbuf = ptr::null_mut();
                 self.owns_mbuf = false;
             }
         }
@@ -229,7 +229,7 @@ impl<'a> Pdu<'a> {
     /// clone has same mbuf as the original and increments mbuf ref count
     /// clone replicates the mutable references to the headers, therefore it is unsafe, see parse()
     #[inline]
-    pub fn clone(&mut self) -> Pdu<'static> {
+    pub unsafe fn clone(&mut self) -> Pdu<'static> {
         Pdu::pdu_from_mbuf(self.mbuf) // owns_mbuf = true via above
     }
 
@@ -343,7 +343,7 @@ impl<'a> Pdu<'a> {
     #[inline]
     unsafe fn get_mbuf_ref(&mut self) -> *mut MBuf {
         let mbuf = self.mbuf;
-        self.mbuf = std::ptr::null_mut();
+        self.mbuf = ptr::null_mut();
         self.owns_mbuf = false; // NEW: prevent Drop from dereferencing
         mbuf
     }
@@ -586,7 +586,7 @@ impl<'a> Pdu<'a> {
         // sum up the header offsets
         let sum = self
             .header_stack
-            .get_slice(0..which as usize + 1)
+            .get_slice(0..which + 1)
             .iter()
             .fold(0, |sum, value| sum + value.offset().unwrap());
         self.data_len() - sum
