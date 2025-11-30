@@ -93,7 +93,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

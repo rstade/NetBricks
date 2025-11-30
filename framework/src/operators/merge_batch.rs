@@ -55,7 +55,7 @@ impl BatchIterator for MergeBatchTraitObj {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parents[self.which].next_payload(idx)
     }
 }
@@ -168,7 +168,7 @@ impl<T: Batch> BatchIterator for MergeBatch<T> {
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parents[self.which].next_payload(idx)
     }
 }

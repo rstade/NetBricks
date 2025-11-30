@@ -40,130 +40,129 @@ pub trait EndOffset: Send {
     fn header_kind(&self) -> HeaderKind;
 }
 
+//Replace the current, lifetime-bearing enum with a pointer-backed version.
+// New internal representation (no lifetime parameter)
 #[derive(Debug)]
-pub enum Header<'a> {
+pub enum HeaderPtr {
     Null,
-    Mac(&'a mut MacHeader),
-    ArpIpv4(&'a mut ArpIpv4Header),
-    Ip(&'a mut IpHeader),
-    Tcp(&'a mut TcpHeader),
-    Udp(&'a mut UdpHeader),
+    Mac(*mut MacHeader),
+    ArpIpv4(*mut ArpIpv4Header),
+    Ip(*mut IpHeader),
+    Tcp(*mut TcpHeader),
+    Udp(*mut UdpHeader),
 }
 
-///as Header contains mutable references, we can only clone Header::Null
-///we need this for initialization of arrays
-impl<'a> Clone for Header<'a> {
-    fn clone(&self) -> Self {
-        Header::Null
-    }
-}
-
-impl<'a> Header<'a> {
-    pub fn new<T: EndOffset>(ptr: *mut T) -> Header<'a> {
+// Keep initialization ergonomics
+impl HeaderPtr {
+    #[inline]
+    pub fn new<T: EndOffset>(ptr: *mut T) -> HeaderPtr {
         unsafe {
             match (*ptr).header_kind() {
-                HeaderKind::Null => Header::Null,
-                HeaderKind::Mac => Header::Mac(&mut *(ptr as *mut MacHeader)),
-                HeaderKind::Ip => Header::Ip(&mut *(ptr as *mut IpHeader)),
-                HeaderKind::Tcp => Header::Tcp(&mut *(ptr as *mut TcpHeader)),
-                HeaderKind::Udp => Header::Udp(&mut *(ptr as *mut UdpHeader)),
-                HeaderKind::ArpIpv4 => Header::ArpIpv4(&mut *(ptr as *mut ArpIpv4Header)),
+                HeaderKind::Null => HeaderPtr::Null,
+                HeaderKind::Mac => HeaderPtr::Mac(ptr as *mut MacHeader),
+                HeaderKind::Ip => HeaderPtr::Ip(ptr as *mut IpHeader),
+                HeaderKind::Tcp => HeaderPtr::Tcp(ptr as *mut TcpHeader),
+                HeaderKind::Udp => HeaderPtr::Udp(ptr as *mut UdpHeader),
+                HeaderKind::ArpIpv4 => HeaderPtr::ArpIpv4(ptr as *mut ArpIpv4Header),
             }
         }
     }
 
+    // Accessors create temporary borrows on demand (no persistent &mut stored)
     #[inline]
     pub fn as_mac_mut(&mut self) -> Option<&mut MacHeader> {
-        match self {
-            Header::Mac(p) => Some(&mut **p),
-            _ => None,
-        }
+        match self { HeaderPtr::Mac(p) => Some(unsafe { &mut **p }), _ => None }
     }
-
-    #[inline]
-    pub fn as_arpipv4_mut(&mut self) -> Option<&mut ArpIpv4Header> {
-        match self {
-            Header::ArpIpv4(p) => Some(&mut **p),
-            _ => None,
-        }
-    }
-
-    #[inline]
-    pub fn as_ip_mut(&mut self) -> Option<&mut IpHeader> {
-        match self {
-            Header::Ip(p) => Some(&mut **p),
-            _ => None,
-        }
-    }
-
-    #[inline]
-    pub fn as_tcp_mut(&mut self) -> Option<&mut TcpHeader> {
-        match self {
-            Header::Tcp(p) => Some(&mut **p),
-            _ => None,
-        }
-    }
-
-    #[inline]
-    pub fn as_udp_mut(&mut self) -> Option<&mut UdpHeader> {
-        match self {
-            Header::Udp(p) => Some(&mut **p),
-            _ => None,
-        }
-    }
-
     #[inline]
     pub fn as_mac(&self) -> Option<&MacHeader> {
-        match self {
-            Header::Mac(p) => Some(&**p),
-            _ => None,
-        }
+        match self { HeaderPtr::Mac(p) => Some(unsafe { &**p }), _ => None }
     }
-
+    // ArpIpv4 accessors
+    #[inline]
+    pub fn as_arpipv4_mut(&mut self) -> Option<&mut ArpIpv4Header> {
+        match self { HeaderPtr::ArpIpv4(p) => Some(unsafe { &mut **p }), _ => None }
+    }
     #[inline]
     pub fn as_arpipv4(&self) -> Option<&ArpIpv4Header> {
-        match self {
-            Header::ArpIpv4(p) => Some(&**p),
-            _ => None,
-        }
+        match self { HeaderPtr::ArpIpv4(p) => Some(unsafe { &**p }), _ => None }
     }
 
+    // Ip accessors
+    #[inline]
+    pub fn as_ip_mut(&mut self) -> Option<&mut IpHeader> {
+        match self { HeaderPtr::Ip(p) => Some(unsafe { &mut **p }), _ => None }
+    }
     #[inline]
     pub fn as_ip(&self) -> Option<&IpHeader> {
-        match self {
-            Header::Ip(p) => Some(&**p),
-            _ => None,
-        }
+        match self { HeaderPtr::Ip(p) => Some(unsafe { &**p }), _ => None }
     }
 
+    // Tcp accessors
+    #[inline]
+    pub fn as_tcp_mut(&mut self) -> Option<&mut TcpHeader> {
+        match self { HeaderPtr::Tcp(p) => Some(unsafe { &mut **p }), _ => None }
+    }
     #[inline]
     pub fn as_tcp(&self) -> Option<&TcpHeader> {
-        match self {
-            Header::Tcp(p) => Some(&**p),
-            _ => None,
-        }
+        match self { HeaderPtr::Tcp(p) => Some(unsafe { &**p }), _ => None }
     }
 
+    // Udp accessors
+    #[inline]
+    pub fn as_udp_mut(&mut self) -> Option<&mut UdpHeader> {
+        match self { HeaderPtr::Udp(p) => Some(unsafe { &mut **p }), _ => None }
+    }
     #[inline]
     pub fn as_udp(&self) -> Option<&UdpHeader> {
-        match self {
-            Header::Udp(p) => Some(&**p),
-            _ => None,
-        }
+        match self { HeaderPtr::Udp(p) => Some(unsafe { &**p }), _ => None }
     }
 
     #[inline]
     pub fn kind(&self) -> HeaderKind {
         match self {
-            Header::Null => HeaderKind::Null,
-            Header::Mac(_) => HeaderKind::Mac,
-            Header::Ip(_) => HeaderKind::Ip,
-            Header::Tcp(_) => HeaderKind::Tcp,
-            Header::Udp(_) => HeaderKind::Udp,
-            Header::ArpIpv4(_) => HeaderKind::ArpIpv4,
+            HeaderPtr::Null => HeaderKind::Null,
+            HeaderPtr::Mac(_) => HeaderKind::Mac,
+            HeaderPtr::ArpIpv4(_) => HeaderKind::ArpIpv4,
+            HeaderPtr::Ip(_) => HeaderKind::Ip,
+            HeaderPtr::Tcp(_) => HeaderKind::Tcp,
+            HeaderPtr::Udp(_) => HeaderKind::Udp,
         }
     }
 
+    // Raw pointer views used by payload computations
+    #[inline]
+    pub fn as_ptr_u8(&self) -> Option<*const u8> {
+        match self {
+            HeaderPtr::Null => None,
+            HeaderPtr::Mac(p) => Some(*p as *const u8),
+            HeaderPtr::ArpIpv4(p) => Some(*p as *const u8),
+            HeaderPtr::Ip(p) => Some(*p as *const u8),
+            HeaderPtr::Tcp(p) => Some(*p as *const u8),
+            HeaderPtr::Udp(p) => Some(*p as *const u8),
+        }
+    }
+    #[inline]
+    pub fn as_ptr_u8_mut(&mut self) -> Option<*mut u8> {
+        match self {
+            HeaderPtr::Null => None,
+            HeaderPtr::Mac(p) => Some(*p as *mut u8),
+            HeaderPtr::ArpIpv4(p) => Some(*p as *mut u8),
+            HeaderPtr::Ip(p) => Some(*p as *mut u8),
+            HeaderPtr::Tcp(p) => Some(*p as *mut u8),
+            HeaderPtr::Udp(p) => Some(*p as *mut u8),
+        }
+    }
+}
+
+// Preserve existing initialization behavior for arrays
+impl Clone for HeaderPtr {
+    fn clone(&self) -> Self { HeaderPtr::Null }
+}
+
+// Keep the public name and lifetime parameter to avoid signature churn
+pub type Header = HeaderPtr; // 'a is unused but preserves existing signatures
+
+impl HeaderPtr {
     #[inline]
     pub fn offset(&self) -> Option<usize> {
         match self {
@@ -175,33 +174,11 @@ impl<'a> Header<'a> {
             Header::ArpIpv4(_) => Some(self.as_arpipv4().unwrap().offset()),
         }
     }
-
-    #[inline]
-    pub fn as_ptr_u8_mut(&mut self) -> Option<*mut u8> {
-        match self {
-            Header::Null => None,
-            Header::Mac(p) => Some(*p as *mut MacHeader as *mut u8),
-            Header::Ip(p) => Some(*p as *mut IpHeader as *mut u8),
-            Header::Tcp(p) => Some(*p as *mut TcpHeader as *mut u8),
-            Header::Udp(p) => Some(*p as *mut UdpHeader as *mut u8),
-            Header::ArpIpv4(p) => Some(*p as *mut ArpIpv4Header as *mut u8),
-        }
-    }
-
-    #[inline]
-    pub fn as_ptr_u8(&self) -> Option<*const u8> {
-        match self {
-            Header::Null => None,
-            Header::Mac(p) => Some(*p as *const MacHeader as *const u8),
-            Header::Ip(p) => Some(*p as *const IpHeader as *const u8),
-            Header::Tcp(p) => Some(*p as *const TcpHeader as *const u8),
-            Header::Udp(p) => Some(*p as *const UdpHeader as *const u8),
-            Header::ArpIpv4(p) => Some(*p as *const ArpIpv4Header as *const u8),
-        }
-    }
 }
 
-impl<'a> fmt::Display for Header<'a> {
+
+
+impl<'a> fmt::Display for HeaderPtr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Header::Null => write!(f, "{:?}", self),

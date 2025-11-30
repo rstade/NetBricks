@@ -6,7 +6,7 @@ use crate::common::*;
 use crate::interface::PacketTx;
 use crate::interface::Pdu;
 
-pub type TransformFn = Box<dyn FnMut(&mut Pdu<'_>) + Send>;
+pub type TransformFn = Box<dyn FnMut(&mut Pdu) + Send>;
 
 pub struct TransformBatch<V>
 where
@@ -50,7 +50,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

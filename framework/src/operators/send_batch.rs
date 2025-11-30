@@ -50,7 +50,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, _: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, _: usize) -> Option<Pdu> {
         panic!("Cannot iterate send batch")
     }
 }

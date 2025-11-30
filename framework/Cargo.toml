@@ -20,7 +20,7 @@ regex = "*"
 lazy_static = "*"
 net2 = "*"
 # NIX restricts us to just unix for now, we can fix this if someone cares at a later point.
-nix = { version = ">=0.27.1", features =["event"] }
+nix = { version = ">=0.30.1", features =["event"] }
 toml = ">=0.6"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }

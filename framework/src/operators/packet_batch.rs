@@ -221,7 +221,7 @@ impl BatchIterator for PacketBatch {
     }
 
     /// The starting offset for packets in the current batch.
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         if idx < self.array.len() {
             Some(Pdu::pdu_from_mbuf_no_increment(self.array[idx]))
         } else {

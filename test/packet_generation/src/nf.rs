@@ -33,14 +33,14 @@ impl<'a> PacketCreator {
     }
 
     #[inline]
-    fn initialize_packet(&self, mut pkt: Pdu<'a>) -> Pdu<'a> {
+    fn initialize_packet(&self, mut pkt: Pdu) -> Pdu {
         pkt.push_header(&self.mac);
         pkt.push_header(&self.ip);
         pkt
     }
 
     #[inline]
-    pub fn create_packet(&'_ self) -> Pdu<'_> {
+    pub fn create_packet(&'_ self) -> Pdu {
         self.initialize_packet(Pdu::new_pdu().unwrap())
     }
 }

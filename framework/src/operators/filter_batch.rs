@@ -6,7 +6,7 @@ use crate::common::*;
 use crate::interface::PacketTx;
 use crate::interface::Pdu;
 
-pub type FilterFn = Box<dyn FnMut(&Pdu<'_>) -> bool + Send>;
+pub type FilterFn = Box<dyn FnMut(&Pdu) -> bool + Send>;
 
 pub struct FilterBatch<V>
 where
@@ -107,7 +107,7 @@ where
     }
 
     #[inline]
-    fn next_payload(&mut self, idx: usize) -> Option<Pdu<'_>> {
+    fn next_payload(&mut self, idx: usize) -> Option<Pdu> {
         self.parent.next_payload(idx)
     }
 }

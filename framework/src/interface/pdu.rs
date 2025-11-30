@@ -7,7 +7,7 @@ use std::slice;
 
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
-use crate::headers::{ArpIpv4Header, EndOffset, Header, IpHeader, MacHeader, TcpHeader, UdpHeader};
+use crate::headers::{ArpIpv4Header, EndOffset, Header, HeaderPtr, IpHeader, MacHeader, TcpHeader, UdpHeader};
 use crate::native::zcsi::MBuf;
 use crate::native::zcsi::{mbuf_alloc, mbuf_alloc_bulk, validate_tx_offload};
 use crate::utils::ipv4_checksum;
@@ -15,24 +15,27 @@ use crate::utils::ipv4_checksum;
 const MAX_HEADERS: usize = 5;
 
 #[derive(Clone, Debug)]
-pub struct HeaderStack<'a> {
-    stack: [Header<'a>; MAX_HEADERS],
+pub struct HeaderStack {
+    stack: [HeaderPtr; MAX_HEADERS], // Header<'a> now aliases HeaderPtr
     /// header count
     hc: usize,
+    // Tie the header stack to a lifetime without storing actual borrows
+    //phantom: PhantomData<&'a mut ()>,
 }
 
 /// there are no bound checks!
-impl<'a> HeaderStack<'a> {
+impl HeaderStack {
     #[inline]
-    pub fn new() -> HeaderStack<'a> {
+    pub fn new() -> HeaderStack {
         HeaderStack {
             stack: [Header::Null, Header::Null, Header::Null, Header::Null, Header::Null],
             hc: 0,
+        //    phantom: PhantomData,
         }
     }
 
     #[inline]
-    pub fn push(&mut self, h: Header<'a>) {
+    pub fn push(&mut self, h: Header) {
         self.stack[self.hc] = h;
         self.hc += 1;
     }
@@ -43,17 +46,17 @@ impl<'a> HeaderStack<'a> {
     }
 
     #[inline]
-    pub fn get(&self, which: usize) -> &Header<'a> {
+    pub fn get(&self, which: usize) -> &Header {
         &self.stack[which]
     }
 
     #[inline]
-    pub fn get_mut(&mut self, which: usize) -> &mut Header<'a> {
+    pub fn get_mut(&mut self, which: usize) -> &mut Header {
         &mut self.stack[which]
     }
 
     #[inline]
-    pub fn get_slice(&self, range: Range<usize>) -> &[Header<'a>] {
+    pub fn get_slice(&self, range: Range<usize>) -> &[Header] {
         &self.stack[range]
     }
 
@@ -98,7 +101,7 @@ impl<'a> HeaderStack<'a> {
     }
 }
 
-impl<'a> fmt::Display for HeaderStack<'a> {
+impl<'a> fmt::Display for HeaderStack {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut r = Ok(());
         if self.hc == 0 {
@@ -114,13 +117,15 @@ impl<'a> fmt::Display for HeaderStack<'a> {
 }
 
 #[repr(align(16))]
-pub struct Pdu<'a> {
-    header_stack: HeaderStack<'a>,
+pub struct Pdu {
+    header_stack: HeaderStack,
     mbuf: *mut MBuf,
     owns_mbuf: bool, // NEW: whether this PDU should deref the mbuf on Drop
+    // Carry the lifetime without holding references
+    // phantom: PhantomData<&'a mut ()>,
 }
 
-impl<'a> Drop for Pdu<'a> {
+impl<'a> Drop for Pdu {
     fn drop(&mut self) {
         unsafe {
             if !self.mbuf.is_null() && self.owns_mbuf {
@@ -134,7 +139,7 @@ impl<'a> Drop for Pdu<'a> {
     }
 }
 
-impl<'a> fmt::Display for Pdu<'a> {
+impl<'a> fmt::Display for Pdu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -146,10 +151,10 @@ impl<'a> fmt::Display for Pdu<'a> {
     }
 }
 
-impl<'a> Pdu<'a> {
+impl Pdu {
     /// Allocate a new pdu.
     #[inline]
-    pub fn new_pdu() -> Option<Pdu<'a>> {
+    pub fn new_pdu() -> Option<Pdu> {
         unsafe {
             // This sets refcnt = 1
             let mbuf = mbuf_alloc();
@@ -160,13 +165,14 @@ impl<'a> Pdu<'a> {
                     mbuf,
                     header_stack: HeaderStack::new(),
                     owns_mbuf: true,
+ //                   phantom: PhantomData,
                 })
             }
         }
     }
 
     /// Allocate an array of pdus.
-    pub fn new_pdu_array() -> Option<Vec<Pdu<'static>>> {
+    pub fn new_pdu_array() -> Option<Vec<Pdu>> {
         let mut pkts = [ptr::null_mut::<MBuf>(); 32];
         unsafe {
             let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
@@ -179,7 +185,7 @@ impl<'a> Pdu<'a> {
     }
 
     #[inline]
-    pub fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu<'a> {
+    pub fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu {
         // Need to up the refcnt, so that things don't drop.
         reference_mbuf(mbuf);
         Pdu { mbuf, header_stack: HeaderStack::new(), owns_mbuf: true }
@@ -187,7 +193,7 @@ impl<'a> Pdu<'a> {
 
     // For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
     #[inline]
-      pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu<'a> {
+      pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu {
         let mut pdu = Pdu {
             mbuf,
             header_stack: HeaderStack::new(),
@@ -211,7 +217,7 @@ impl<'a> Pdu<'a> {
     }
 
     #[inline]
-    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu<'_> { unsafe {
+    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu { unsafe {
         assert!(!mbuf.is_null());
         (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
         Pdu::pdu_from_mbuf_no_increment(mbuf)
@@ -219,7 +225,7 @@ impl<'a> Pdu<'a> {
 
     /// copy gets us a new mbuf
     #[inline]
-    pub unsafe fn copy(&self) -> Option<Pdu<'_>> { unsafe {
+    pub unsafe fn copy(&self) -> Option<Pdu> { unsafe {
         // This sets refcnt = 1
         let mbuf = mbuf_alloc();
         if mbuf.is_null() { return None; }
@@ -229,7 +235,7 @@ impl<'a> Pdu<'a> {
     /// clone has same mbuf as the original and increments mbuf ref count
     /// clone replicates the mutable references to the headers, therefore it is unsafe, see parse()
     #[inline]
-    pub unsafe fn clone(&mut self) -> Pdu<'static> {
+    pub unsafe fn clone(&mut self) -> Pdu {
         Pdu::pdu_from_mbuf(self.mbuf) // owns_mbuf = true via above
     }
 
@@ -237,8 +243,8 @@ impl<'a> Pdu<'a> {
     #[inline]
     /// Unsafe: returns a Pdu that does not own an mbuf reference. The caller must
     /// ensure the mbuf outlives this Pdu and that some other owner eventually frees it.
-    pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu<'_> {
-        let mut p = Pdu { mbuf: self.mbuf, header_stack: HeaderStack::new(), owns_mbuf: false };
+    pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu {
+        let mut p = Pdu { mbuf: self.mbuf, header_stack: HeaderStack::new(), owns_mbuf: false};
         p.parse();
         p
     }
@@ -360,17 +366,17 @@ impl<'a> Pdu<'a> {
     }
 
     #[inline]
-    pub fn headers(&self) -> &HeaderStack<'a> {
+    pub fn headers(&self) -> &HeaderStack {
         &self.header_stack
     }
 
     #[inline]
-    pub fn headers_mut(&mut self) -> &mut HeaderStack<'a> {
+    pub fn headers_mut(&mut self) -> &mut HeaderStack {
         &mut self.header_stack
     }
 
     #[inline]
-    pub fn replace_header(&mut self, which: usize, hdr: &Header<'_>) {
+    pub fn replace_header(&mut self, which: usize, hdr: &Header) {
         unsafe {
             let pdu_header = self.header_stack.get_mut(which);
             assert_eq!(hdr.kind(), pdu_header.kind());
@@ -388,7 +394,7 @@ impl<'a> Pdu<'a> {
         }
     }
 
-    pub unsafe fn replace(&mut self, other: Pdu<'static>) -> Pdu<'_> {
+    pub unsafe fn replace(&mut self, other: Pdu) -> Pdu {
         mem::replace(self, other)
     }
 
