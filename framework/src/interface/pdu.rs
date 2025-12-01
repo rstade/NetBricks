@@ -413,7 +413,8 @@ impl Pdu {
                     // Need to move the payload down.
                     let final_dst = (*self.mbuf).data_address(0);
                     let move_loc = final_dst.offset(size as isize);
-                    ptr::copy_nonoverlapping(final_dst, move_loc, payload_sz);
+                    // Use ptr::copy (memmove) because source and destination regions overlap
+                    ptr::copy(final_dst, move_loc, payload_sz);
                     final_dst as *mut T
                 } else {
                     (*self.mbuf).data_address(0) as *mut T
@@ -430,7 +431,8 @@ impl Pdu {
                     // Need to move the payload down.
                     let final_dst = self.payload_mut(last_header_ix).unwrap();
                     let move_loc = final_dst.offset(size as isize);
-                    ptr::copy_nonoverlapping(final_dst, move_loc, payload_sz);
+                    // Use ptr::copy (memmove) because source and destination regions overlap
+                    ptr::copy(final_dst, move_loc, payload_sz);
                     final_dst as *mut T
                 } else {
                     self.payload(last_header_ix).unwrap() as *mut T
