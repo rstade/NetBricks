@@ -41,23 +41,23 @@ use std::slice;
 #[inline]
 fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
     let len = data.len();
-    let wdata: &[u16] = unsafe { slice::from_raw_parts(data.as_ptr() as *const u16, len / 2) };
-    skipword = ::std::cmp::min(skipword, wdata.len());
-
+    // Process 16-bit big-endian words without assuming alignment of `data`.
     let mut sum = 0u32;
-    let mut i = 0;
-    while i < skipword {
-        sum += u16::from_be(unsafe { *wdata.get_unchecked(i) }) as u32;
+    let mut i = 0usize;
+
+    let mut chunks = data.chunks_exact(2);
+    while let Some(chunk) = chunks.next() {
+        if i != skipword {
+            // chunk has length 2
+            let word = u16::from_be_bytes([chunk[0], chunk[1]]);
+            sum += word as u32;
+        }
         i += 1;
     }
-    i += 1;
-    while i < wdata.len() {
-        sum += u16::from_be(unsafe { *wdata.get_unchecked(i) }) as u32;
-        i += 1;
-    }
+
     // If the length is odd, make sure to checksum the final byte
-    if len & 1 != 0 {
-        sum += (unsafe { *data.get_unchecked(len - 1) } as u32) << 8;
+    if let [last] = chunks.remainder() {
+        sum += (*last as u32) << 8;
     }
 
     sum
@@ -65,26 +65,10 @@ fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
 
 #[inline]
 fn sum_be_words_ptr(data: *mut u8, len: usize, mut skipword: usize) -> u32 {
-    let wdata: &[u16] = unsafe { slice::from_raw_parts(data as *const u16, len / 2) };
-    skipword = ::std::cmp::min(skipword, wdata.len());
-
-    let mut sum = 0u32;
-    let mut i = 0;
-    while i < skipword {
-        sum += u16::from_be(unsafe { *wdata.get_unchecked(i) }) as u32;
-        i += 1;
-    }
-    i += 1;
-    while i < wdata.len() {
-        sum += u16::from_be(unsafe { *wdata.get_unchecked(i) }) as u32;
-        i += 1;
-    }
-    // If the length is odd, make sure to checksum the final byte
-    if len & 1usize != 0 {
-        sum += (unsafe { *data.offset((len - 1) as isize) } as u32) << 8;
-    }
-
-    sum
+    // Create a temporary u8 slice (u8 has alignment 1, so this is always valid)
+    let bytes: &[u8] = unsafe { slice::from_raw_parts(data as *const u8, len) };
+    // Reuse the safe implementation above
+    sum_be_words(bytes, skipword)
 }
 
 /// Calculates a checksum. Used by ipv4 and icmp. The two bytes starting at `skipword * 2` will be
@@ -123,10 +107,12 @@ pub fn ipv4_checksum(
 
     sum += next_level_protocol;
 
-    let len = len + extra_data.len();
-    sum += len as u32;
+    // Total length includes payload in pseudo-header sum
+    let total_len = len + extra_data.len();
+    sum += total_len as u32;
 
     // Checksum packet header and data
+    // Only the base buffer pointed to by `data` is covered by `len` bytes.
     sum += sum_be_words_ptr(data, len, skipword);
     sum += sum_be_words(extra_data, extra_data.len() / 2);
 

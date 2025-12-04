@@ -57,7 +57,6 @@ all-static: $(DEPS) $(PROD_STATIC)
 
 install: $(DEPS) $(PROD) | $(INSTALL_PATH)
 	cp $(PROD) $(INSTALL_PATH)
-	sudo cp $(PROD) /usr/local/lib64
 
 $(INSTALL_PATH):
 	mkdir -p $(INSTALL_PATH)
