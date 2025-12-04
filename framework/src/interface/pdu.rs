@@ -188,7 +188,7 @@ impl Pdu {
     pub fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu {
         // Need to up the refcnt, so that things don't drop.
         reference_mbuf(mbuf);
-        Pdu { mbuf, header_stack: HeaderStack::new(), owns_mbuf: true }
+        Self::pdu_from_mbuf_no_increment(mbuf)
     }
 
     // For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
