@@ -39,8 +39,7 @@ pub type u16be = u16;
 /// `skipword` will be skipped. Each word is treated as big endian.
 use std::slice;
 #[inline]
-fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
-    let len = data.len();
+fn sum_be_words(data: &[u8], skipword: usize) -> u32 {
     // Process 16-bit big-endian words without assuming alignment of `data`.
     let mut sum = 0u32;
     let mut i = 0usize;
@@ -64,7 +63,7 @@ fn sum_be_words(data: &[u8], mut skipword: usize) -> u32 {
 }
 
 #[inline]
-fn sum_be_words_ptr(data: *mut u8, len: usize, mut skipword: usize) -> u32 {
+fn sum_be_words_ptr(data: *mut u8, len: usize, skipword: usize) -> u32 {
     // Create a temporary u8 slice (u8 has alignment 1, so this is always valid)
     let bytes: &[u8] = unsafe { slice::from_raw_parts(data as *const u8, len) };
     // Reuse the safe implementation above

@@ -232,7 +232,7 @@ impl Clone for MpscProducer {
 
 impl MpscProducer {
     pub fn enqueue(&self, pdus: &mut Vec<Pdu>) -> usize {
-        let mbufs: Vec<_> = pdus.drain(..).map(|p| unsafe { p.get_mbuf() }).collect();
+        let mbufs: Vec<_> = pdus.drain(..).map(|p| unsafe { p.into_mbuf() }).collect();
         self.mpsc_queue.enqueue(&mbufs[..])
     }
 
@@ -243,12 +243,12 @@ impl MpscProducer {
 
     #[inline]
     pub fn enqueue_one(&self, pdu: Pdu) -> bool {
-        unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
+        unsafe { self.mpsc_queue.enqueue_one(pdu.into_mbuf()) }
     }
 
     #[inline]
     pub fn enqueue_one_boxed(&self, pdu: Box<Pdu>) -> bool {
-        unsafe { self.mpsc_queue.enqueue_one(pdu.get_mbuf()) }
+        unsafe { self.mpsc_queue.enqueue_one(pdu.into_mbuf()) }
     }
 
     #[inline]

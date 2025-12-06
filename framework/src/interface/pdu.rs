@@ -141,13 +141,19 @@ impl<'a> Drop for Pdu {
 
 impl<'a> fmt::Display for Pdu {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "({}, data_len= {}), headers=\n{ }",
-            unsafe { &*self.mbuf },
-            self.data_len(),
-            self.header_stack,
-        )
+        if self.mbuf.is_null() {
+            write!(f, "<Pdu consumed>")
+        } else {
+            // Safe because we just checked for null
+            let mbuf_ref = unsafe { &*self.mbuf };
+            write!(
+                f,
+                "({}, data_len= {}), headers=\n{ }",
+                mbuf_ref,
+                self.data_len(),
+                self.header_stack,
+            )
+        }
     }
 }
 
@@ -187,13 +193,14 @@ impl Pdu {
     #[inline]
     pub fn pdu_from_mbuf(mbuf: *mut MBuf) -> Pdu {
         // Need to up the refcnt, so that things don't drop.
-        reference_mbuf(mbuf);
-        Self::pdu_from_mbuf_no_increment(mbuf)
+        unsafe { (*mbuf).reference() };
+        Self::mbuf_into_pdu_no_increment(mbuf)
     }
 
     // For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
     #[inline]
-      pub fn pdu_from_mbuf_no_increment(mbuf: *mut MBuf) -> Pdu {
+    pub fn mbuf_into_pdu_no_increment(mbuf: *mut MBuf) -> Pdu {
+        debug_assert!(!mbuf.is_null());
         let mut pdu = Pdu {
             mbuf,
             header_stack: HeaderStack::new(),
@@ -208,6 +215,7 @@ impl Pdu {
         unsafe { (*self.mbuf).refcnt() }
     }
 
+/* this footgun is no longer needed, as Drop handles dereferencing
     #[inline]
     pub fn dereference_mbuf(&mut self) -> u16 {
         unsafe {
@@ -215,40 +223,40 @@ impl Pdu {
         }
         self.refcnt()
     }
-
+*/
     #[inline]
-    pub unsafe fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu { unsafe {
+    pub fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu { unsafe {
         assert!(!mbuf.is_null());
         (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
-        Pdu::pdu_from_mbuf_no_increment(mbuf)
+        Pdu::mbuf_into_pdu_no_increment(mbuf)
     } }
 
     /// copy gets us a new mbuf
     #[inline]
-    pub unsafe fn copy(&self) -> Option<Pdu> { unsafe {
+    pub fn copy(&self) -> Option<Pdu> { unsafe {
         // This sets refcnt = 1
         let mbuf = mbuf_alloc();
         if mbuf.is_null() { return None; }
         Some(self.copy_use_mbuf(mbuf)) // ensure copy_use_mbuf sets owns_mbuf = true
     } }
 
-    /// clone has same mbuf as the original and increments mbuf ref count
-    /// clone replicates the mutable references to the headers, therefore it is unsafe, see parse()
+    /// clone_from_same_mbuf has same mbuf as the original and increments mbuf ref count
+    /// clone_from_same_mbuf replicates the pointers to the mutable headers.
+    /// Both Pdus will point into the same MBuf memory.
+    /// This is inherently unsafe if both Pdus are used to mutate the same headers concurrently.
     #[inline]
-    pub unsafe fn clone(&mut self) -> Pdu {
+    pub unsafe fn clone_from_same_mbuf(&self) -> Pdu {
         Pdu::pdu_from_mbuf(self.mbuf) // owns_mbuf = true via above
     }
-
+/*  removed this because unused and danger of footgun, as reference not increased.
     /// same as clone, but without increment of mbuf ref count
     #[inline]
     /// Unsafe: returns a Pdu that does not own an mbuf reference. The caller must
     /// ensure the mbuf outlives this Pdu and that some other owner eventually frees it.
     pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu {
-        let mut p = Pdu { mbuf: self.mbuf, header_stack: HeaderStack::new(), owns_mbuf: false};
-        p.parse();
-        p
+        Self::pdu_from_mbuf_no_increment(self.mbuf)
     }
-
+*/
     #[inline]
     pub fn add_padding(&mut self, nbytes: usize) -> usize {
         self.increase_payload_size(nbytes)
@@ -256,6 +264,7 @@ impl Pdu {
 
     #[inline]
     fn parse_tcp(&mut self, offset: usize) {
+        debug_assert!(!self.mbuf.is_null());
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut TcpHeader };
         unsafe {
             self.header_stack.push(Header::Tcp(&mut *hdr));
@@ -264,6 +273,7 @@ impl Pdu {
 
     #[inline]
     fn parse_ipv4(&mut self, offset: usize) {
+        debug_assert!(!self.mbuf.is_null());
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut IpHeader };
         unsafe {
             self.header_stack.push(Header::Ip(&mut *hdr));
@@ -290,6 +300,7 @@ impl Pdu {
     #[inline]
     fn parse_arp(&mut self, offset: usize) {
         //TODO generalize for any protocol type, not only Ipv4
+        debug_assert!(!self.mbuf.is_null());
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut ArpIpv4Header };
 
         unsafe {
@@ -303,6 +314,7 @@ impl Pdu {
     /// assumes an Ethernet frame and parses the frame up to Layer 4 if possible
     #[inline]
     pub fn parse(&mut self) -> usize {
+        debug_assert!(!self.mbuf.is_null());
         let l = self.data_len();
         if l < MacHeader::size() {
             return 0;
@@ -342,26 +354,23 @@ impl Pdu {
     /// The reference held by this Packet is nulled out as a result of this code. The callee is responsible for
     /// appropriately freeing this mbuf from here-on out.
     #[inline]
-    pub unsafe fn get_mbuf(mut self) -> *mut MBuf { unsafe {
-        self.get_mbuf_ref()
-    }}
-
-    #[inline]
-    unsafe fn get_mbuf_ref(&mut self) -> *mut MBuf {
+    pub unsafe fn into_mbuf(mut self) -> *mut MBuf {
         let mbuf = self.mbuf;
         self.mbuf = ptr::null_mut();
-        self.owns_mbuf = false; // NEW: prevent Drop from dereferencing
+        self.owns_mbuf = false; // prevent Drop from dereferencing
         mbuf
     }
 
     // this includes ethernet padding if it is present, sta
     #[inline]
     pub fn data_len(&self) -> usize {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).data_len() }
     }
 
     #[inline]
     pub fn get_tailroom(&self) -> usize {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).pkt_tailroom() }
     }
 
@@ -394,12 +403,13 @@ impl Pdu {
         }
     }
 
-    pub unsafe fn replace(&mut self, other: Pdu) -> Pdu {
+    pub fn replace(&mut self, other: Pdu) -> Pdu {
         mem::replace(self, other)
     }
 
     /// Append a header to the header stack of a packet
     pub fn push_header<T: EndOffset>(&mut self, header: &T) -> bool {
+        debug_assert!(!self.mbuf.is_null());
         let size = header.offset();
         let added = unsafe { (*self.mbuf).add_data_end(size) };
         if added < size {
@@ -447,90 +457,114 @@ impl Pdu {
     #[inline]
     pub fn set_tcp_ipv4_checksum_tx_offload(&mut self) {
         unsafe {
+            debug_assert!(!self.mbuf.is_null());
             (*self.mbuf).set_tcp_ipv4_checksum_tx_offload();
         }
     }
 
     #[inline]
     pub fn ipv4_checksum_tx_offload(&self) -> bool {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).ipv4_checksum_tx_offload() }
     }
 
     #[inline]
     pub fn tcp_checksum_tx_offload(&self) -> bool {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).tcp_checksum_tx_offload() }
     }
 
     /// functions for tx offload
     #[inline]
     pub fn l2_len(&self) -> u64 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).l2_len() }
     }
 
     #[inline]
     pub fn set_l2_len(&mut self, val: u64) {
         unsafe {
+            debug_assert!(!self.mbuf.is_null());
             (*self.mbuf).set_l2_len(val);
         }
     }
 
     #[inline]
     pub fn l3_len(&self) -> u64 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).l3_len() }
     }
 
     #[inline]
     pub fn set_l3_len(&mut self, val: u64) {
         unsafe {
+            debug_assert!(!self.mbuf.is_null());
             (*self.mbuf).set_l3_len(val);
         }
     }
 
     #[inline]
     pub fn l4_len(&self) -> u64 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).l4_len() }
     }
 
     #[inline]
     pub fn set_l4_len(&mut self, val: u64) {
         unsafe {
+            debug_assert!(!self.mbuf.is_null());
             (*self.mbuf).set_l4_len(val);
         }
     }
 
     #[inline]
     pub fn ol_flags(&self) -> u64 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).ol_flags }
     }
 
     #[inline]
     pub fn clear_offload_flags(&mut self) {
-        unsafe { (*self.mbuf).clear_offload_flags() }
+        unsafe {
+            debug_assert!(!self.mbuf.is_null());
+            (*self.mbuf).clear_offload_flags()
+        }
     }
 
     #[inline]
     pub fn clear_rx_offload_flags(&mut self) -> u64 {
-        unsafe { (*self.mbuf).clear_rx_offload_flags() }
+        unsafe {
+            debug_assert!(!self.mbuf.is_null());
+            (*self.mbuf).clear_rx_offload_flags()
+        }
     }
     /// returns 0 if no problem found
     #[inline]
     pub fn validate_tx_offload(&self) -> i32 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { validate_tx_offload(self.mbuf) }
     }
 
     #[inline]
     pub fn trim_payload_size(&mut self, trim_by: usize) -> usize {
-        unsafe { (*self.mbuf).remove_data_end(trim_by) }
+        unsafe {
+            debug_assert!(!self.mbuf.is_null());
+            (*self.mbuf).remove_data_end(trim_by)
+        }
     }
 
     #[inline]
     pub fn increase_payload_size(&mut self, increase_by: usize) -> usize {
-        unsafe { (*self.mbuf).add_data_end(increase_by) }
+        unsafe {
+            debug_assert!(!self.mbuf.is_null());
+            (*self.mbuf).add_data_end(increase_by)
+        }
     }
 
     #[inline]
     pub fn add_to_payload_tail(&mut self, size: usize) -> errors::Result<()> {
         unsafe {
+            debug_assert!(!self.mbuf.is_null());
             let added = (*self.mbuf).add_data_end(size);
             if added >= size {
                 Ok(())
@@ -645,13 +679,9 @@ impl Pdu {
 
     #[inline]
     pub fn port_id(&self) -> u16 {
+        debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).port }
     }
-}
-
-#[inline]
-fn reference_mbuf(mbuf: *mut MBuf) {
-    unsafe { (*mbuf).reference() };
 }
 
 #[inline]
