@@ -24,7 +24,7 @@ nix = { version = ">=0.30.1", features =["event"] }
 toml = ">=0.6"
 # Hack for SHM
 uuid= { version = ">=0.7", features=["v4"] }
-eui48 = { git= "https://github.com/readysettech/eui48.git", version= ">=1.1", features=["serde"] , default-features= false}
+macaddr = { version = ">=1.0", features = ["serde"] }
 separator =  ">= 0.3"
 serde_derive = ">=1.0"
 serde = ">=1.0"

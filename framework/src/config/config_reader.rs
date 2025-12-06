@@ -2,7 +2,7 @@ use super::super::interface::{FlowSteeringMode, NetSpec};
 use super::{DriverType, NetbricksConfiguration, PortConfiguration};
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
-use eui48::MacAddress;
+use macaddr::MacAddr6 as MacAddress;
 use ipnet::Ipv4Net;
 use crate::native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
 use std::clone::Clone;

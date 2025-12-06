@@ -1,5 +1,4 @@
 extern crate e2d2;
-extern crate eui48;
 extern crate fnv;
 extern crate getopts;
 extern crate rand;

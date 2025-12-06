@@ -5,7 +5,7 @@ use crate::allocators::*;
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
 use crate::config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
-use eui48::MacAddress;
+use macaddr::MacAddr6 as MacAddress;
 use crate::interface::port::fdir::FlowSteeringMode;
 use crate::interface::PortType::Physical;
 use ipnet::Ipv4Net;
@@ -1263,6 +1263,6 @@ impl PmdPort {
         unsafe {
             rte_eth_macaddr_get(self.port, &mut address);
         }
-        MacAddress::new(address.addr_bytes)
+        MacAddress::from(address.addr_bytes)
     }
 }

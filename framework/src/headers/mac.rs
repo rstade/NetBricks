@@ -1,5 +1,5 @@
 use super::{EndOffset, HeaderKind};
-use eui48::MacAddress;
+use macaddr::MacAddr6 as MacAddress;
 use std::default::Default;
 use std::fmt;
 

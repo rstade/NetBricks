@@ -1,4 +1,4 @@
-use eui48::MacAddress;
+use macaddr::MacAddr6 as MacAddress;
 use std::fmt;
 use std::net::Ipv4Addr;
 

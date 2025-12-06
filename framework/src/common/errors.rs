@@ -156,8 +156,8 @@ impl From<toml::de::Error> for ErrorKind {
     }
 }
 
-impl From<eui48::ParseError> for ErrorKind {
-    fn from(err: eui48::ParseError) -> Self {
+impl From<macaddr::ParseError> for ErrorKind {
+    fn from(err: macaddr::ParseError) -> Self {
         ErrorKind::ConfigParseError(format!("{}", err))
     }
 }
