@@ -10,11 +10,10 @@ use std::fmt;
 use std::io;
 use std::net::Ipv4Addr;
 use std::os::raw::{c_char, c_void};
-use std::ptr;
 use std::ptr::null_mut;
 use std::str::Utf8Error;
 
-pub enum RteKni {}
+//pub enum RteKni {}
 
 /*
  * A packet can be identified by hardware as different flow types. Different
@@ -137,42 +136,6 @@ pub enum RteFilterOp {
     RteEthFilterOpMax,
 }
 
-pub const KNI_MAX_KTHREAD: usize = 32;
-
-#[repr(C)]
-pub struct KniPortParams {
-    pub associated_dpdk_port_id: u16,
-    // Port ID
-    pub lcore_rx: u32,
-    // lcore ID for RX
-    pub lcore_tx: u32,
-    // lcore ID for TX
-    pub nb_lcore_k: u32,
-    // Number of lcores for KNI multi kernel threads
-    pub nb_kni: u32,
-    // Number of KNI devices to be created
-    pub lcore_k: [u32; KNI_MAX_KTHREAD],
-    // lcore ID list for kthreads
-    pub kni: [*mut RteKni; KNI_MAX_KTHREAD], // KNI context pointers
-}
-
-impl KniPortParams {
-    pub fn new(port_id: u16, lcore_rx: u32, lcore_tx: u32, lcore_k: &Vec<i32>) -> KniPortParams {
-        let mut params = KniPortParams {
-            associated_dpdk_port_id: port_id, // Port ID
-            lcore_rx,                         // lcore ID for RX
-            lcore_tx,                         // lcore ID for TX
-            nb_lcore_k: lcore_k.len() as u32, // Number of lcores for KNI multi kernel threads
-            nb_kni: 1,
-            lcore_k: [0u32; KNI_MAX_KTHREAD],        // lcore ID list for kthreads
-            kni: [ptr::null_mut(); KNI_MAX_KTHREAD], // KNI context pointers
-        };
-        for i in 0..lcore_k.len() {
-            params.lcore_k[i] = lcore_k[i] as u32;
-        }
-        params
-    }
-}
 
 #[repr(C)]
 pub struct RteFlowError {
@@ -190,7 +153,7 @@ impl RteFlowError {
         }
     }
 }
-
+/*
 pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> { unsafe {
     let kni_if_raw: *const c_char = rte_kni_get_name(p_kni);
     let slice = CStr::from_ptr(kni_if_raw).to_str();
@@ -199,7 +162,7 @@ pub unsafe fn kni_get_name(p_kni: *const RteKni) -> Option<String> { unsafe {
         Err(_) => None,
     }
 } }
-
+*/
 pub fn eth_dev_get_name_by_port(port_id: u16) -> Option<String> {
     let mut name = vec![' ' as u8; RTE_ETH_NAME_MAX_LEN as usize];
     let c_ptr = name.as_mut_ptr() as *mut c_char;
@@ -350,25 +313,6 @@ pub struct RteEthFdirFlowExt {
     pub is_vf: u8,   // 1 for VF, 0 for port dev
     pub dst_id: u16, // VF ID, available when is_vf is 1
 }
-
-/*
- * An union contains the inputs for all types of flow
- * Items in flows need to be in big endian
-
-union rte_eth_fdir_flow {
-    struct rte_eth_l2_flow     l2_flow;
-    struct rte_eth_udpv4_flow  udp4_flow;
-    struct rte_eth_tcpv4_flow  tcp4_flow;
-    struct rte_eth_sctpv4_flow sctp4_flow;
-    struct rte_eth_ipv4_flow   ip4_flow;
-    struct rte_eth_udpv6_flow  udp6_flow;
-    struct rte_eth_tcpv6_flow  tcp6_flow;
-    struct rte_eth_sctpv6_flow sctp6_flow;  // largest struct: 43 bytes
-    struct rte_eth_ipv6_flow   ipv6_flow;
-    struct rte_eth_mac_vlan_flow mac_vlan_flow;
-    struct rte_eth_tunnel_flow   tunnel_flow;
-};
-*/
 
 /**
  * A structure used to define the input for a flow director filter entry
@@ -868,7 +812,7 @@ unsafe extern "C" {
     pub fn ipv4_cksum(payload: *const u8) -> u16;
     pub fn ipv4_phdr_chksum(ipv4_hdr: *const IpHeader, ol_flags: u64) -> u16;
     pub fn validate_tx_offload(m: *const rte_mbuf) -> i32;
-
+ /*
     //usually called already by rte_eal_init when e.g. --vdev netkni0:
     pub fn rte_kni_init(max_kni_ifaces: u32);
     pub fn kni_alloc(associated_dpdk_port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
@@ -878,7 +822,7 @@ unsafe extern "C" {
     pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
     pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
     pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
-
+*/
     pub fn add_tcp_flow(
         port_id: u16,
         rx_q: u16,

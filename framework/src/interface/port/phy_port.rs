@@ -17,8 +17,8 @@ use crate::native::zcsi::rte_ethdev_api::{
 use crate::native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use crate::native::zcsi::{
     add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring,
-    init_ovs_eth_ring, init_pmd_port, kni_alloc, kni_get_name, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
-    rte_kni_rx_burst, rte_kni_tx_burst, KniPortParams, MBuf, RteFdirConf, RteFlowError, RteKni,
+    init_ovs_eth_ring, init_pmd_port, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
+    MBuf, RteFdirConf, RteFlowError,
 };
 use regex::Regex;
 use std::arch::x86_64::_rdtsc;
@@ -29,28 +29,13 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
-use std::ptr::{self, NonNull};
+use std::ptr::{self};
 use std::rc::Rc;
 use std::string::ToString;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use crate::utils::FiveTupleV4;
 
-#[derive(Clone, Copy)]
-struct KniPtr(NonNull<RteKni>);
-
-impl KniPtr {
-    #[inline]
-    fn as_ptr(&self) -> *mut RteKni {
-        self.0.as_ptr()
-    }
-}
-
-// Safety: KNI handle is an opaque pointer managed by DPDK; sharing the pointer across threads
-// does not change aliasing or ownership semantics beyond what the original code did with Unique.
-// The underlying synchronization/usage is enforced by higher-level logic.
-unsafe impl Send for KniPtr {}
-unsafe impl Sync for KniPtr {}
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -95,9 +80,6 @@ pub struct PmdPort {
     port: u16,
     // id of an associated port, if any
     associated_dpdk_port_id: Option<u16>,
-    // must use a wrapper to mark the opaque pointer as Send/Sync
-    kni: Option<KniPtr>,
-    // used for kni interfaces
     linux_if: Option<String>,
     rxqs: u16,
     txqs: u16,
@@ -132,9 +114,6 @@ impl Default for PmdPort {
             csumoffload: false,
             port: 0,
             associated_dpdk_port_id: None,
-            //must use Unique because raw ptr does not implement Send
-            kni: None,
-            // used for kni interfaces
             linux_if: None,
             rxqs: 1,
             txqs: 1,
@@ -173,7 +152,6 @@ impl PartialEq for CacheAligned<PortQueue> {
         self.port_id == other.port_id
             && self.txq == other.txq
             && self.rxq == other.rxq
-            && self.port.is_native_kni() == other.port.is_native_kni()
     }
 }
 
@@ -184,7 +162,6 @@ impl Hash for CacheAligned<PortQueue> {
         self.port_id.hash(state);
         self.txq.hash(state);
         self.rxq.hash(state);
-        self.port.is_native_kni().hash(state);
     }
 }
 
@@ -280,9 +257,7 @@ impl fmt::Display for PortQueue {
 impl PortQueue {
     #[inline]
     fn try_send(&mut self, pkts: &mut [*mut MBuf], to_send: u32) -> u32 {
-        let sent = if self.port.is_native_kni() {
-            unsafe { rte_kni_tx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_send) }
-        } else {
+        let sent = {
             if self.csum_offload() {
                 let nb_prep = unsafe { eth_tx_prepare(self.port_id, self.txq, pkts.as_mut_ptr(), to_send as u16) };
                 assert_eq!(nb_prep, to_send as u16);
@@ -304,9 +279,7 @@ impl PortQueue {
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
         let start = unsafe { _rdtsc() };
         unsafe {
-            let recv = if self.port.is_native_kni() {
-                rte_kni_rx_burst(self.port.kni.unwrap().as_ptr(), pkts.as_mut_ptr(), to_recv as u32)
-            } else {
+            let recv = {
                 eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
             };
             //debug!("received { } packets", recv);
@@ -657,11 +630,6 @@ impl PmdPort {
     }
 
     #[inline]
-    pub fn is_native_kni(&self) -> bool {
-        self.kni.is_some()
-    }
-
-    #[inline]
     pub fn is_virtio(&self) -> bool {
         *self.port_type() == PortType::Virtio
     }
@@ -669,11 +637,6 @@ impl PmdPort {
     #[inline]
     pub fn is_physical(&self) -> bool {
         *self.port_type() == PortType::Physical
-    }
-
-    #[inline]
-    pub fn get_rte_kni(&self) -> *mut RteKni {
-        self.kni.unwrap().as_ptr()
     }
 
     pub fn new_queue_pair(port: &Arc<PmdPort>, rxq: u16, txq: u16) -> errors::Result<CacheAligned<PortQueue>> {
@@ -966,7 +929,6 @@ impl PmdPort {
                     kni_name: kni,
                     port_type,
                     port,
-                    kni: None,
                     linux_if,
                     rxqs: actual_rxqs as u16,
                     txqs: actual_txqs as u16,
@@ -1035,42 +997,6 @@ impl PmdPort {
                 }
             }
             _ => Err(ErrorKind::BadVdev(String::from(name)).into()),
-        }
-    }
-
-    fn new_kni_port(
-        name: &str,
-        kni_port_params: Box<KniPortParams>,
-        rx_cores: &[i32],
-        tx_cores: &[i32],
-        net_spec: Option<NetSpec>,
-    ) -> errors::Result<Arc<PmdPort>> {
-        let associated_dpdk_port_id = kni_port_params.associated_dpdk_port_id;
-        let p_kni_port_params: *mut KniPortParams = Box::into_raw(kni_port_params);
-        unsafe {
-            // This call returns a pointer to an opaque C struct
-            let p_kni = kni_alloc(associated_dpdk_port_id, p_kni_port_params);
-            if !p_kni.is_null() {
-                Ok(Arc::new(PmdPort {
-                    name: name.to_string(),
-                    kni_name: None, // kni ports do not have an associated kni
-                    port_type: PortType::Kni,
-                    port: associated_dpdk_port_id,
-                    kni: NonNull::new(p_kni).map(KniPtr),
-                    linux_if: kni_get_name(p_kni),
-                    rx_cores: Some(rx_cores.to_vec()),
-                    tx_cores: Some(tx_cores.to_vec()),
-                    stats_rx: (0..rx_cores.len()).map(|_| Arc::new(PortStats::new())).collect(),
-                    stats_tx: (0..tx_cores.len()).map(|_| Arc::new(PortStats::new())).collect(),
-                    rxqs: rx_cores.len() as u16,
-                    txqs: tx_cores.len() as u16,
-                    net_spec,
-                    associated_dpdk_port_id: Some(associated_dpdk_port_id),
-                    ..Default::default()
-                }))
-            } else {
-                Err(ErrorKind::FailedToInitializeKni(name.to_string()).into())
-            }
         }
     }
 
@@ -1260,29 +1186,6 @@ impl PmdPort {
                     port_config.net_spec.clone(),
                     associated_port.map_or(None, |p| Some(p.port_id())),
                 )
-            }
-            "kni" => {
-                if associated_port.is_none() {
-                    warn!("kni port {} has no associated dpdk port", name);
-                    Err(ErrorKind::FailedToInitializeKni(name.to_string()).into())
-                } else {
-                    let port_id = associated_port.unwrap().port_id();
-                    let rx_cores = associated_port.map_or(rx_cores, |p| &p.rx_cores.as_ref().unwrap()[..]);
-                    let tx_cores = associated_port.map_or(tx_cores, |p| &p.tx_cores.as_ref().unwrap()[..]);
-
-                    PmdPort::new_kni_port(
-                        name,
-                        Box::new(KniPortParams::new(
-                            port_id,
-                            rx_cores[0] as u32,
-                            tx_cores[0] as u32,
-                            &port_config.k_cores,
-                        )),
-                        rx_cores,
-                        tx_cores,
-                        port_config.net_spec.clone(),
-                    )
-                }
             }
             "null" => PmdPort::null_port(),
             _ => PmdPort::new_dpdk_port(

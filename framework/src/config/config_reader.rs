@@ -452,7 +452,22 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
             return Err(ErrorKind::ConfigurationError(String::from("Ports is not an array")).into());
         }
     };
-
+    // Warn if deprecated 'vdev' configuration is present; it will be ignored.
+    if let Some(v) = toml.get("vdev") {
+        match v {
+            Value::Array(arr) if !arr.is_empty() => {
+                warn!(
+                    "Deprecated config: 'vdev' entries are no longer supported and will be ignored. Please remove 'vdev' from your configuration."
+                );
+            }
+            _ => {
+                warn!(
+                    "Deprecated config: 'vdev' key is no longer supported and will be ignored. Please remove it from your configuration."
+                );
+            }
+        }
+    }
+/* we no longer need vdevs as we removed native kni support
     let vdevs = match toml.get("vdev") {
         Some(&Value::Array(ref vdevs)) => {
             let mut vouts = Vec::with_capacity(vdevs.len());
@@ -467,7 +482,9 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
             return Err(ErrorKind::ConfigurationError(String::from("Could not parse vdev")).into());
         }
     };
-
+*/
+    // supply an empty vdevs list 
+    let vdevs: Vec<String> = Vec::with_capacity(0);
     Ok(NetbricksConfiguration {
         name,
         primary_core: master_lcore,
