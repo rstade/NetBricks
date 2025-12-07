@@ -159,20 +159,38 @@ impl NetBricksContext {
     /// Stop all schedulers, safely shutting down the system.
     pub fn stop(&mut self) {
         for (core, channel) in &self.scheduler_channels {
-            channel.send(SchedulerCommand::Shutdown).unwrap();
+            if let Err(e) = channel.send(SchedulerCommand::Shutdown) {
+                warn!("Failed to send shutdown for core {}: {}", core, e);
+                continue;
+            }
             println!("Issued shutdown for core {}", core);
         }
         for (core, join_handle) in self.scheduler_handles.drain() {
-            join_handle.join().unwrap();
-            println!("Core {} has shutdown", core);
+            match join_handle.join() {
+                Ok(_) => {
+                    println!("Core {} has shutdown", core);
+                }
+                Err(_) => {
+                    // A panic occurred in the scheduler thread; log and continue shutdown instead of panicking here.
+                    warn!("Failed to join scheduler thread for core {}: thread panicked", core);
+                    println!("Core {} has shutdown (with panic)", core);
+                }
+            }
         }
         println!("System shutdown");
     }
 
     pub fn wait(&mut self) {
         for (core, join_handle) in self.scheduler_handles.drain() {
-            join_handle.join().unwrap();
-            println!("Core {} has shutdown", core);
+            match join_handle.join() {
+                Ok(_) => {
+                    println!("Core {} has shutdown", core);
+                }
+                Err(_) => {
+                    warn!("Failed to join scheduler thread for core {}: thread panicked", core);
+                    println!("Core {} has shutdown (with panic)", core);
+                }
+            }
         }
         println!("System shutdown");
     }
