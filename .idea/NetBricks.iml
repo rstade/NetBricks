@@ -70,6 +70,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/test/tcp_check/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test/packet_generation_tokio/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/framework/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/test/acl-fw/target" />

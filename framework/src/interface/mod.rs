@@ -3,6 +3,8 @@ pub use self::port::*;
 pub mod dpdk;
 mod pdu;
 mod port;
+mod pciaddress;
+
 use crate::common::errors;
 use crate::native::zcsi::MBuf;
 

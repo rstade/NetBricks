@@ -34,6 +34,9 @@ use std::rc::Rc;
 use std::string::ToString;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::process::{Command};
+
+use crate::interface::pciaddress::{pci_to_interface, PciAddress, PciError};
 use crate::utils::FiveTupleV4;
 
 
@@ -520,6 +523,91 @@ impl fmt::Display for PortQueueTxBuffered {
     }
 }
 
+
+fn run_command(cmd: &str, args: &[&str]) -> Result<(), String> {
+    println!("  Running: {} {}", cmd, args.join(" "));
+
+    let output = Command::new(cmd)
+        .args(args)
+        .output()
+        .map_err(|e| format!("Failed to execute command: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Command failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+fn interface_exists(iface: &str) -> bool {
+    Command::new("ip")
+        .args(&["link", "show", iface])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+
+fn bring_interface_down(iface: &str) -> Result<(), String> {
+    if interface_exists(iface) {
+        println!("📉 Bringing interface {} down...", iface);
+        run_command("ip", &["link", "set", iface, "down"])?;
+        println!("  ✓ Interface {} is down", iface);
+    } else {
+        println!("  ℹ Interface {} not found; skipping 'ip link set down'", iface);
+    }
+    Ok(())
+}
+
+fn load_vfio_pci() -> Result<(), String> {
+    println!("🔧 Loading vfio-pci module...");
+    run_command("modprobe", &["vfio_pci"])?;
+    println!("  ✓ vfio-pci module loaded");
+    Ok(())
+}
+
+fn bind_to_vfio_pci(pci_addr: &str) -> Result<(), String> {
+    println!("🔗 Binding {} to vfio-pci...", pci_addr);
+    run_command("dpdk-devbind.py", &["--bind", "vfio-pci", pci_addr])?;
+    println!("  ✓ Device {} bound to vfio-pci", pci_addr);
+    Ok(())
+}
+
+pub fn bind_device_to_dpdk(pci_addr: &str) -> Result<(), String> {
+    println!("\n🚀 DPDK Device Binding Tool");
+    println!("================================\n");
+    println!("PCI Address: {}", pci_addr);
+
+    // Step 1: Find interface name
+    print!("🔍 Looking up interface name... ");
+    match pci_to_interface(pci_addr) {
+        Ok(iface) => {
+            println!("found: {}", iface);
+
+            // Step 2: Bring interface down
+            bring_interface_down(&iface)?;
+        }
+        Err(PciError::NotFound) => {
+            println!("not found (device may already be bound to DPDK)");
+        }
+        Err(e) => {
+            return Err(format!("Failed to lookup interface: {}", e));
+        }
+    }
+
+    // Step 3: Load vfio-pci module
+    load_vfio_pci()?;
+
+    // Step 4: Bind to vfio-pci
+    bind_to_vfio_pci(pci_addr)?;
+
+    println!("\n✅ Successfully bound {} to DPDK (vfio-pci)\n", pci_addr);
+    Ok(())
+}
+
+
+
 impl PmdPort {
     #[inline]
     /// Determine the number of ports in a system.
@@ -859,6 +947,7 @@ impl PmdPort {
         println!("");
     }
 
+
     /// Create a PMD port with a given number of RX and TXQs.
     fn init_dpdk_port(
         name: &str,
@@ -1019,6 +1108,9 @@ impl PmdPort {
         net_spec: Option<NetSpec>,
         associated_dpdk_port_id: Option<u16>,
     ) -> errors::Result<Arc<PmdPort>> {
+        if PciAddress::parse(spec).is_ok() {  // is a physical PCI port
+            bind_device_to_dpdk(spec);
+        }
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         debug!("attach_pmd_device, port = {:?}", cannonical_spec);
         let mut ports: Vec<u16> = Vec::with_capacity(16);
