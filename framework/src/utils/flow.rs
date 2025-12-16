@@ -1,3 +1,4 @@
+use crate::native::zcsi::{crc_hash_native, ipv4_cksum};
 use byteorder::{BigEndian, ByteOrder};
 use fnv::FnvHasher;
 use std::fmt;
@@ -5,7 +6,6 @@ use std::hash::Hasher;
 use std::mem;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::slice;
-use crate::native::zcsi::{crc_hash_native, ipv4_cksum};
 
 // TODO: Currently just deriving Hash, but figure out if this is a performance problem. By default, Rust uses SipHash
 // which is supposed to have reasonable performance characteristics.

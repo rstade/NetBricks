@@ -1,7 +1,7 @@
 use fnv::FnvHasher;
 
-use std::collections::hash_map::Iter;
 use std::collections::HashMap;
+use std::collections::hash_map::Iter;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
 

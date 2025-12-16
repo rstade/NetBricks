@@ -1,10 +1,10 @@
-use std::collections::hash_map::Iter;
+use crate::utils::FiveTupleV4;
 use std::collections::HashMap;
+use std::collections::hash_map::Iter;
 use std::hash::BuildHasherDefault;
 use std::ops::AddAssign;
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
+use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use twox_hash::XxHash32;
-use crate::utils::FiveTupleV4;
 
 type XxHasher = BuildHasherDefault<XxHash32>;
 const VEC_SIZE: usize = 1 << 24;

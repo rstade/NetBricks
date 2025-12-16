@@ -4,22 +4,22 @@ use super::PortStats;
 use crate::allocators::*;
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
-use crate::config::{DriverType, PortConfiguration, NUM_RXD, NUM_TXD};
-use macaddr::MacAddr6 as MacAddress;
-use crate::interface::port::fdir::FlowSteeringMode;
+use crate::config::{DriverType, NUM_RXD, NUM_TXD, PortConfiguration};
 use crate::interface::PortType::Physical;
-use ipnet::Ipv4Net;
-use libc::if_indextoname;
+use crate::interface::port::fdir::FlowSteeringMode;
+use crate::native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use crate::native::zcsi::rte_ethdev_api::{
     rte_eth_dev_info, rte_eth_dev_info_get, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name,
     rte_eth_macaddr_get, rte_eth_rx_mq_mode_ETH_MQ_RX_NONE, rte_eth_rx_mq_mode_ETH_MQ_RX_RSS, rte_ether_addr, rte_flow,
 };
-use crate::native::zcsi::rte_ethdev_api::{RTE_ETH_FLOW_MAX, RTE_ETH_FLOW_UNKNOWN};
 use crate::native::zcsi::{
-    add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring,
-    init_ovs_eth_ring, init_pmd_port, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name,
-    MBuf, RteFdirConf, RteFlowError,
+    MBuf, RteFdirConf, RteFlowError, add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst,
+    eth_tx_prepare, init_bess_eth_ring, init_ovs_eth_ring, init_pmd_port, max_rxqs, max_txqs, num_pmd_ports,
+    rss_flow_name,
 };
+use ipnet::Ipv4Net;
+use libc::if_indextoname;
+use macaddr::MacAddr6 as MacAddress;
 use regex::Regex;
 use std::arch::x86_64::_rdtsc;
 use std::cell::RefCell;
@@ -29,16 +29,15 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::net::Ipv4Addr;
+use std::process::Command;
 use std::ptr::{self};
 use std::rc::Rc;
 use std::string::ToString;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::process::{Command};
+use std::sync::atomic::Ordering;
 
-use crate::interface::pciaddress::{pci_to_interface, PciAddress, PciError};
+use crate::interface::pciaddress::{PciAddress, PciError, pci_to_interface};
 use crate::utils::FiveTupleV4;
-
 
 /// A DPDK based PMD port. Send and receive should not be called directly on this structure but on the port queue
 /// structure instead.
@@ -152,9 +151,7 @@ unsafe impl Send for PortQueue {}
 
 impl PartialEq for CacheAligned<PortQueue> {
     fn eq(&self, other: &CacheAligned<PortQueue>) -> bool {
-        self.port_id == other.port_id
-            && self.txq == other.txq
-            && self.rxq == other.rxq
+        self.port_id == other.port_id && self.txq == other.txq && self.rxq == other.rxq
     }
 }
 
@@ -282,9 +279,7 @@ impl PortQueue {
     fn recv_queue(&self, pkts: &mut [*mut MBuf], to_recv: u16) -> errors::Result<u32> {
         let start = unsafe { _rdtsc() };
         unsafe {
-            let recv = {
-                eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv)
-            };
+            let recv = { eth_rx_burst(self.port_id, self.rxq, pkts.as_mut_ptr(), to_recv) };
             //debug!("received { } packets", recv);
             let update = self.stats_rx.stats.load(Ordering::Relaxed) + recv as usize;
             self.stats_rx.stats.store(update, Ordering::Relaxed);
@@ -523,7 +518,6 @@ impl fmt::Display for PortQueueTxBuffered {
     }
 }
 
-
 fn run_command(cmd: &str, args: &[&str]) -> Result<(), String> {
     println!("  Running: {} {}", cmd, args.join(" "));
 
@@ -547,7 +541,6 @@ fn interface_exists(iface: &str) -> bool {
         .map(|output| output.status.success())
         .unwrap_or(false)
 }
-
 
 fn bring_interface_down(iface: &str) -> Result<(), String> {
     if interface_exists(iface) {
@@ -605,8 +598,6 @@ pub fn bind_device_to_dpdk(pci_addr: &str) -> Result<(), String> {
     println!("\n✅ Successfully bound {} to DPDK (vfio-pci)\n", pci_addr);
     Ok(())
 }
-
-
 
 impl PmdPort {
     #[inline]
@@ -947,7 +938,6 @@ impl PmdPort {
         println!("");
     }
 
-
     /// Create a PMD port with a given number of RX and TXQs.
     fn init_dpdk_port(
         name: &str,
@@ -1108,8 +1098,9 @@ impl PmdPort {
         net_spec: Option<NetSpec>,
         associated_dpdk_port_id: Option<u16>,
     ) -> errors::Result<Arc<PmdPort>> {
-        if PciAddress::parse(spec).is_ok() {  // is a physical PCI port
-            bind_device_to_dpdk(spec);
+        if PciAddress::parse(spec).is_ok() {
+            // is a physical PCI port
+            let _= bind_device_to_dpdk(spec); //consume the Result, to avoid warning
         }
         let cannonical_spec = PmdPort::cannonicalize_pci(spec);
         debug!("attach_pmd_device, port = {:?}", cannonical_spec);

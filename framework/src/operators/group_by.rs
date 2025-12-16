@@ -1,7 +1,7 @@
-use super::act::Act;
-use super::iterator::*;
 use super::Batch;
 use super::ReceiveBatch;
+use super::act::Act;
+use super::iterator::*;
 use crate::interface::Pdu;
 use crate::queues::*;
 use crate::scheduler::{Executable, Runnable, Scheduler};

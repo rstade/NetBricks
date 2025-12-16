@@ -1,13 +1,13 @@
 use crate::allocators::CacheAligned;
-use crate::common::{errors, ErrorKind};
+use crate::common::{ErrorKind, errors};
 use crate::config::NetbricksConfiguration;
 use crate::interface::dpdk::{init_system, init_thread};
 use crate::interface::{PmdPort, PortQueue, VirtualPort, VirtualQueue};
 use crate::scheduler::*;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, SyncSender};
 use std::sync::Arc;
+use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::thread::{self, JoinHandle, Thread};
 
 type AlignedPortQueue = CacheAligned<PortQueue>;
@@ -286,7 +286,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
                             "Port {} could not be initialized {:?}",
                             port.name, e
                         ))
-                        .into())
+                        .into());
                     }
                 },
             }

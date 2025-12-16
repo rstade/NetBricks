@@ -1,7 +1,7 @@
-use getopts;
 use self::getopts::{Matches, Options};
+use getopts;
 
-use super::{read_configuration, NetbricksConfiguration, PortConfiguration};
+use super::{NetbricksConfiguration, PortConfiguration, read_configuration};
 //use common::print_error;
 use std::collections::HashMap;
 

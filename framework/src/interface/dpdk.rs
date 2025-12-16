@@ -1,4 +1,4 @@
-use crate::config::{NetbricksConfiguration, DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE};
+use crate::config::{DEFAULT_CACHE_SIZE, DEFAULT_MBUF_CNT, DEFAULT_POOL_SIZE, NetbricksConfiguration};
 use crate::native::libnuma;
 use crate::native::zcsi;
 use std::cell::Cell;

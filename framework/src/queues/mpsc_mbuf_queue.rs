@@ -2,13 +2,13 @@ use crate::common::*;
 use crate::interface::{PacketRx, Pdu};
 use crate::native::zcsi::MBuf;
 use crate::operators::ReceiveBatch;
+use crate::utils::round_to_power_of_2;
 use std::arch::x86_64::_mm_pause;
 use std::clone::Clone;
 use std::cmp::min;
 use std::default::Default;
-use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 use std::sync::Arc;
-use crate::utils::round_to_power_of_2;
+use std::sync::atomic::{AtomicPtr, AtomicUsize, Ordering};
 
 #[derive(Default)]
 struct QueueMetadata {

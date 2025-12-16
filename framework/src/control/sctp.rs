@@ -1,4 +1,4 @@
-use super::{Available, IOScheduler, PollHandle, PollScheduler, Token, HUP, READ, WRITE};
+use super::{Available, HUP, IOScheduler, PollHandle, PollScheduler, READ, Token, WRITE};
 use fnv::FnvHasher;
 use scheduler::Executable;
 /// SCTP Connections.

@@ -6,6 +6,9 @@
 *.user
 *.sln.docstates
 
+# JetBrains
+*.iml
+
 # Build results
 Cargo.lock
 /target/

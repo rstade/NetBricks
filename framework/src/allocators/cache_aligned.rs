@@ -1,4 +1,4 @@
-use std::alloc::{self, alloc_zeroed, Layout};
+use std::alloc::{self, Layout, alloc_zeroed};
 use std::fmt;
 use std::mem::{align_of, size_of};
 use std::ops::{Deref, DerefMut};
@@ -13,14 +13,16 @@ fn cache_aligned_layout_for<T>() -> Layout {
     Layout::from_size_align(size_of::<T>(), align).expect("invalid layout")
 }
 
-unsafe fn allocate_cache_aligned<T>() -> *mut T { unsafe {
-    let layout = cache_aligned_layout_for::<T>();
-    let ptr = alloc_zeroed(layout) as *mut T;
-    if ptr.is_null() {
-        alloc::handle_alloc_error(layout);
+unsafe fn allocate_cache_aligned<T>() -> *mut T {
+    unsafe {
+        let layout = cache_aligned_layout_for::<T>();
+        let ptr = alloc_zeroed(layout) as *mut T;
+        if ptr.is_null() {
+            alloc::handle_alloc_error(layout);
+        }
+        ptr
     }
-    ptr
-} }
+}
 
 #[derive(Debug)]
 pub struct CacheAligned<T: Sized> {
@@ -40,10 +42,7 @@ impl<T: Sized> Drop for CacheAligned<T> {
             // Drop the contained value first
             ptr::drop_in_place(self.ptr.as_ptr());
             // Then deallocate the memory with the same layout
-            alloc::dealloc(
-                self.ptr.as_ptr() as *mut u8,
-                cache_aligned_layout_for::<T>(),
-            );
+            alloc::dealloc(self.ptr.as_ptr() as *mut u8, cache_aligned_layout_for::<T>());
         }
     }
 }

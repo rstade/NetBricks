@@ -1,7 +1,7 @@
 use super::super::super::headers::IpHeader;
 use crate::native::zcsi::rte_ethdev_api::{
-    rte_eth_dev_get_name_by_port, rte_eth_rx_mq_mode, rte_eth_stats, rte_eth_xstat_name, rte_flow, RTE_ETH_FLOW_MAX,
-    RTE_ETH_NAME_MAX_LEN,
+    RTE_ETH_FLOW_MAX, RTE_ETH_NAME_MAX_LEN, rte_eth_dev_get_name_by_port, rte_eth_rx_mq_mode, rte_eth_stats,
+    rte_eth_xstat_name, rte_flow,
 };
 use crate::native::zcsi::rte_mbuf_api::rte_mbuf;
 use std::convert;
@@ -135,7 +135,6 @@ pub enum RteFilterOp {
     RteEthFilterStats = 8,
     RteEthFilterOpMax,
 }
-
 
 #[repr(C)]
 pub struct RteFlowError {
@@ -812,17 +811,17 @@ unsafe extern "C" {
     pub fn ipv4_cksum(payload: *const u8) -> u16;
     pub fn ipv4_phdr_chksum(ipv4_hdr: *const IpHeader, ol_flags: u64) -> u16;
     pub fn validate_tx_offload(m: *const rte_mbuf) -> i32;
- /*
-    //usually called already by rte_eal_init when e.g. --vdev netkni0:
-    pub fn rte_kni_init(max_kni_ifaces: u32);
-    pub fn kni_alloc(associated_dpdk_port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
-    pub fn rte_kni_release(kni: *mut RteKni) -> i32;
-    pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32;
-    pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
-    pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
-    pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
-    pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
-*/
+    /*
+        //usually called already by rte_eal_init when e.g. --vdev netkni0:
+        pub fn rte_kni_init(max_kni_ifaces: u32);
+        pub fn kni_alloc(associated_dpdk_port_id: u16, kni_port_params: *mut KniPortParams) -> *mut RteKni;
+        pub fn rte_kni_release(kni: *mut RteKni) -> i32;
+        pub fn rte_kni_handle_request(kni: *mut RteKni) -> i32;
+        pub fn rte_kni_rx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
+        pub fn rte_kni_tx_burst(kni: *mut RteKni, pkts: *mut *mut rte_mbuf, len: u32) -> u32;
+        pub fn rte_kni_get_name(kni: *const RteKni) -> *const c_char;
+        pub fn rte_kni_update_link(kni: *mut RteKni, linkup: u32) -> i32;
+    */
     pub fn add_tcp_flow(
         port_id: u16,
         rx_q: u16,

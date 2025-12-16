@@ -1,7 +1,7 @@
+use super::Batch;
 use super::act::Act;
 use super::iterator::*;
 use super::packet_batch::PacketBatch;
-use super::Batch;
 use crate::common::*;
 use crate::interface::{PacketRx, PacketTx, Pdu};
 
@@ -50,11 +50,7 @@ impl<T: PacketRx> Batch for ReceiveBatch<T> {
     fn queued(&self) -> usize {
         if self.urgent {
             // we implement priority by faking the queue length
-            if self.packet_rx.queued() > 0 {
-                10000
-            } else {
-                0
-            }
+            if self.packet_rx.queued() > 0 { 10000 } else { 0 }
         } else {
             self.packet_rx.queued()
         }

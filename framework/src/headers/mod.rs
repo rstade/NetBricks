@@ -71,50 +71,80 @@ impl HeaderPtr {
     // Accessors create temporary borrows on demand (no persistent &mut stored)
     #[inline]
     pub fn as_mac_mut(&mut self) -> Option<&mut MacHeader> {
-        match self { HeaderPtr::Mac(p) => Some(unsafe { &mut **p }), _ => None }
+        match self {
+            HeaderPtr::Mac(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
     }
     #[inline]
     pub fn as_mac(&self) -> Option<&MacHeader> {
-        match self { HeaderPtr::Mac(p) => Some(unsafe { &**p }), _ => None }
+        match self {
+            HeaderPtr::Mac(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
     }
     // ArpIpv4 accessors
     #[inline]
     pub fn as_arpipv4_mut(&mut self) -> Option<&mut ArpIpv4Header> {
-        match self { HeaderPtr::ArpIpv4(p) => Some(unsafe { &mut **p }), _ => None }
+        match self {
+            HeaderPtr::ArpIpv4(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
     }
     #[inline]
     pub fn as_arpipv4(&self) -> Option<&ArpIpv4Header> {
-        match self { HeaderPtr::ArpIpv4(p) => Some(unsafe { &**p }), _ => None }
+        match self {
+            HeaderPtr::ArpIpv4(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
     }
 
     // Ip accessors
     #[inline]
     pub fn as_ip_mut(&mut self) -> Option<&mut IpHeader> {
-        match self { HeaderPtr::Ip(p) => Some(unsafe { &mut **p }), _ => None }
+        match self {
+            HeaderPtr::Ip(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
     }
     #[inline]
     pub fn as_ip(&self) -> Option<&IpHeader> {
-        match self { HeaderPtr::Ip(p) => Some(unsafe { &**p }), _ => None }
+        match self {
+            HeaderPtr::Ip(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
     }
 
     // Tcp accessors
     #[inline]
     pub fn as_tcp_mut(&mut self) -> Option<&mut TcpHeader> {
-        match self { HeaderPtr::Tcp(p) => Some(unsafe { &mut **p }), _ => None }
+        match self {
+            HeaderPtr::Tcp(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
     }
     #[inline]
     pub fn as_tcp(&self) -> Option<&TcpHeader> {
-        match self { HeaderPtr::Tcp(p) => Some(unsafe { &**p }), _ => None }
+        match self {
+            HeaderPtr::Tcp(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
     }
 
     // Udp accessors
     #[inline]
     pub fn as_udp_mut(&mut self) -> Option<&mut UdpHeader> {
-        match self { HeaderPtr::Udp(p) => Some(unsafe { &mut **p }), _ => None }
+        match self {
+            HeaderPtr::Udp(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
     }
     #[inline]
     pub fn as_udp(&self) -> Option<&UdpHeader> {
-        match self { HeaderPtr::Udp(p) => Some(unsafe { &**p }), _ => None }
+        match self {
+            HeaderPtr::Udp(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
     }
 
     #[inline]
@@ -156,7 +186,9 @@ impl HeaderPtr {
 
 // Preserve existing initialization behavior for arrays
 impl Clone for HeaderPtr {
-    fn clone(&self) -> Self { HeaderPtr::Null }
+    fn clone(&self) -> Self {
+        HeaderPtr::Null
+    }
 }
 
 // Keep the public name and lifetime parameter to avoid signature churn
@@ -175,8 +207,6 @@ impl HeaderPtr {
         }
     }
 }
-
-
 
 impl<'a> fmt::Display for HeaderPtr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

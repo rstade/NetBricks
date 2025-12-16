@@ -8,7 +8,6 @@
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "dev", deny(warnings))]
 
-
 #[macro_use]
 extern crate serde_derive;
 
@@ -30,7 +29,6 @@ extern crate sctp;
 extern crate log;
 #[allow(dead_code)]
 #[cfg(unix)]
-
 pub mod allocators;
 pub mod common;
 pub mod config;

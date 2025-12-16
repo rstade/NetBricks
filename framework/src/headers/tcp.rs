@@ -1,7 +1,7 @@
 use super::{EndOffset, HeaderKind};
+use crate::utils::update_checksum_incremental;
 use std::default::Default;
 use std::fmt;
-use crate::utils::update_checksum_incremental;
 
 #[derive(Clone, Copy, Debug, Default)]
 #[repr(C, packed)]

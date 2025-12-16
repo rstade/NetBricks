@@ -2,9 +2,9 @@ use super::super::interface::{FlowSteeringMode, NetSpec};
 use super::{DriverType, NetbricksConfiguration, PortConfiguration};
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
-use macaddr::MacAddr6 as MacAddress;
-use ipnet::Ipv4Net;
 use crate::native::zcsi::{RteEthIpv4Flow, RteFdirConf, RteFdirMode, RteFdirPballocType};
+use ipnet::Ipv4Net;
+use macaddr::MacAddr6 as MacAddress;
 use std::clone::Clone;
 use std::fs::File;
 use std::io::Read;
@@ -41,7 +41,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 v => {
                     return Err(
                         ErrorKind::ConfigurationError(format!("Could not parse kni spec {} ", v.unwrap())).into(),
-                    )
+                    );
                 }
             };
 
@@ -73,7 +73,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 Some(&Value::Boolean(l)) => l,
                 None => false,
                 v => {
-                    return Err(ErrorKind::ConfigurationError(format!("Could not parse loopback spec {:?}", v)).into())
+                    return Err(ErrorKind::ConfigurationError(format!("Could not parse loopback spec {:?}", v)).into());
                 }
             };
 
@@ -122,7 +122,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 v => {
                     return Err(
                         ErrorKind::ConfigurationError(format!("Could not parse namespace {} ", v.unwrap())).into(),
-                    )
+                    );
                 }
             };
 
@@ -467,23 +467,23 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
             }
         }
     }
-/* we no longer need vdevs as we removed native kni support
-    let vdevs = match toml.get("vdev") {
-        Some(&Value::Array(ref vdevs)) => {
-            let mut vouts = Vec::with_capacity(vdevs.len());
-            for vdev in vdevs {
-                vouts.push(vdev.as_str().unwrap().to_string());
+    /* we no longer need vdevs as we removed native kni support
+        let vdevs = match toml.get("vdev") {
+            Some(&Value::Array(ref vdevs)) => {
+                let mut vouts = Vec::with_capacity(vdevs.len());
+                for vdev in vdevs {
+                    vouts.push(vdev.as_str().unwrap().to_string());
+                }
+                vouts
             }
-            vouts
-        }
-        None => Vec::with_capacity(0),
-        _ => {
-            error!("Could not parse vdev");
-            return Err(ErrorKind::ConfigurationError(String::from("Could not parse vdev")).into());
-        }
-    };
-*/
-    // supply an empty vdevs list 
+            None => Vec::with_capacity(0),
+            _ => {
+                error!("Could not parse vdev");
+                return Err(ErrorKind::ConfigurationError(String::from("Could not parse vdev")).into());
+            }
+        };
+    */
+    // supply an empty vdevs list
     let vdevs: Vec<String> = Vec::with_capacity(0);
     Ok(NetbricksConfiguration {
         name,

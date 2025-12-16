@@ -2,10 +2,10 @@ use super::super::{PacketRx, PacketTx};
 use super::PortStats;
 use crate::allocators::*;
 use crate::common::*;
-use crate::native::zcsi::{mbuf_alloc_bulk, mbuf_free_bulk, MBuf};
+use crate::native::zcsi::{MBuf, mbuf_alloc_bulk, mbuf_free_bulk};
 use std::fmt;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 pub struct VirtualPort {
     stats_rx: Arc<CacheAligned<PortStats>>,

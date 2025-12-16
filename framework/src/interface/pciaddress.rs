@@ -1,6 +1,6 @@
 use std::fs;
-use std::path::PathBuf;
 use std::io;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum PciError {
@@ -45,24 +45,19 @@ impl PciAddress {
             ));
         }
 
-        let bus = u8::from_str_radix(parts[0], 16).map_err(|_| {
-            PciError::InvalidFormat("Bus must be hexadecimal".to_string())
-        })?;
+        let bus = u8::from_str_radix(parts[0], 16)
+            .map_err(|_| PciError::InvalidFormat("Bus must be hexadecimal".to_string()))?;
 
         let slot_func: Vec<&str> = parts[1].split('.').collect();
         if slot_func.len() != 2 {
-            return Err(PciError::InvalidFormat(
-                "Expected format 'Slot.Function'".to_string(),
-            ));
+            return Err(PciError::InvalidFormat("Expected format 'Slot.Function'".to_string()));
         }
 
-        let slot = u8::from_str_radix(slot_func[0], 16).map_err(|_| {
-            PciError::InvalidFormat("Slot must be hexadecimal".to_string())
-        })?;
+        let slot = u8::from_str_radix(slot_func[0], 16)
+            .map_err(|_| PciError::InvalidFormat("Slot must be hexadecimal".to_string()))?;
 
-        let function = u8::from_str_radix(slot_func[1], 16).map_err(|_| {
-            PciError::InvalidFormat("Function must be hexadecimal".to_string())
-        })?;
+        let function = u8::from_str_radix(slot_func[1], 16)
+            .map_err(|_| PciError::InvalidFormat("Function must be hexadecimal".to_string()))?;
 
         Ok(PciAddress { bus, slot, function })
     }
@@ -119,4 +114,3 @@ pub fn pci_to_interface(pci_addr: &str) -> Result<String, PciError> {
 
     Err(PciError::NotFound)
 }
-

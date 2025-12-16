@@ -2,9 +2,9 @@ use super::{Executable, Scheduler};
 use std::arch::x86_64::_rdtsc;
 use std::cmp;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvError, Sender, SyncSender};
-use std::sync::Arc;
 use std::thread;
 
 use separator::Separatable;

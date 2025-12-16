@@ -1,8 +1,8 @@
+use super::Batch;
+use super::SchedulingPolicy;
 use super::act::Act;
 use super::iterator::BatchIterator;
 use super::packet_batch::PacketBatch;
-use super::Batch;
-use super::SchedulingPolicy;
 
 use crate::common::*;
 use crate::interface::{PacketTx, Pdu};

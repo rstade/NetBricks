@@ -15,9 +15,9 @@ pub use self::receive_batch::ReceiveBatch;
 pub use self::send_batch::SendBatch;
 pub use self::transform_batch::TransformBatch;
 use self::transform_batch::TransformFn;
+use crate::interface::PacketTx;
 use crate::scheduler::Scheduler;
 use uuid::Uuid;
-use crate::interface::PacketTx;
 
 #[macro_use]
 mod macros;

@@ -3541,7 +3541,7 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn pthread_condattr_setclock(__attr: *mut pthread_condattr_t, __clock_id: __clockid_t)
-        -> ::std::os::raw::c_int;
+    -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn pthread_spin_init(
@@ -3606,7 +3606,7 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn pthread_setspecific(__key: pthread_key_t, __pointer: *const ::std::os::raw::c_void)
-        -> ::std::os::raw::c_int;
+    -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn pthread_getcpuclockid(__thread_id: pthread_t, __clock_id: *mut __clockid_t) -> ::std::os::raw::c_int;
@@ -3923,7 +3923,7 @@ pub type rte_bus_cmp_t = ::std::option::Option<
 >;
 unsafe extern "C" {
     pub fn rte_bus_find(start: *const rte_bus, cmp: rte_bus_cmp_t, data: *const ::std::os::raw::c_void)
-        -> *mut rte_bus;
+    -> *mut rte_bus;
 }
 unsafe extern "C" {
     pub fn rte_bus_find_by_device(dev: *const rte_device) -> *mut rte_bus;
@@ -4900,11 +4900,11 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn rte_fbarray_find_biggest_free(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint)
-        -> ::std::os::raw::c_int;
+    -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn rte_fbarray_find_biggest_used(arr: *mut rte_fbarray, start: ::std::os::raw::c_uint)
-        -> ::std::os::raw::c_int;
+    -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn rte_fbarray_find_rev_biggest_free(

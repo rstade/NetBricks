@@ -30,7 +30,7 @@ impl HeaderStack {
         HeaderStack {
             stack: [Header::Null, Header::Null, Header::Null, Header::Null, Header::Null],
             hc: 0,
-        //    phantom: PhantomData,
+            //    phantom: PhantomData,
         }
     }
 
@@ -121,8 +121,8 @@ pub struct Pdu {
     header_stack: HeaderStack,
     mbuf: *mut MBuf,
     owns_mbuf: bool, // NEW: whether this PDU should deref the mbuf on Drop
-    // Carry the lifetime without holding references
-    // phantom: PhantomData<&'a mut ()>,
+                     // Carry the lifetime without holding references
+                     // phantom: PhantomData<&'a mut ()>,
 }
 
 impl<'a> Drop for Pdu {
@@ -171,7 +171,7 @@ impl Pdu {
                     mbuf,
                     header_stack: HeaderStack::new(),
                     owns_mbuf: true,
- //                   phantom: PhantomData,
+                    //                   phantom: PhantomData,
                 })
             }
         }
@@ -183,7 +183,15 @@ impl Pdu {
         unsafe {
             let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
             if alloc_ret == 0 {
-                Some(pkts.iter().map(|&m| Pdu { mbuf: m, header_stack: HeaderStack::new(), owns_mbuf: true }).collect())
+                Some(
+                    pkts.iter()
+                        .map(|&m| Pdu {
+                            mbuf: m,
+                            header_stack: HeaderStack::new(),
+                            owns_mbuf: true,
+                        })
+                        .collect(),
+                )
             } else {
                 None
             }
@@ -215,30 +223,36 @@ impl Pdu {
         unsafe { (*self.mbuf).refcnt() }
     }
 
-/* this footgun is no longer needed, as Drop handles dereferencing
-    #[inline]
-    pub fn dereference_mbuf(&mut self) -> u16 {
-        unsafe {
-            (*self.mbuf).dereference();
+    /* this footgun is no longer needed, as Drop handles dereferencing
+        #[inline]
+        pub fn dereference_mbuf(&mut self) -> u16 {
+            unsafe {
+                (*self.mbuf).dereference();
+            }
+            self.refcnt()
         }
-        self.refcnt()
-    }
-*/
+    */
     #[inline]
-    pub fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu { unsafe {
-        assert!(!mbuf.is_null());
-        (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
-        Pdu::mbuf_into_pdu_no_increment(mbuf)
-    } }
+    pub fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu {
+        unsafe {
+            assert!(!mbuf.is_null());
+            (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
+            Pdu::mbuf_into_pdu_no_increment(mbuf)
+        }
+    }
 
     /// copy gets us a new mbuf
     #[inline]
-    pub fn copy(&self) -> Option<Pdu> { unsafe {
-        // This sets refcnt = 1
-        let mbuf = mbuf_alloc();
-        if mbuf.is_null() { return None; }
-        Some(self.copy_use_mbuf(mbuf)) // ensure copy_use_mbuf sets owns_mbuf = true
-    } }
+    pub fn copy(&self) -> Option<Pdu> {
+        unsafe {
+            // This sets refcnt = 1
+            let mbuf = mbuf_alloc();
+            if mbuf.is_null() {
+                return None;
+            }
+            Some(self.copy_use_mbuf(mbuf)) // ensure copy_use_mbuf sets owns_mbuf = true
+        }
+    }
 
     /// clone_from_same_mbuf has same mbuf as the original and increments mbuf ref count
     /// clone_from_same_mbuf replicates the pointers to the mutable headers.
@@ -248,15 +262,15 @@ impl Pdu {
     pub unsafe fn clone_from_same_mbuf(&self) -> Pdu {
         Pdu::pdu_from_mbuf(self.mbuf) // owns_mbuf = true via above
     }
-/*  removed this because unused and danger of footgun, as reference not increased.
-    /// same as clone, but without increment of mbuf ref count
-    #[inline]
-    /// Unsafe: returns a Pdu that does not own an mbuf reference. The caller must
-    /// ensure the mbuf outlives this Pdu and that some other owner eventually frees it.
-    pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu {
-        Self::pdu_from_mbuf_no_increment(self.mbuf)
-    }
-*/
+    /*  removed this because unused and danger of footgun, as reference not increased.
+        /// same as clone, but without increment of mbuf ref count
+        #[inline]
+        /// Unsafe: returns a Pdu that does not own an mbuf reference. The caller must
+        /// ensure the mbuf outlives this Pdu and that some other owner eventually frees it.
+        pub unsafe fn clone_without_ref_counting(&mut self) -> Pdu {
+            Self::pdu_from_mbuf_no_increment(self.mbuf)
+        }
+    */
     #[inline]
     pub fn add_padding(&mut self, nbytes: usize) -> usize {
         self.increase_payload_size(nbytes)

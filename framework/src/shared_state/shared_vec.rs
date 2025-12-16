@@ -1,8 +1,8 @@
-use super::{open_shared, SharedMemory};
+use super::{SharedMemory, open_shared};
+use crate::utils::round_to_pages;
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::ops::{Index, IndexMut, Range, RangeFrom, RangeTo};
-use crate::utils::round_to_pages;
 
 #[allow(dead_code)] // TODO: While WIP
 pub struct SharedVec<T: Sized + 'static> {

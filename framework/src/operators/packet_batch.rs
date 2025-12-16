@@ -1,6 +1,6 @@
+use super::Batch;
 use super::act::Act;
 use super::iterator::BatchIterator;
-use super::Batch;
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
 use crate::interface::*;
@@ -77,17 +77,19 @@ impl PacketBatch {
 
     // Assumes we have already deallocated batch.
     #[inline]
-    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> { unsafe {
-        let capacity = self.array.capacity();
-        self.add_to_batch(capacity);
-        match port.recv(self.packet_ptr()) {
-            e @ Err(_) => e,
-            Ok((recv, q_count)) => {
-                self.add_to_batch(recv as usize);
-                Ok((recv, q_count))
+    unsafe fn recv_internal<Rx: PacketRx>(&mut self, port: &Rx) -> errors::Result<(u32, i32)> {
+        unsafe {
+            let capacity = self.array.capacity();
+            self.add_to_batch(capacity);
+            match port.recv(self.packet_ptr()) {
+                e @ Err(_) => e,
+                Ok((recv, q_count)) => {
+                    self.add_to_batch(recv as usize);
+                    Ok((recv, q_count))
+                }
             }
         }
-    } }
+    }
 
     /// This drops packet buffers and keeps things ordered. We expect that idxes is an ordered vector of indices, no
     /// guarantees are made when this is not the case.
@@ -137,11 +139,7 @@ impl PacketBatch {
                     let array_ptr = self.scratch.as_mut_ptr();
                     let ret = mbuf_free_bulk(array_ptr, len as i32);
                     self.scratch.clear();
-                    if ret >= 0 {
-                        Some(len)
-                    } else {
-                        None
-                    }
+                    if ret >= 0 { Some(len) } else { None }
                 }
             }
         }
@@ -154,24 +152,28 @@ impl PacketBatch {
     }
 
     #[inline]
-    unsafe fn consume_batch_partial(&mut self, consumed: usize) { unsafe {
-        let len = self.array.len();
-        for (new_idx, idx) in (consumed..len).enumerate() {
-            self.array[new_idx] = self.array[idx];
+    unsafe fn consume_batch_partial(&mut self, consumed: usize) {
+        unsafe {
+            let len = self.array.len();
+            for (new_idx, idx) in (consumed..len).enumerate() {
+                self.array[new_idx] = self.array[idx];
+            }
+
+            self.array.set_len(len - consumed);
         }
-
-        self.array.set_len(len - consumed);
-    } }
+    }
 
     #[inline]
-    unsafe fn consume_batch(&mut self) { unsafe {
-        self.array.set_len(0)
-    } }
+    unsafe fn consume_batch(&mut self) {
+        unsafe { self.array.set_len(0) }
+    }
 
     #[inline]
-    unsafe fn add_to_batch(&mut self, added: usize) { unsafe {
-        self.array.set_len(added);
-    } }
+    unsafe fn add_to_batch(&mut self, added: usize) {
+        unsafe {
+            self.array.set_len(added);
+        }
+    }
 
     #[inline]
     fn alloc_packet_batch(&mut self, cnt: i32) -> errors::Result<()> {
@@ -203,11 +205,7 @@ impl PacketBatch {
                 };
                 // If free fails, I am not sure we can do much to recover this batch.
                 self.array.set_len(0);
-                if ret >= 0 {
-                    Ok(ret as usize)
-                } else {
-                    Err(())
-                }
+                if ret >= 0 { Ok(ret as usize) } else { Err(()) }
             }
         }
     }
