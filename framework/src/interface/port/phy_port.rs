@@ -540,7 +540,7 @@ fn reset_pci_device(pci_addr: &str) -> Result<(), Box<dyn std::error::Error>> {
     let reset_path = format!("/sys/bus/pci/devices/{}/reset", pci_addr);
     println!("Resetting device {}...", pci_addr);
     fs::write(&reset_path, "1")?;
-    sleep(Duration::from_millis(100));
+    sleep(Duration::from_millis(500));
 
     Ok(())
 }

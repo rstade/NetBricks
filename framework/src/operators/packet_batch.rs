@@ -200,10 +200,11 @@ impl PacketBatch {
             } else {
                 let len = self.array.len() as i32;
                 let ret = {
+                    // trace!("Freeing {} mbufs", len);
                     let parray = self.packet_ptr().as_mut_ptr();
                     mbuf_free_bulk(parray, len)
                 };
-                // If free fails, I am not sure we can do much to recover this batch.
+                // If free fails, I am not sure if we can do much to recover this batch.
                 self.array.set_len(0);
                 if ret >= 0 { Ok(ret as usize) } else { Err(()) }
             }

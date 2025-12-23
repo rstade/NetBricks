@@ -128,12 +128,20 @@ pub struct Pdu {
 impl<'a> Drop for Pdu {
     fn drop(&mut self) {
         unsafe {
-            if !self.mbuf.is_null() && self.owns_mbuf {
-                // This decrements the rte_mbuf refcnt and may free the mbuf.
-                (*self.mbuf).dereference();
-                // Prevent any accidental double use in potential future drops.
-                self.mbuf = ptr::null_mut();
-                self.owns_mbuf = false;
+            if !self.mbuf.is_null() {
+                if self.owns_mbuf {
+                    // trace!("****  dropping PDU with owned mbuf {:p}, refcnt= {}", self.mbuf, (*self.mbuf).refcnt);
+                    // This decrements the rte_mbuf refcnt and may free the mbuf.
+                    (*self.mbuf).dereference();
+                    // Prevent any accidental double use in potential future drops.
+                    self.mbuf = ptr::null_mut();
+                    self.owns_mbuf = false;
+                } else {
+                    // trace!("**** cannot drop Pdu with unowned mbuf {:p}, refcnt= {}", self.mbuf, (*self.mbuf).refcnt);
+                }
+            }
+            else {
+                // trace!("cannot drop consumed Pdu/mbuf");
             }
         }
     }
@@ -167,6 +175,7 @@ impl Pdu {
             if mbuf.is_null() {
                 None
             } else {
+                // trace!("allocated pdu with mbuf {:p}", mbuf);
                 Some(Pdu {
                     mbuf,
                     header_stack: HeaderStack::new(),
@@ -183,6 +192,7 @@ impl Pdu {
         unsafe {
             let alloc_ret = mbuf_alloc_bulk(pkts.as_mut_ptr(), pkts.len() as u32);
             if alloc_ret == 0 {
+                // trace!("allocated {} pdus", pkts.len());
                 Some(
                     pkts.iter()
                         .map(|&m| Pdu {
@@ -205,7 +215,7 @@ impl Pdu {
         Self::mbuf_into_pdu_no_increment(mbuf)
     }
 
-    // For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
+    /// For safety and simplicity, treat this as a transfer-of-ownership constructor: the caller hands ownership to Pdu without incrementing. Set owns_mbuf = true.
     #[inline]
     pub fn mbuf_into_pdu_no_increment(mbuf: *mut MBuf) -> Pdu {
         debug_assert!(!mbuf.is_null());
@@ -233,6 +243,7 @@ impl Pdu {
         }
     */
     #[inline]
+    /// creates and returns a new Pdu which becomes the new owner of the mbuf and contains a copy of the called Pdu
     pub fn copy_use_mbuf(&self, mbuf: *mut MBuf) -> Pdu {
         unsafe {
             assert!(!mbuf.is_null());
@@ -240,6 +251,16 @@ impl Pdu {
             Pdu::mbuf_into_pdu_no_increment(mbuf)
         }
     }
+    /// copies content of pdu mbuf into the provided mbuf
+    #[inline]
+    pub fn copy_to_mbuf(&self, mbuf: *mut MBuf) -> *mut MBuf{
+        unsafe {
+            assert!(!mbuf.is_null());
+            (*self.mbuf).copy_to(mbuf.as_mut().unwrap());
+            mbuf
+        }
+    }
+
 
     /// copy gets us a new mbuf
     #[inline]
@@ -250,7 +271,9 @@ impl Pdu {
             if mbuf.is_null() {
                 return None;
             }
-            Some(self.copy_use_mbuf(mbuf)) // ensure copy_use_mbuf sets owns_mbuf = true
+            let r= self.copy_use_mbuf(mbuf); // ensure copy_use_mbuf sets owns_mbuf = true
+            //trace!("copied pdu with a new mbuf {:p}, refcnt= {}, owns_mbuf={}", mbuf, (*mbuf).refcnt, r.owns_mbuf);
+            Some(r)
         }
     }
 
