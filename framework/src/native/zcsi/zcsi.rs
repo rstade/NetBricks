@@ -746,6 +746,7 @@ pub fn check_os_error(code: i32) -> io::Result<i32> {
 #[link(name = "rte_ethdev")]
 #[link(name = "rte_eal")]
 unsafe extern "C" {
+    
     pub fn init_system_whitelisted(
         name: *const c_char,
         nlen: i32,
@@ -780,6 +781,8 @@ unsafe extern "C" {
         loopback: i32,
         tso: i32,
         csumoffload: i32,
+        rss_key: *const u8,
+        key_len: u16,
         rx_mq_mode: rte_eth_rx_mq_mode,
         fdir_conf_ptr: *const RteFdirConf,
     ) -> i32;

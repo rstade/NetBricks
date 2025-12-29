@@ -251,7 +251,7 @@ impl Pdu {
             Pdu::mbuf_into_pdu_no_increment(mbuf)
         }
     }
-    /// copies content of pdu mbuf into the provided mbuf
+    /// copies content of pdu mbuf into the provided mbuf, which is then returned
     #[inline]
     pub fn copy_to_mbuf(&self, mbuf: *mut MBuf) -> *mut MBuf{
         unsafe {

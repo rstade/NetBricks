@@ -222,12 +222,12 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                     Value::Table(ref fdir_def) => {
                         match fdir_def.get("pballoc") {
                             //TODO replace unwrap() with error conversion
-                            Some(v) => fdir_conf.pballoc = v.clone().try_into::<RteFdirPballocType>().unwrap(),
+                            Some(v) => fdir_conf.pballoc = v.clone().try_into::<RteFdirPballocType>()?,
                             None => (), // X710 does not support pballoc
                         };
                         match fdir_def.get("mode") {
                             //TODO replace unwrap() with error conversion
-                            Some(v) => fdir_conf.mode = v.clone().try_into::<RteFdirMode>().unwrap(),
+                            Some(v) => fdir_conf.mode = v.clone().try_into::<RteFdirMode>()?,
                             None => {
                                 return Err(ErrorKind::ConfigurationError("missing fdir mode spec".to_string()).into());
                             }
@@ -275,7 +275,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
 
             let driver = match port_def.get("driver") {
                 //TODO replace unwrap() with error conversion
-                Some(v) => v.clone().try_into::<DriverType>().unwrap(),
+                Some(v) => v.clone().try_into::<DriverType>()?,
                 None => DriverType::Unknown,
             };
 
@@ -290,6 +290,11 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 || net_spec.ip_net.is_some()
                 || net_spec.port.is_some()
                 || net_spec.nsname.is_some();
+            
+            let rss_key = match port_def.get("rss_key") {
+                Some(v) => Some(v.clone().try_into::<usize>()?),
+                None => None,
+            };
 
             Ok(PortConfiguration {
                 name,
@@ -302,6 +307,7 @@ fn read_port(value: &Value) -> errors::Result<PortConfiguration> {
                 tso,
                 k_cores,
                 kni,
+                rss_key,
                 fdir_conf,
                 flow_steering,
                 driver,
@@ -317,7 +323,7 @@ pub fn read_toml_table(toml_value: &Value, table_name: &str) -> errors::Result<V
         Some(value) => Ok(value.clone()),
         _ => {
             error!("[{}] table missing", table_name);
-            return Err(ErrorKind::ConfigurationError(format!("[{}] table missing", table_name)).into());
+            Err(ErrorKind::ConfigurationError(format!("[{}] table missing", table_name)).into())
         }
     }
 }
@@ -467,6 +473,43 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
             }
         }
     }
+    
+    let rss_keys = match toml.get("rss_keys") {
+        Some(&Value::Array(ref rss_keys)) => {
+            let mut keys = Vec::with_capacity(rss_keys.len());
+            for rss_key in rss_keys {
+                if let Value::Array(ref rss_key) = *rss_key {
+                    let mut key = Vec::with_capacity(rss_key.len());
+                    for b in rss_key {
+                        if let Value::Integer(b) = *b {
+                            key.push(b as u8)
+                        } else {
+                            return Err(ErrorKind::ConfigurationError(format!(
+                                "Could not parse rss_key spec {:?}",
+                                b
+                            ))
+                            .into());
+                        }
+                    }
+                    keys.push(key)
+                } else {
+                    return Err(ErrorKind::ConfigurationError(format!(
+                        "Could not parse rss_key spec {:?}",
+                        rss_key
+                    ))
+                    .into());
+                }
+            }
+            Some(keys)
+        }
+        None => None,
+        _ => {
+            error!("rss_keys is not an array");
+            return Err(ErrorKind::ConfigurationError(String::from("rss_keys is not an array")).into());
+        }
+    };
+        
+        
     /* we no longer need vdevs as we removed native kni support
         let vdevs = match toml.get("vdev") {
             Some(&Value::Array(ref vdevs)) => {
@@ -489,6 +532,7 @@ pub fn read_configuration_from_str(configuration: &str, filename: &str) -> error
         name,
         primary_core: master_lcore,
         cores,
+        rss_keys,
         strict,
         secondary,
         pool_size,

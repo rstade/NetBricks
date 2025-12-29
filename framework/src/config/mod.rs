@@ -22,6 +22,8 @@ pub struct NetbricksConfiguration {
     /// Cores that can be used by NetBricks. Note that currently we will add any cores specified in the ports
     /// configuration to this list (unless told not to using the next option.
     pub cores: Vec<i32>,
+    /// define RSS keys if required
+    pub rss_keys: Option<Vec<Vec<u8>>>,
     /// Use the core list as a strict list, i.e., error out if any cores with an rxq or txq are not specified on the
     /// core list. This is set to false by default because of laziness.
     pub strict: bool,
@@ -45,6 +47,7 @@ impl Default for NetbricksConfiguration {
             cache_size: DEFAULT_CACHE_SIZE,
             primary_core: 0,
             cores: Default::default(),
+            rss_keys: None,
             strict: false,
             secondary: false,
             ports: vec![],
@@ -127,6 +130,7 @@ pub struct PortConfiguration {
     pub kni: Option<String>,
     /// cores on which kni kernel threads should run (in case of multi-threading kni kernel module)
     pub k_cores: Vec<i32>,
+    pub rss_key: Option<usize>,
     pub fdir_conf: Option<RteFdirConf>,
     pub flow_steering: Option<FlowSteeringMode>,
     pub driver: DriverType,
@@ -146,6 +150,7 @@ impl Default for PortConfiguration {
             csum: false,
             k_cores: vec![],
             kni: None,
+            rss_key: None,
             fdir_conf: None,
             flow_steering: None,
             driver: DriverType::Unknown,

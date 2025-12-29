@@ -7,6 +7,7 @@
 #include <rte_malloc.h>
 #include "mempool.h"
 #include "fdir.h"
+#include "pmd.h"
 
 /*
  * RX and TX Prefetch, Host, and Write-back threshold values should be
@@ -231,7 +232,7 @@ assert_link_status(int port_id) {
 
 
 int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], int txq_core[], uint16_t nrxd, uint16_t ntxd,
-                  int loopback, int tso, int csumoffload, enum rte_eth_rx_mq_mode rx_mq_mode, struct rte_fdir_conf const *p_fdir_conf) {
+                  int loopback, int tso, int csumoffload, enum rte_eth_rx_mq_mode rx_mq_mode, uint8_t rss_key[], uint16_t key_len, struct rte_fdir_conf const *p_fdir_conf) {
     struct rte_eth_dev_info dev_info = {};
     struct rte_eth_conf eth_conf;
     struct rte_eth_rxconf eth_rxconf;
@@ -255,6 +256,11 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
     eth_conf.rx_adv_conf.rss_conf.rss_hf = dev_info.flow_type_rss_offloads;
+    if (rss_key && key_len > 0) {
+        eth_conf.rx_adv_conf.rss_conf.rss_key = rss_key;
+        eth_conf.rx_adv_conf.rss_conf.rss_key_len = key_len;
+    }
+
     if (csumoffload) {
         eth_conf.txmode.offloads = DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM;
         eth_conf.rxmode.offloads = DEV_RX_OFFLOAD_IPV4_CKSUM | DEV_RX_OFFLOAD_UDP_CKSUM | DEV_RX_OFFLOAD_TCP_CKSUM;

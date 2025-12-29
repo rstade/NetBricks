@@ -876,6 +876,7 @@ impl PmdPort {
         csumoffload: bool,
         driver: DriverType,
         port_type: PortType,
+        rss_key: Option<&[u8]>,
         fdir_conf: Option<&RteFdirConf>,
         flow_steering_mode: Option<FlowSteeringMode>,
         net_spec: Option<NetSpec>,
@@ -905,6 +906,7 @@ impl PmdPort {
             } else {
                 rte_eth_rx_mq_mode_ETH_MQ_RX_NONE
             };
+            let (rss_key_ptr, rss_key_len) = rss_key.map_or((ptr::null(), 0), |key| (key.as_ptr(), key.len() as u16));
             let ret = unsafe {
                 init_pmd_port(
                     port,
@@ -917,6 +919,8 @@ impl PmdPort {
                     loopbackv,
                     tsov,
                     csumoffloadv,
+                    rss_key_ptr,
+                    rss_key_len,
                     rx_mq_mode,
                     fdir_conf.map_or(ptr::null(), |conf| conf as *const RteFdirConf),
                 )
@@ -1008,6 +1012,7 @@ impl PmdPort {
         csumoffload: bool,
         driver: DriverType,
         port_type: PortType,
+        rss_key: Option<&[u8]>,
         fdir_conf: Option<&RteFdirConf>,
         flow_steering_mode: Option<FlowSteeringMode>,
         net_spec: Option<NetSpec>,
@@ -1059,6 +1064,7 @@ impl PmdPort {
             csumoffload,
             driver,
             port_type,
+            rss_key,
             fdir_conf,
             flow_steering_mode,
             net_spec,
@@ -1080,6 +1086,7 @@ impl PmdPort {
     pub fn new_port_from_configuration(
         port_config: &PortConfiguration,
         associated_port: Option<&Arc<PmdPort>>,
+        rss_keys: &Option<Vec<Vec<u8>>>,
     ) -> errors::Result<Arc<PmdPort>> {
         /// Create a new port.
         ///
@@ -1098,11 +1105,12 @@ impl PmdPort {
         let tso = port_config.tso;
         let csumoffload = port_config.csum;
         let driver = port_config.driver;
+        let rss_key_idx = port_config.rss_key;  // index to rss_keys
         let fdir_conf = port_config.fdir_conf.as_ref();
         let kni = port_config.kni.clone();
         let parts: Vec<_> = name.splitn(2, ':').collect();
         let queues = associated_port.map_or(Some(rx_cores.len()), |p| Some(p.rx_cores.as_ref().unwrap().len()));
-
+        
         #[derive(Debug)]
         struct DevSpec {
             name: String,
@@ -1156,6 +1164,19 @@ impl PmdPort {
             }
         }
 
+        let selected_rss_key: Option<&[u8]> = match (rss_keys, rss_key_idx) {
+            (Some(keys), Some(idx)) => {
+                if idx < keys.len() {
+                    debug!("using rss key {} from rss_keys", idx);
+                    Some(&keys[idx][..])
+                } else {
+                    warn!("RSS key index {} out of bounds (max {}), using None", idx, keys.len() - 1);
+                    None
+                }
+            },
+            _ => None,
+        };
+
         match parts[0] {
             "bess" => PmdPort::new_bess_port(parts[1], rx_cores[0]),
             "ovs" => PmdPort::new_ovs_port(parts[1], rx_cores[0]),
@@ -1174,7 +1195,7 @@ impl PmdPort {
                     parts[1].to_string()
                 };
                 debug!("modified spec= {}", modified_spec);
-                PmdPort::new_dpdk_port(
+                 PmdPort::new_dpdk_port(
                     &dev_spec.name,
                     kni,
                     dev_spec.iface,
@@ -1188,6 +1209,7 @@ impl PmdPort {
                     csumoffload,
                     driver,
                     port_type,
+                    selected_rss_key,
                     fdir_conf,
                     port_config.flow_steering,
                     port_config.net_spec.clone(),
@@ -1209,6 +1231,7 @@ impl PmdPort {
                 csumoffload,
                 driver,
                 PortType::Physical,
+                selected_rss_key,
                 fdir_conf,
                 port_config.flow_steering,
                 None,
@@ -1234,15 +1257,16 @@ impl PmdPort {
             tso: false,
             csum: false,
             k_cores: vec![],
+            rss_key: None,
             fdir_conf: None,
             flow_steering: None,
             kni: None,
             driver: DriverType::Unknown,
             net_spec: None,
         };
-        PmdPort::new_port_from_configuration(&config, None)
+        PmdPort::new_port_from_configuration(&config, None, &None)
     }
-
+/*  do we need this?
     pub fn new_with_cores(name: &str, rx_core: i32, tx_core: i32) -> errors::Result<Arc<PmdPort>> {
         let rx_vec = vec![rx_core];
         let tx_vec = vec![tx_core];
@@ -1252,7 +1276,7 @@ impl PmdPort {
     pub fn new(name: &str, core: i32) -> errors::Result<Arc<PmdPort>> {
         PmdPort::new_with_cores(name, core, core)
     }
-
+*/
     fn canonicalize_pci(pci: &str) -> CString {
         lazy_static! {
             static ref PCI_RE: Regex = Regex::new(r"^\d{2}:\d{2}\.\d$").unwrap();

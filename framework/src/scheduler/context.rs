@@ -215,6 +215,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
     init_system(configuration);
     let mut ctx: NetBricksContext = Default::default();
     let mut cores: HashSet<_> = configuration.cores.iter().cloned().collect();
+    let rss_keys: Option<Vec<Vec<u8>>> = configuration.rss_keys.clone();
     //maps kni name to port_id of associated port
     let mut kni2pci: HashMap<String, Arc<PmdPort>> = HashMap::with_capacity(configuration.ports.len());
     {
@@ -252,7 +253,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
             }
 
             debug!("initialize: {}", port);
-            match PmdPort::new_port_from_configuration(port, None) {
+            match PmdPort::new_port_from_configuration(port, None, &rss_keys) {
                 Ok(p) => {
                     if port.kni.is_some() {
                         kni2pci.insert(port.kni.as_ref().unwrap().clone(), p.clone());
@@ -276,7 +277,7 @@ pub fn initialize_system(configuration: &NetbricksConfiguration) -> errors::Resu
             let parts: Vec<_> = port.name.splitn(2, ',').collect();
             let associated_port = kni2pci.get(&parts[0][..]);
             debug!("initialize: {} - {}", port, parts[0]);
-            match PmdPort::new_port_from_configuration(port, associated_port) {
+            match PmdPort::new_port_from_configuration(port, associated_port, &rss_keys) {
                 Ok(p) => update_context(p)?,
                 Err(e) => match e {
                     // we ignore failed initialization of KNI ports (e.g. because of a missing associated port)
