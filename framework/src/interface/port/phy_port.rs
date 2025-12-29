@@ -919,9 +919,9 @@ impl PmdPort {
                     loopbackv,
                     tsov,
                     csumoffloadv,
+                    rx_mq_mode,
                     rss_key_ptr,
                     rss_key_len,
-                    rx_mq_mode,
                     fdir_conf.map_or(ptr::null(), |conf| conf as *const RteFdirConf),
                 )
             };

@@ -781,9 +781,9 @@ unsafe extern "C" {
         loopback: i32,
         tso: i32,
         csumoffload: i32,
+        rx_mq_mode: rte_eth_rx_mq_mode,
         rss_key: *const u8,
         key_len: u16,
-        rx_mq_mode: rte_eth_rx_mq_mode,
         fdir_conf_ptr: *const RteFdirConf,
     ) -> i32;
     pub fn free_pmd_port(port: u16) -> i32;
