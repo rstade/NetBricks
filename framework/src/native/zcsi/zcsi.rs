@@ -786,6 +786,7 @@ unsafe extern "C" {
         key_len: u16,
         fdir_conf_ptr: *const RteFdirConf,
     ) -> i32;
+    pub fn enumerate_pmd_ports();
     pub fn free_pmd_port(port: u16) -> i32;
     pub fn fdir_get_infos(pmdport_id: u16);
     pub fn eth_rx_burst(port: u16, qid: u16, pkts: *mut *mut rte_mbuf, len: u16) -> u32;
@@ -800,6 +801,7 @@ unsafe extern "C" {
     pub fn init_ovs_eth_ring(iface: i32, core: i32) -> i32;
     //pub fn find_port_with_pci_address(pciaddr: *const c_char) -> i32;
     //pub fn attach_pmd_device(dev: *const c_char) -> i32;
+    pub fn reset_dpdk_port(port_id: u16) -> i32;
     /// returns portids of all matching ports for the device
     pub fn attach_device(identifier: *const c_char, port_id_ptr: *mut u16, max_port_ids: u32) -> i32;
     // TODO: Generic PMD info

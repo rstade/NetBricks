@@ -12,11 +12,7 @@ use crate::native::zcsi::rte_ethdev_api::{
     rte_eth_dev_info, rte_eth_dev_info_get, rte_eth_dev_rx_offload_name, rte_eth_dev_tx_offload_name,
     rte_eth_macaddr_get, rte_eth_rx_mq_mode_ETH_MQ_RX_NONE, rte_eth_rx_mq_mode_ETH_MQ_RX_RSS, rte_ether_addr, rte_flow,
 };
-use crate::native::zcsi::{
-    MBuf, RteFdirConf, RteFlowError, add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst,
-    eth_tx_prepare, init_bess_eth_ring, init_ovs_eth_ring, init_pmd_port, max_rxqs, max_txqs, num_pmd_ports,
-    rss_flow_name,
-};
+use crate::native::zcsi::{MBuf, RteFdirConf, RteFlowError, add_tcp_flow, attach_device, eth_rx_burst, eth_rx_queue_count, eth_tx_burst, eth_tx_prepare, init_bess_eth_ring, init_ovs_eth_ring, init_pmd_port, max_rxqs, max_txqs, num_pmd_ports, rss_flow_name, reset_dpdk_port};
 use ipnet::Ipv4Net;
 use libc::if_indextoname;
 use macaddr::MacAddr6 as MacAddress;
@@ -34,6 +30,8 @@ use std::ptr;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::thread::sleep;
+use std::time::Duration;
 use crate::interface::pciaddress::{PciAddress, PciError, pci_to_interface};
 use crate::utils::FiveTupleV4;
 
@@ -210,6 +208,135 @@ impl TxQueue {
     #[inline]
     fn is_empty(&self) -> bool {
         self.tx_buffer.is_empty()
+    }
+}
+
+pub trait PortQueueAccess {
+    fn port(&self) -> &Arc<PmdPort>;
+    fn port_id(&self) -> u16;
+    fn rxq(&self) -> u16;
+    fn txq(&self) -> u16;
+    fn stats_rx(&self) -> &Arc<CacheAligned<PortStats>>;
+    fn stats_tx(&self) -> &Arc<CacheAligned<PortStats>>;
+}
+
+#[derive(Clone)]
+pub enum PortQueueVariant {
+    Regular(PortQueue),
+    TxBuffered(PortQueueTxBuffered),
+}
+
+impl PortQueueAccess for PortQueue {
+    #[inline]
+    fn port(&self) -> &Arc<PmdPort> {
+        &self.port
+    }
+
+    #[inline]
+    fn port_id(&self) -> u16 {
+        self.port_id
+    }
+
+    #[inline]
+    fn rxq(&self) -> u16 {
+        self.rxq
+    }
+
+    #[inline]
+    fn txq(&self) -> u16 {
+        self.txq
+    }
+
+    #[inline]
+    fn stats_rx(&self) -> &Arc<CacheAligned<PortStats>> {
+        &self.stats_rx
+    }
+
+    #[inline]
+    fn stats_tx(&self) -> &Arc<CacheAligned<PortStats>> {
+        &self.stats_tx
+    }
+}
+
+impl PortQueueAccess for PortQueueTxBuffered {
+    #[inline]
+    fn port(&self) -> &Arc<PmdPort> {
+        &self.port_queue.port
+    }
+
+    #[inline]
+    fn port_id(&self) -> u16 {
+        self.port_queue.port_id
+    }
+
+    #[inline]
+    fn rxq(&self) -> u16 {
+        self.port_queue.rxq
+    }
+
+    #[inline]
+    fn txq(&self) -> u16 {
+        self.port_queue.txq
+    }
+
+    #[inline]
+    fn stats_rx(&self) -> &Arc<CacheAligned<PortStats>> {
+        &self.port_queue.stats_rx
+    }
+
+    #[inline]
+    fn stats_tx(&self) -> &Arc<CacheAligned<PortStats>> {
+        &self.port_queue.stats_tx
+    }
+}
+
+impl PortQueueAccess for PortQueueVariant {
+    #[inline]
+    fn port(&self) -> &Arc<PmdPort> {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.port(),
+            PortQueueVariant::TxBuffered(pq) => pq.port(),
+        }
+    }
+
+    #[inline]
+    fn port_id(&self) -> u16 {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.port_id(),
+            PortQueueVariant::TxBuffered(pq) => pq.port_id(),
+        }
+    }
+
+    #[inline]
+    fn rxq(&self) -> u16 {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.rxq(),
+            PortQueueVariant::TxBuffered(pq) => pq.rxq(),
+        }
+    }
+
+    #[inline]
+    fn txq(&self) -> u16 {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.txq(),
+            PortQueueVariant::TxBuffered(pq) => pq.txq(),
+        }
+    }
+
+    #[inline]
+    fn stats_rx(&self) -> &Arc<CacheAligned<PortStats>> {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.stats_rx(),
+            PortQueueVariant::TxBuffered(pq) => pq.stats_rx(),
+        }
+    }
+
+    #[inline]
+    fn stats_tx(&self) -> &Arc<CacheAligned<PortStats>> {
+        match self {
+            PortQueueVariant::Regular(pq) => pq.stats_tx(),
+            PortQueueVariant::TxBuffered(pq) => pq.stats_tx(),
+        }
     }
 }
 
@@ -540,7 +667,7 @@ fn reset_pci_device(pci_addr: &str) -> Result<(), Box<dyn std::error::Error>> {
     let reset_path = format!("/sys/bus/pci/devices/{}/reset", pci_addr);
     println!("Resetting device {}...", pci_addr);
     fs::write(&reset_path, "1")?;
-    sleep(Duration::from_millis(500));
+    sleep(Duration::from_millis(100));
 
     Ok(())
 }
@@ -1042,13 +1169,15 @@ impl PmdPort {
 
         if rc > 1 {
             warn!(
-            "dpdk detected {} ports for spec {}, using first port with id {}",
-            rc, spec, ports[0]
-        );
+                "dpdk detected {} ports for spec {}, using first port with id {}",
+                rc, spec, ports[0]
+            );
         }
 
         let port = ports[0];
         debug!("Going to initialize dpdk port {} ({})", port, spec);
+
+        unsafe { reset_dpdk_port(port); }
 
         PmdPort::init_dpdk_port(
             name,

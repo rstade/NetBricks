@@ -380,6 +380,9 @@ impl Pdu {
                     self.parse_arp(mac.offset());
                 }
             } // ARP
+            0x88E1 => { }  // HomePlug AV
+            0x8912 => { }  // Mediaxtream
+            0x0026 => { }  // 802.3 Length format, STP, LLDP, ...
             e => warn!("received Ethertype {:x}", e),
         }
         self.header_stack.count()

@@ -136,6 +136,18 @@ int max_txqs(uint16_t dev) {
 }
 
 void enumerate_pmd_ports() {
+    /*
+    uint16_t port_id;
+    struct rte_eth_dev_info dev_info;
+    int num_dpdk_ports=0;
+    RTE_LOG(INFO, PMD, "Enumerating DPDK ports:\n");
+    RTE_ETH_FOREACH_DEV(port_id) {
+        rte_eth_dev_info_get(port_id, &dev_info);
+        num_dpdk_ports++;
+        printf("found %d: %s \n", port_id, dev_info.driver_name);
+    }
+    */
+
     int num_dpdk_ports = rte_eth_dev_count_avail();
     int i;
 
@@ -255,10 +267,38 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
-    eth_conf.rx_adv_conf.rss_conf.rss_hf = dev_info.flow_type_rss_offloads;
-    if (rss_key && key_len > 0) {
-        eth_conf.rx_adv_conf.rss_conf.rss_key = rss_key;
-        eth_conf.rx_adv_conf.rss_conf.rss_key_len = key_len;
+
+    // ============================================
+    // CHANGE 1: For symmetric RSS, limit hash types
+    // ============================================
+    if (rx_mq_mode == ETH_MQ_RX_RSS) {
+        // Use only IP+TCP/UDP for symmetric hashing
+        uint64_t symmetric_rss_hf = ETH_RSS_IP |
+                                     ETH_RSS_TCP |
+                                     ETH_RSS_UDP;
+
+        // Mask with device capabilities
+        eth_conf.rx_adv_conf.rss_conf.rss_hf = symmetric_rss_hf & dev_info.flow_type_rss_offloads;
+        // ============================================
+        // CHANGE 2: Ensure symmetric key is used
+        // ============================================
+        if (rss_key && key_len > 0) {
+            RTE_LOG(DEBUG, PMD, "Using provided RSS key with length %d.\n", key_len);
+            eth_conf.rx_adv_conf.rss_conf.rss_key = rss_key;
+            eth_conf.rx_adv_conf.rss_conf.rss_key_len = key_len;
+        } else {
+            // IMPORTANT: If no key provided, warn user!
+            RTE_LOG(WARNING, PMD, "No RSS key provided for symmetric RSS. Using device default (may not be symmetric)\n");
+            eth_conf.rx_adv_conf.rss_conf.rss_key = NULL;
+            eth_conf.rx_adv_conf.rss_conf.rss_key_len = 0;
+        }
+    } else {
+        // For non-RSS modes, use device defaults
+        eth_conf.rx_adv_conf.rss_conf.rss_hf = dev_info.flow_type_rss_offloads;
+        if (rss_key && key_len > 0) {
+            eth_conf.rx_adv_conf.rss_conf.rss_key = rss_key;
+            eth_conf.rx_adv_conf.rss_conf.rss_key_len = key_len;
+        }
     }
 
     if (csumoffload) {
@@ -441,6 +481,39 @@ int attach_pmd_device(const char *devname) {
     return (int) port;
 }
 */
+
+int reset_dpdk_port(uint16_t port_id) {
+    int ret;
+
+    // 1. Prüfe ob Port gültig ist
+    if (!rte_eth_dev_is_valid_port(port_id)) {
+        return -EINVAL;
+    }
+
+    // 2. Stoppe Port
+    ret = rte_eth_dev_stop(port_id);
+    if (ret != 0) {
+        printf("Stop failed: %d\n", ret);
+        return ret;
+    }
+
+    // 3. Warte auf vollständiges Stoppen
+    rte_delay_ms(200);
+
+    // 4. Reset durchführen
+    ret = rte_eth_dev_reset(port_id);
+    if (ret != 0) {
+        printf("Reset failed: %d\n", ret);
+        return ret;
+    }
+
+    // 5. Warte auf vollständigen reset
+    rte_delay_ms(200);
+
+    printf("Port %u erfolgreich zurückgesetzt\n", port_id);
+    return 0;
+}
+
 
 int
 attach_device(char *identifier, portid_t* portid_ptr, unsigned int max_ports)
