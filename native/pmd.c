@@ -263,13 +263,14 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     eth_conf.lpbk_mode = !(!loopback);
     if (p_fdir_conf) eth_conf.fdir_conf = *p_fdir_conf;
     eth_conf.rxmode.mq_mode=rx_mq_mode;
+    eth_conf.link_speeds = ETH_LINK_SPEED_AUTONEG;
 
     /* Use default rx/tx configuration as provided by PMD drivers,
      * with minor tweaks */
     rte_eth_dev_info_get(port, &dev_info);
 
     // ============================================
-    // CHANGE 1: For symmetric RSS, limit hash types
+    //     For symmetric RSS, limit hash types
     // ============================================
     if (rx_mq_mode == ETH_MQ_RX_RSS) {
         // Use only IP+TCP/UDP for symmetric hashing
@@ -280,7 +281,7 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
         // Mask with device capabilities
         eth_conf.rx_adv_conf.rss_conf.rss_hf = symmetric_rss_hf & dev_info.flow_type_rss_offloads;
         // ============================================
-        // CHANGE 2: Ensure symmetric key is used
+        //         Ensure symmetric key is used
         // ============================================
         if (rss_key && key_len > 0) {
             RTE_LOG(DEBUG, PMD, "Using provided RSS key with length %d.\n", key_len);
@@ -318,16 +319,22 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     tso = !(!tso);
     csumoffload = !(!csumoffload);
 
-    /* removed in 18.08
-    eth_txconf.txq_flags = ETH_TXQ_FLAGS_NOVLANOFFL | ETH_TXQ_FLAGS_NOMULTSEGS * (1 - tso) |
-                           ETH_TXQ_FLAGS_NOXSUMS * (1 - csumoffload);
-    */
     //following is only per queue offload
     //if (csumoffload) eth_txconf.offloads |= (DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM | DEV_TX_OFFLOAD_UDP_CKSUM);
     //if (tso) eth_txconf.offloads |= DEV_TX_OFFLOAD_MULTI_SEGS;
     ret = rte_eth_dev_configure(port, rxqs, txqs, &eth_conf);
 
-    rte_eth_dev_info_get(port, &dev_info);
+    if (ret != 0) {
+        RTE_LOG(CRIT, PMD, "Failed to configure port \n");
+        return ret; /* Don't need to clean up here */
+    }
+
+    ret = rte_eth_dev_info_get(port, &dev_info);
+
+    if (ret != 0) {
+        RTE_LOG(CRIT, PMD, "Failed to retrieve eth dev info \n");
+        return ret;
+    }
 
     // some logging:
     RTE_LOG(DEBUG, PMD, "--- rte_eth_dev_info:\n");
@@ -341,13 +348,14 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
     RTE_LOG(DEBUG, PMD, "--- using eth_txconf:\n");
     log_eth_txconf(&eth_txconf);
 
-    if (ret != 0) {
-        RTE_LOG(CRIT, PMD, "Failed to configure port \n");
-        return ret; /* Don't need to clean up here */
-    }
+
 
     /* Set to promiscuous mode */
-    rte_eth_promiscuous_enable(port);
+    ret = rte_eth_promiscuous_enable(port);
+
+    if (ret == -ENOTSUP) {
+        RTE_LOG(DEBUG, PMD, "promiscuous mode not supported\n");
+    }
 
     for (i = 0; i < rxqs; i++) {
         int sid = rte_lcore_to_socket_id(rxq_core[i]);
@@ -368,14 +376,42 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
         }
     }
 
+    RTE_LOG(DEBUG, PMD, "trying to start port %d \n", port);
+
     ret = rte_eth_dev_start(port);
     if (ret != 0) {
         RTE_LOG(CRIT, PMD, "Failed to configure port \n");
         return ret; /* Clean up things */
     }
 
-    assert_link_status(port);
-    RTE_LOG(INFO, PMD, "pmd port %d configured successfully\n", port);
+    // Warte max 5 Sekunden auf Link
+    int timeout = 50;  // 5 Sekunden (100 * 100ms)
+    struct rte_eth_link link;
+
+    while (timeout > 0) {
+        ret= rte_eth_link_get_nowait(port, &link);
+        if (ret == -ENOTSUP) {
+            RTE_LOG(DEBUG, PMD, "rte_eth_link_get_nowait is not supported\n");
+            break;
+        } else if (ret != 0) {
+            RTE_LOG(DEBUG, PMD, "rte_eth_link_get_nowait failed with error %d\n", ret);
+            break;
+        }
+
+        if (ret==0 && link.link_status == ETH_LINK_UP) {
+            RTE_LOG(INFO, PMD, "Link up - speed %u Mbps - %s\n",
+                    link.link_speed,
+                    (link.link_duplex == ETH_LINK_FULL_DUPLEX) ? "full-duplex" : "half-duplex");
+            break;
+        }
+        rte_delay_ms(100);
+        timeout--;
+    }
+
+    if (timeout == 0) {
+        RTE_LOG(WARNING, PMD, "Link timeout - continuing anyway\n");
+    }
+    else RTE_LOG(INFO, PMD, "pmd port %d configured successfully\n", port);
 
     return 0;
 }

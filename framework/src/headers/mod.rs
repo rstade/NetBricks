@@ -2,6 +2,7 @@ use std::fmt;
 
 pub use self::arp::*;
 pub use self::ip::*;
+pub use self::ipv6::*;
 pub use self::mac::*;
 pub use self::null_header::*;
 pub use self::tcp::*;
@@ -9,6 +10,7 @@ pub use self::udp::*;
 
 mod arp;
 mod ip;
+mod ipv6;
 mod mac;
 mod null_header;
 mod tcp;
@@ -20,6 +22,7 @@ pub enum HeaderKind {
     Mac,
     ArpIpv4,
     Ip,
+    Ipv6,
     Tcp,
     Udp,
 }
@@ -48,6 +51,7 @@ pub enum HeaderPtr {
     Mac(*mut MacHeader),
     ArpIpv4(*mut ArpIpv4Header),
     Ip(*mut IpHeader),
+    Ipv6(*mut Ipv6Header),
     Tcp(*mut TcpHeader),
     Udp(*mut UdpHeader),
 }
@@ -61,6 +65,7 @@ impl HeaderPtr {
                 HeaderKind::Null => HeaderPtr::Null,
                 HeaderKind::Mac => HeaderPtr::Mac(ptr as *mut MacHeader),
                 HeaderKind::Ip => HeaderPtr::Ip(ptr as *mut IpHeader),
+                HeaderKind::Ipv6 => HeaderPtr::Ipv6(ptr as *mut Ipv6Header),
                 HeaderKind::Tcp => HeaderPtr::Tcp(ptr as *mut TcpHeader),
                 HeaderKind::Udp => HeaderPtr::Udp(ptr as *mut UdpHeader),
                 HeaderKind::ArpIpv4 => HeaderPtr::ArpIpv4(ptr as *mut ArpIpv4Header),
@@ -115,6 +120,22 @@ impl HeaderPtr {
         }
     }
 
+    // Ipv6 accessors
+    #[inline]
+    pub fn as_ipv6_mut(&mut self) -> Option<&mut Ipv6Header> {
+        match self {
+            HeaderPtr::Ipv6(p) => Some(unsafe { &mut **p }),
+            _ => None,
+        }
+    }
+    #[inline]
+    pub fn as_ipv6(&self) -> Option<&Ipv6Header> {
+        match self {
+            HeaderPtr::Ipv6(p) => Some(unsafe { &**p }),
+            _ => None,
+        }
+    }
+
     // Tcp accessors
     #[inline]
     pub fn as_tcp_mut(&mut self) -> Option<&mut TcpHeader> {
@@ -154,6 +175,7 @@ impl HeaderPtr {
             HeaderPtr::Mac(_) => HeaderKind::Mac,
             HeaderPtr::ArpIpv4(_) => HeaderKind::ArpIpv4,
             HeaderPtr::Ip(_) => HeaderKind::Ip,
+            HeaderPtr::Ipv6(_) => HeaderKind::Ipv6,
             HeaderPtr::Tcp(_) => HeaderKind::Tcp,
             HeaderPtr::Udp(_) => HeaderKind::Udp,
         }
@@ -167,6 +189,7 @@ impl HeaderPtr {
             HeaderPtr::Mac(p) => Some(*p as *const u8),
             HeaderPtr::ArpIpv4(p) => Some(*p as *const u8),
             HeaderPtr::Ip(p) => Some(*p as *const u8),
+            HeaderPtr::Ipv6(p) => Some(*p as *const u8),
             HeaderPtr::Tcp(p) => Some(*p as *const u8),
             HeaderPtr::Udp(p) => Some(*p as *const u8),
         }
@@ -178,6 +201,7 @@ impl HeaderPtr {
             HeaderPtr::Mac(p) => Some(*p as *mut u8),
             HeaderPtr::ArpIpv4(p) => Some(*p as *mut u8),
             HeaderPtr::Ip(p) => Some(*p as *mut u8),
+            HeaderPtr::Ipv6(p) => Some(*p as *mut u8),
             HeaderPtr::Tcp(p) => Some(*p as *mut u8),
             HeaderPtr::Udp(p) => Some(*p as *mut u8),
         }
@@ -201,6 +225,7 @@ impl HeaderPtr {
             Header::Null => None,
             Header::Mac(_) => Some(self.as_mac().unwrap().offset()),
             Header::Ip(_) => Some(self.as_ip().unwrap().offset()),
+            Header::Ipv6(_) => Some(self.as_ipv6().unwrap().offset()),
             Header::Tcp(_) => Some(self.as_tcp().unwrap().offset()),
             Header::Udp(_) => Some(self.as_udp().unwrap().offset()),
             Header::ArpIpv4(_) => Some(self.as_arpipv4().unwrap().offset()),
@@ -214,6 +239,7 @@ impl<'a> fmt::Display for HeaderPtr {
             Header::Null => write!(f, "{:?}", self),
             Header::Mac(_) => write!(f, "{:?}", self.as_mac().unwrap()),
             Header::Ip(_) => write!(f, "{ }", self.as_ip().unwrap()),
+            Header::Ipv6(_) => write!(f, "{ }", self.as_ipv6().unwrap()),
             Header::Tcp(_) => write!(f, "{ }", self.as_tcp().unwrap()),
             Header::Udp(_) => write!(f, "{:?}", self.as_udp().unwrap()),
             Header::ArpIpv4(_) => write!(f, "{:?}", self.as_arpipv4().unwrap()),

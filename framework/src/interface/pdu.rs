@@ -7,7 +7,7 @@ use std::slice;
 
 use crate::common::errors;
 use crate::common::errors::ErrorKind;
-use crate::headers::{ArpIpv4Header, EndOffset, Header, HeaderPtr, IpHeader, MacHeader, TcpHeader, UdpHeader};
+use crate::headers::{ArpIpv4Header, EndOffset, Header, HeaderKind, HeaderPtr, IpHeader, Ipv6Header, MacHeader, TcpHeader, UdpHeader};
 use crate::native::zcsi::MBuf;
 use crate::native::zcsi::{mbuf_alloc, mbuf_alloc_bulk, validate_tx_offload};
 use crate::utils::ipv4_checksum;
@@ -81,13 +81,33 @@ impl HeaderStack {
     }
 
     #[inline]
+    pub fn ipv6_mut(&mut self, which: usize) -> &mut Ipv6Header {
+        self.stack[which].as_ipv6_mut().unwrap()
+    }
+
+    #[inline]
+    pub fn udp_mut(&mut self, which: usize) -> &mut UdpHeader {
+        self.stack[which].as_udp_mut().unwrap()
+    }
+
+    #[inline]
     pub fn tcp(&self, which: usize) -> &TcpHeader {
         self.stack[which].as_tcp().unwrap()
     }
 
     #[inline]
+    pub fn udp(&self, which: usize) -> &UdpHeader {
+        self.stack[which].as_udp().unwrap()
+    }
+
+    #[inline]
     pub fn ip(&self, which: usize) -> &IpHeader {
         self.stack[which].as_ip().unwrap()
+    }
+
+    #[inline]
+    pub fn ipv6(&self, which: usize) -> &Ipv6Header {
+        self.stack[which].as_ipv6().unwrap()
     }
 
     #[inline]
@@ -309,6 +329,15 @@ impl Pdu {
     }
 
     #[inline]
+    fn parse_udp(&mut self, offset: usize) {
+        debug_assert!(!self.mbuf.is_null());
+        let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut UdpHeader };
+        unsafe {
+            self.header_stack.push(Header::Udp(&mut *hdr));
+        }
+    }
+
+    #[inline]
     fn parse_ipv4(&mut self, offset: usize) {
         debug_assert!(!self.mbuf.is_null());
         let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut IpHeader };
@@ -326,8 +355,15 @@ impl Pdu {
         }
         match ip_protocol {
             6 => {
+                // TCP
                 if self.data_len() >= ip_length as usize + offset {
                     self.parse_tcp(offset + ip_offset);
+                }
+            }
+            17 => {
+                // UDP
+                if self.data_len() >= offset + ip_offset + UdpHeader::size() {
+                    self.parse_udp(offset + ip_offset);
                 }
             }
             _ => {}
@@ -345,6 +381,37 @@ impl Pdu {
             if arp.hw_type() == 1 && arp.proto_etype() == 0x0800 {
                 self.header_stack.push(Header::ArpIpv4(&mut *hdr));
             }
+        }
+    }
+
+    #[inline]
+    fn parse_ipv6(&mut self, offset: usize) {
+        debug_assert!(!self.mbuf.is_null());
+        let hdr = unsafe { (*self.mbuf).data_address(offset) as *mut Ipv6Header };
+        unsafe {
+            self.header_stack.push(Header::Ipv6(&mut *hdr));
+        }
+        let next_header;
+        let payload_length;
+        unsafe {
+            let ipv6 = &mut *hdr;
+            next_header = ipv6.next_header();
+            payload_length = ipv6.payload_length();
+        }
+        match next_header {
+            6 => {
+                // TCP
+                if self.data_len() >= offset + Ipv6Header::size() + TcpHeader::size() {
+                    self.parse_tcp(offset + Ipv6Header::size());
+                }
+            }
+            17 => {
+                // UDP
+                if self.data_len() >= offset + Ipv6Header::size() + UdpHeader::size() {
+                    self.parse_udp(offset + Ipv6Header::size());
+                }
+            }
+            _ => {}
         }
     }
 
@@ -374,7 +441,12 @@ impl Pdu {
                     self.parse_ipv4(mac.offset());
                 }
             }
-            0x86DD => {} // IPv6
+            0x86DD => {
+                // IPv6
+                if l >= mac.offset() + Ipv6Header::size() {
+                    self.parse_ipv6(mac.offset());
+                }
+            }
             0x0806 => {
                 if l >= mac.offset() + ArpIpv4Header::size() {
                     self.parse_arp(mac.offset());
@@ -434,6 +506,7 @@ impl Pdu {
                 Header::Null => (),
                 Header::Mac(ref mut p) => ptr::copy_nonoverlapping(hdr.as_mac().unwrap() as *const MacHeader, *p, 1),
                 Header::Ip(ref mut p) => ptr::copy_nonoverlapping(hdr.as_ip().unwrap() as *const IpHeader, *p, 1),
+                Header::Ipv6(ref mut p) => ptr::copy_nonoverlapping(hdr.as_ipv6().unwrap() as *const Ipv6Header, *p, 1),
                 Header::Tcp(ref mut p) => ptr::copy_nonoverlapping(hdr.as_tcp().unwrap() as *const TcpHeader, *p, 1),
                 Header::Udp(ref mut p) => ptr::copy_nonoverlapping(hdr.as_udp().unwrap() as *const UdpHeader, *p, 1),
                 Header::ArpIpv4(ref mut p) => {
@@ -721,6 +794,55 @@ impl Pdu {
     pub fn port_id(&self) -> u16 {
         debug_assert!(!self.mbuf.is_null());
         unsafe { (*self.mbuf).port }
+    }
+
+    #[inline]
+    pub fn is_ipv4(&self) -> bool {
+        self.header_stack.get_slice(0..self.header_stack.count())
+            .iter()
+            .any(|h| h.kind() == HeaderKind::Ip)
+    }
+
+    /// Prüft, ob das Paket ein TCP-Paket ist
+    #[inline]
+    pub fn is_tcp(&self) -> bool {
+        self.header_stack.get_slice(0..self.header_stack.count())
+            .iter()
+            .any(|h| h.kind() == HeaderKind::Tcp)
+    }
+
+    /// Prüft, ob das Paket ein UDP-Paket ist
+    #[inline]
+    pub fn is_udp(&self) -> bool {
+        self.header_stack.get_slice(0..self.header_stack.count())
+            .iter()
+            .any(|h| h.kind() == HeaderKind::Udp)
+    }
+
+    /// Prüft, ob das Paket ein ARP (IPv4) Paket ist
+    #[inline]
+    pub fn is_arp_ipv4(&self) -> bool {
+        self.header_stack.get_slice(0..self.header_stack.count())
+            .iter()
+            .any(|h| h.kind() == HeaderKind::ArpIpv4)
+    }
+
+    /// Prüft auf IPv6
+    #[inline]
+    pub fn is_ipv6(&self) -> bool {
+        self.header_stack.get_slice(0..self.header_stack.count())
+            .iter()
+            .any(|h| h.kind() == HeaderKind::Ipv6)
+    }
+
+    /// Gibt den Typ des obersten (letzten) Headers zurück
+    #[inline]
+    pub fn top_header_kind(&self) -> HeaderKind {
+        if self.header_stack.count() == 0 {
+            HeaderKind::Null
+        } else {
+            self.header_stack.get(self.header_stack.count() - 1).kind()
+        }
     }
 }
 
