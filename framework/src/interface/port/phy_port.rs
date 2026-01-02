@@ -414,16 +414,6 @@ impl PortQueue {
     }
 
     #[inline]
-    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
-        self.stats_rx.clone()
-    }
-
-    #[inline]
-    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
-        self.stats_tx.clone()
-    }
-
-    #[inline]
     pub fn csum_offload(&self) -> bool {
         self.port.csumoffload
     }
@@ -433,6 +423,11 @@ impl PacketTx for PortQueue {
     #[inline]
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         self.send_queue(pkts, pkts.len() as u32)
+    }
+
+    #[inline]
+    fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_tx.clone()
     }
 }
 
@@ -461,6 +456,11 @@ impl PacketRx for PortQueue {
         let count = q_count as usize;
         self.stats_rx.set_q_len(count);
         count
+    }
+
+    #[inline]
+    fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_rx.clone()
     }
 }
 
@@ -547,15 +547,7 @@ impl PortQueueTxBuffered {
         Ok(to_send)
     }
 
-    #[inline]
-    pub fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
-        self.port_queue.stats_rx.clone()
-    }
 
-    #[inline]
-    pub fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
-        self.port_queue.stats_tx.clone()
-    }
 }
 
 impl PacketTx for PortQueueTxBuffered {
@@ -563,12 +555,22 @@ impl PacketTx for PortQueueTxBuffered {
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         self.send_queue(pkts, pkts.len() as u32)
     }
+
+    #[inline]
+    fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.port_queue.stats_tx.clone()
+    }
 }
 
 impl PacketRx for PortQueueTxBuffered {
     #[inline]
     fn recv(&self, pkts: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
         self.port_queue.recv(pkts)
+    }
+
+    #[inline]
+    fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.port_queue.stats_rx.clone()
     }
 
     #[inline]
@@ -667,7 +669,7 @@ fn reset_pci_device(pci_addr: &str) -> Result<(), Box<dyn std::error::Error>> {
     let reset_path = format!("/sys/bus/pci/devices/{}/reset", pci_addr);
     println!("Resetting device {}...", pci_addr);
     fs::write(&reset_path, "1")?;
-    sleep(Duration::from_millis(100));
+    sleep(Duration::from_millis(200));
 
     Ok(())
 }

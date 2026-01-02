@@ -1,3 +1,4 @@
+use std::sync::Arc;
 pub use self::fdir::*;
 pub use self::phy_port::*;
 pub use self::virt_port::*;
@@ -34,12 +35,22 @@ impl PortStats {
         })
     }
 
+    pub fn get_stats(&self) -> usize {
+        self.stats.load(Ordering::Relaxed)
+    }
+
+    pub fn get_queued(&self) -> usize {
+        self.queued.load(Ordering::Relaxed)
+    }
+
     pub fn get_q_len(&self) -> usize {
         self.q_len.load(Ordering::Relaxed)
     }
+
     pub fn get_max_q_len(&self) -> usize {
         self.max_q_len.load(Ordering::Relaxed)
     }
+
     pub fn cycles(&self) -> u64 {
         self.cycles.load(Ordering::Relaxed)
     }
@@ -60,6 +71,11 @@ impl<T: PacketRx> PacketRx for CacheAligned<T> {
     }
 
     #[inline]
+    fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        T::rx_stats(&*self)
+    }
+
+    #[inline]
     fn queued(&self) -> usize {
         T::queued(&self)
     }
@@ -69,5 +85,10 @@ impl<T: PacketTx> PacketTx for CacheAligned<T> {
     #[inline]
     fn send(&mut self, pkts: &mut [*mut MBuf]) -> errors::Result<u32> {
         T::send(&mut *self, pkts)
+    }
+
+    #[inline]
+    fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        T::tx_stats(&*self)
     }
 }

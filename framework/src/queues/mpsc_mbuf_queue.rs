@@ -1,5 +1,6 @@
+use crate::allocators::CacheAligned;
 use crate::common::*;
-use crate::interface::{PacketRx, Pdu};
+use crate::interface::{PacketRx, Pdu, PortStats};
 use crate::native::zcsi::MBuf;
 use crate::operators::ReceiveBatch;
 use crate::utils::round_to_power_of_2;
@@ -264,15 +265,22 @@ impl MpscProducer {
 
 pub struct MpscConsumer {
     mpsc_queue: Arc<MpscQueue>,
+    stats_rx: Arc<CacheAligned<PortStats>>,
 }
 
 impl PacketRx for MpscConsumer {
     #[inline]
     fn recv(&self, mbufs: &mut [*mut MBuf]) -> errors::Result<(u32, i32)> {
+        self.stats_rx.stats.fetch_add(mbufs.len() as usize, Ordering::Relaxed);
         Ok((
             self.mpsc_queue.dequeue(mbufs) as u32,
             self.mpsc_queue.used_slots() as i32,
         ))
+  }
+
+    #[inline]
+    fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_rx.clone()
     }
 
     #[inline]
@@ -288,7 +296,10 @@ pub fn new_mpsc_queue_pair_with_size(size: usize) -> (MpscProducer, ReceiveBatch
         MpscProducer {
             mpsc_queue: mpsc_q.clone(),
         },
-        ReceiveBatch::new(MpscConsumer { mpsc_queue: mpsc_q }),
+        ReceiveBatch::new(MpscConsumer {
+            mpsc_queue: mpsc_q,
+            stats_rx: Arc::new(PortStats::new()),
+        }),
     )
 }
 

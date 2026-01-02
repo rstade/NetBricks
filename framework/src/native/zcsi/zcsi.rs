@@ -205,21 +205,26 @@ impl fmt::Display for rte_eth_stats {
         write!(f, "imissed= {}, rx_no_mbuf= {}\n", self.imissed, self.rx_nombuf).unwrap();
         write!(
             f,
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
-            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors"
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | \n",
+            "q", "ipackets", "opackets", "ibytes", "obytes", "ierrors", "oerrors",
         )
         .unwrap();
-        for q in 0..4 {
+
+        /* per queue stats not supported, if not configured */
+
+        for q in 0..2 {
             write!(
                 f,
                 "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | \n",
-                q, self.q_ipackets[q], self.q_opackets[q], self.q_ibytes[q], self.q_obytes[q], self.q_errors[q],
+                q, self.q_ipackets[q], self.q_opackets[q], self.q_ibytes[q], self.q_obytes[q], self.q_errors[q]
             )
             .unwrap();
         }
+
+
         write!(
             f,
-            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20}\n",
+            "{0:>3} | {1: >20} | {2: >20} | {3: >20} | {4: >20} | {5: >20} | {6: >20} | \n",
             "sum", self.ipackets, self.opackets, self.ibytes, self.obytes, self.ierrors, self.oerrors,
         )
         .unwrap();

@@ -35,6 +35,11 @@ impl PacketTx for VirtualQueue {
         }
         Ok(len as u32)
     }
+
+    #[inline]
+    fn tx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_tx.clone()
+    }
 }
 
 impl PacketRx for VirtualQueue {
@@ -48,6 +53,11 @@ impl PacketRx for VirtualQueue {
         let update = self.stats_rx.stats.load(Ordering::Relaxed) + alloced as usize;
         self.stats_rx.stats.store(update, Ordering::Relaxed);
         Ok((alloced as u32, 0))
+    }
+
+    #[inline]
+    fn rx_stats(&self) -> Arc<CacheAligned<PortStats>> {
+        self.stats_rx.clone()
     }
 
     #[inline]

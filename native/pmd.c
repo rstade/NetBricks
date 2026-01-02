@@ -366,6 +366,14 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
         }
     }
 
+    // Nach rte_eth_rx_queue_setup(), vor rte_eth_dev_start()
+    for (uint16_t queue_id = 0; queue_id < rxqs; queue_id++) {
+        ret = rte_eth_dev_set_rx_queue_stats_mapping(port, queue_id, queue_id);   // Stats Index (0-15));
+        if (ret != 0) {
+            printf("Failed to set RX queue stats mapping for queue %u\n", queue_id);
+        }
+    }
+
 
     for (i = 0; i < txqs; i++) {
         int sid = rte_lcore_to_socket_id(txq_core[i]);
@@ -375,6 +383,14 @@ int init_pmd_port(uint16_t port, uint16_t rxqs, uint16_t txqs, int rxq_core[], i
             return ret; /* Clean things up */
         }
     }
+
+    for (uint16_t queue_id = 0; queue_id < txqs; queue_id++) {
+        ret = rte_eth_dev_set_tx_queue_stats_mapping(port, queue_id, queue_id);
+        if (ret != 0) {
+            printf("Failed to set TX queue stats mapping\n");
+        }
+    }
+
 
     RTE_LOG(DEBUG, PMD, "trying to start port %d \n", port);
 
